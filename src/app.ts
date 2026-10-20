@@ -58,6 +58,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     ajv: {
       customOptions: {
         allErrors: true,
+        removeAdditional: false,
       },
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
@@ -145,7 +146,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
-  await app.register(moduloProdutos);
+  await app.register(moduloProdutos, { prisma });
   await app.register(moduloComandas);
 
   return app;
