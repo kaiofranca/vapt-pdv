@@ -26,6 +26,9 @@ rabbitmq-data/
 pgdata/
 
 # Configuração pessoal do BMad
+*.agent/
+_bmad/
+_bmad-output/
 _bmad/config.user.toml
 _bmad/custom/*.user.toml
 
@@ -42,3 +45,5 @@ Thumbs.db
 # Outros
 docs/
 AGENTS.md
+STATUS.md
+CHANGELOG.md
