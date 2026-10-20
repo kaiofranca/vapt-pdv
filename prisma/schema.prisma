@@ -23,3 +23,30 @@ model Usuario {
 
   @@map("usuarios")
 }
+
+model Produto {
+  id             Int      @id @default(autoincrement())
+  nome           String
+  categoria      String
+  preco          Decimal  @db.Decimal(10, 2)
+  estoque        Int
+  estoque_minimo Int      @default(0)
+  ativo          Boolean  @default(true)
+  criado_em      DateTime @default(now())
+  atualizado_em  DateTime @updatedAt
+
+  @@map("produtos")
+}
+
+model MovimentoEstoque {
+  id         Int      @id @default(autoincrement())
+  produto_id Int
+  quantidade Int
+  motivo     String
+  comanda_id Int?
+  criado_em  DateTime @default(now())
+
+  @@index([comanda_id])
+  @@index([produto_id])
+  @@map("movimentos_estoque")
+}

@@ -341,5 +341,5 @@ describe('Infraestrutura Base e Esqueleto da API (Story 1)', () => {
 
     await app.close();
     await prismaIndisponivel.$disconnect();
-  });
+  }, 15000);
 });

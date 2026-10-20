@@ -140,15 +140,27 @@ export function extrairDetalhesValidacao(erro: FastifyError): DetalhesErro {
         ? item.params.missingProperty
         : undefined;
 
+    const propriedadeAdicional =
+      item.keyword === 'additionalProperties' &&
+      typeof item.params?.additionalProperty === 'string'
+        ? item.params.additionalProperty
+        : undefined;
+
     const campo = propriedadeFaltante
       ? caminhoBase
         ? `${caminhoBase}.${propriedadeFaltante}`
         : propriedadeFaltante
-      : caminhoBase || contextoPadrao;
+      : propriedadeAdicional
+        ? caminhoBase
+          ? `${caminhoBase}.${propriedadeAdicional}`
+          : propriedadeAdicional
+        : caminhoBase || contextoPadrao;
 
     if (!(campo in detalhes)) {
       if (propriedadeFaltante) {
         detalhes[campo] = 'Campo obrigatório ausente.';
+      } else if (propriedadeAdicional) {
+        detalhes[campo] = 'Propriedade não permitida.';
       } else {
         detalhes[campo] = item.message || 'Valor inválido.';
       }

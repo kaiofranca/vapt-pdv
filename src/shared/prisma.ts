@@ -4,6 +4,8 @@ export interface ClienteBanco {
   $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
   $disconnect?: () => Promise<void>;
   usuario?: PrismaClient['usuario'];
+  produto?: PrismaClient['produto'];
+  movimentoEstoque?: PrismaClient['movimentoEstoque'];
 }
 
 declare global {
