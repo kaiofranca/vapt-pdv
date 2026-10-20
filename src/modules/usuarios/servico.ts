@@ -143,7 +143,7 @@ export class ServicoUsuariosPrisma implements ServicoUsuarios {
   async inativar(id: number): Promise<UsuarioEntidade> {
     const usuario = await this.buscarPorId(id);
 
-    // Operação idempotente: se já estiver inativo, retorna sem erro
+    // se já estiver inativo, retorna sem erro
     if (!usuario.ativo) {
       return usuario;
     }
