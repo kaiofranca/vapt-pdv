@@ -6,3 +6,20 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum PerfilUsuario {
+  garcom
+  caixa
+  gerente
+}
+
+model Usuario {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  perfil       PerfilUsuario
+  ativo        Boolean       @default(true)
+  criado_em    DateTime      @default(now())
+  atualizado_em DateTime     @updatedAt
+
+  @@map("usuarios")
+}

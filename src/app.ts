@@ -144,7 +144,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   const prisma = opcoes.prisma ?? obterPrisma();
 
   await app.register(rotasSaude, { prisma });
-  await app.register(moduloUsuarios);
+  await app.register(moduloUsuarios, { prisma });
   await app.register(moduloProdutos);
   await app.register(moduloComandas);
 

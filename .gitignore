@@ -25,25 +25,25 @@ postgres-data/
 rabbitmq-data/
 pgdata/
 
-# Configuração pessoal do BMad
+# Caches locais e arquivos de usuário do BMad
+_bmad/render/
+_bmad/config.user.toml
+_bmad/custom/*.user.toml
 *.agent/
 _bmad/
 _bmad-output/
-_bmad/config.user.toml
-_bmad/custom/*.user.toml
 
-
-# Temporários
+# Temporários do Sistema Operacional
 *.tmp
 .DS_Store
 Thumbs.db
 
-# Editor
+# Configurações locais de IDE
 .vscode/
 .idea/
 
 # Outros
 docs/
 AGENTS.md
-STATUS.md
 CHANGELOG.md
+STATUS.md

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 export interface ClienteBanco {
   $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
   $disconnect?: () => Promise<void>;
+  usuario?: PrismaClient['usuario'];
 }
 
 declare global {

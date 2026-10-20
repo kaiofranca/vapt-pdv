@@ -1,9 +1,23 @@
 import { FastifyPluginAsync } from 'fastify';
+import { ClienteBanco, obterPrisma } from '../../shared/prisma';
+import { rotasUsuarios } from './rotas';
+import { ServicoUsuarios, ServicoUsuariosPrisma } from './servico';
 
-/**
- * Outros módulos (como Comandas) devem acessar dados de usuários exclusivamente
- * por interfaces de serviço expostas aqui, nunca consultando tabelas diretamente.
- */
-export const moduloUsuarios: FastifyPluginAsync = async () => {
-  // Rotas e serviços de usuários serão implementados na Story 2.
+export interface OpcoesModuloUsuarios {
+  prisma?: ClienteBanco;
+  servico?: ServicoUsuarios;
+}
+
+export const moduloUsuarios: FastifyPluginAsync<OpcoesModuloUsuarios> = async (
+  fastify,
+  opcoes,
+) => {
+  const servico =
+    opcoes.servico ?? new ServicoUsuariosPrisma(opcoes.prisma ?? obterPrisma());
+
+  await fastify.register(rotasUsuarios, { servico });
 };
+
+export * from './schemas';
+export * from './servico';
+export * from './rotas';
