@@ -40,9 +40,7 @@ A API do VaptPDV está totalmente implantada e disponível publicamente na AWS:
 
 ## Vídeo de Demonstração (Módulo 1)
 
-> **Link do Vídeo no YouTube:**
->
-> `[INSIRA_AQUI_O_LINK_DO_VIDEO_DO_YOUTUBE]`
+> [Link do Vídeo](https://drive.google.com/drive/folders/1GzLecg9bSraN3ZjB7usL9Mg3I03I1uzm?usp=sharing)
 
 *(O vídeo demonstra a API publicada na AWS EC2 respondendo a requisições de CRUD, conectando ao banco PostgreSQL e comprovando o acesso público via URL do servidor).*
 
