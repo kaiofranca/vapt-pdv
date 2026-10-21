@@ -1,49 +1,127 @@
-# VaptPDV
+# VaptPDV - Sistema de Ponto de Venda (Módulo 1: Computação em Nuvem)
 
-Sistema Distribuído de Ponto de Venda para Bares e Lanchonetes — Projeto incremental da 3ª Unidade de Sistemas Distribuídos (DCC/UERN).
+> Trabalho prático e incremental desenvolvido para a disciplina de **Sistemas Distribuídos**
+>
+> **Departamento de Ciência da Computação (DCC / UERN)**
+>
+> **Integrantes:** Kaio França e Mateus Neri
 
-## Pré-requisitos
+## Visão Geral do Projeto
 
-- **Node.js** `>=20` (recomendado usar a versão definida em `.nvmrc`)
-- **PostgreSQL** (local ou instalado na instância AWS EC2)
+O **VaptPDV** é um sistema de ponto de venda (PDV) para bares, botecos e lanchonetes de pequeno porte. Ele substitui comanda em papel por registros digitais unificados: o garçom abre uma comanda por mesa, lança o consumo, o caixa fecha a conta e registra o pagamento, e o gerente acompanha o histórico do estabelecimento.
 
-## Configuração Local
+Neste **Módulo 1 (Computação em Nuvem / IaaS)**, foi implantada a primeira versão funcional da API REST em uma instância de nuvem (AWS EC2), acompanhada de um banco de dados relacional PostgreSQL hospedado na própria máquina virtual, com variáveis de ambiente isoladas e documentação interativa OpenAPI/Swagger acessível publicamente.
 
-1. Copie o arquivo de exemplo de variáveis de ambiente:
+## API em Execução na Nuvem
 
-```bash
-cp .env.example .env
+A API do VaptPDV está totalmente implantada e disponível publicamente na AWS:
+
+* **Documentação Interativa (Swagger / OpenAPI):** <http://54.234.157.236:3000/docs>
+
+* **Base URL da API:** `http://54.234.157.236:3000`
+
+## Stack Tecnológica
+
+* **Linguagem:** [TypeScript](https://www.typescriptlang.org/) (Node.js v20 LTS)
+
+* **Framework Web:** [Fastify](https://fastify.dev/) (Alta performance e validação declarativa de schemas)
+
+* **ORM:** [Prisma ORM](https://www.prisma.io/)
+
+* **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/)
+
+* **Documentação de API:** Swagger / OpenAPI (`@fastify/swagger` e `@fastify/swagger-ui`)
+
+* **Testes Automatizados:** [Vitest](https://vitest.dev/)
+
+* **Hospedagem / Nuvem (IaaS):** [AWS EC2](https://aws.amazon.com/ec2/) (Ubuntu Server)
+
+* **Gerenciador de Processos:** [PM2](https://pm2.keymetrics.io/)
+
+## Vídeo de Demonstração (Módulo 1)
+
+> **Link do Vídeo no YouTube:**
+>
+> `[INSIRA_AQUI_O_LINK_DO_VIDEO_DO_YOUTUBE]`
+
+*(O vídeo demonstra a API publicada na AWS EC2 respondendo a requisições de CRUD, conectando ao banco PostgreSQL e comprovando o acesso público via URL do servidor).*
+
+## Instruções de Execução Local
+
+### Pré-requisitos
+
+* Node.js (v20 ou superior)
+
+* NPM ou Yarn
+
+* Instância local ou contêiner do PostgreSQL
+
+### Passo a Passo
+
+1. **Clonar o repositório:**
+
+   ```
+   git clone https://github.com/usuario/vapt-pdv.git
+   cd vapt-pdv
+   
+   ```
+
+2. **Instalar as dependências:**
+
+   ```
+   npm install
+   
+   ```
+
+3. **Configurar o arquivo de ambiente:**
+
+   ```
+   cp .env.example .env
+   
+   ```
+
+   *Ajuste a variável `DATABASE_URL` no `.env` conforme suas credenciais locais do PostgreSQL.*
+
+4. **Executar as migrações do banco (Prisma):**
+
+   ```
+   npx prisma migrate dev
+   
+   ```
+
+5. **Iniciar a aplicação em modo de desenvolvimento:**
+
+   ```
+   npm run dev
+   
+   ```
+
+   A API estará acessível em `http://localhost:3000` e a documentação interativa em `http://localhost:3000/docs`.
+
+## Executando os Testes Automatizados
+
+Os testes automatizados foram construídos utilizando o **Vitest**.
+
+Para executar a suíte completa de testes unitários e de integração:
+
+```
+npm run test
+
 ```
 
-2. Preencha `DATABASE_URL` no arquivo `.env` com a string de conexão do seu banco PostgreSQL.
+Para executar os testes em modo contínuo (*watch mode*):
 
-3. Instale as dependências e gere o cliente Prisma:
+```
+npm run test:watch
 
-```bash
-npm install
-npm run prisma:generate
 ```
 
-> **Nota para Windows PowerShell:** caso a execução de scripts `.ps1` esteja bloqueada na sua sessão, utilize `npm.cmd` no lugar de `npm` (ex.: `npm.cmd install`, `npm.cmd test`).
+## Infraestrutura e Deploy na Nuvem (IaaS)
 
-## Comandos Principais
+1. Instância **AWS EC2** provisionada com sistema operacional Ubuntu Server.
 
-| Comando | Descrição |
-| :--- | :--- |
-| `npm run dev` | Inicia o servidor em modo de desenvolvimento com recarregamento automático (`tsx watch`) |
-| `npm run build` | Compila o projeto TypeScript para `dist/` |
-| `npm start` | Executa a versão compilada (`node dist/server.js`) |
-| `npm run typecheck` | Valida tipos TypeScript sem emitir arquivos (`tsc --noEmit`) |
-| `npm test` | Executa a suíte de testes automatizados (Vitest) |
-| `npm run prisma:generate` | Gera o cliente do Prisma (`@prisma/client`) |
-| `npm run prisma:migrate` | Cria e aplica migrações em ambiente de desenvolvimento |
-| `npm run prisma:deploy` | Aplica migrações pendentes em produção |
+2. Instalação e configuração manual do servidor de banco de dados **PostgreSQL**.
 
-## Endpoints de Infraestrutura
+3. Liberação de regras de firewall nos *Security Groups* da AWS e `iptables` interno para a porta `3000`.
 
-- `GET /health` — Verificação de saúde da aplicação e conectividade com o banco de dados (`SELECT 1`).
-- `GET /docs` — Documentação interativa OpenAPI / Swagger UI.
-
-## Arquitetura (Monólito Modular em Nuvem)
-
-O código-fonte segue fronteiras explícitas de contexto em `src/modules/{usuarios,produtos,comandas}`, preparando a evolução para microsserviços nos módulos seguintes.
+4. Gerenciamento do processo em background via **PM2** (`pm2 start dist/server.js --name vaptpdv-api`), garantindo *uptime* contínuo e reinicialização automática.
