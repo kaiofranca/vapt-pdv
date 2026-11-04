@@ -29,10 +29,12 @@ pgdata/
 _bmad/render/
 _bmad/config.user.toml
 _bmad/custom/*.user.toml
-*.agent/
-.agent/
+*.agents/
+.agents/
 _bmad/
 _bmad-output/
+skills-lock.json
+*skill
 
 # Temporários do Sistema Operacional
 *.tmp
