@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SideNavGestao, type AbaNavegacaoGestao } from './components/SideNavGestao';
 import { VisaoGeralView } from './components/VisaoGeralView';
+import { CardapioView } from './components/CardapioView';
 import { EquipeView } from './components/EquipeView';
 import { CurvaAbcView } from './components/CurvaAbcView';
 import { DesempenhoGarconsView } from './components/DesempenhoGarconsView';
@@ -34,6 +35,8 @@ export const ModoGestaoPage: React.FC = () => {
               onAbrirExportacao={() => setIsModalExportacaoOpen(true)}
             />
           )}
+
+          {abaAtiva === 'cardapio' && <CardapioView />}
 
           {abaAtiva === 'equipe' && <EquipeView />}
 

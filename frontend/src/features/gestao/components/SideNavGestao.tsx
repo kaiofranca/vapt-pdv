@@ -7,12 +7,13 @@ import {
   FileSpreadsheet,
   LogOut,
   UserCog,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { LogoMark } from '../../../components/ui/Logo';
 import { ThemeToggle } from '../../../components/ui/ThemeToggle';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
-export type AbaNavegacaoGestao = 'visao-geral' | 'equipe' | 'curva-abc' | 'garcons' | 'estoque';
+export type AbaNavegacaoGestao = 'visao-geral' | 'cardapio' | 'equipe' | 'curva-abc' | 'garcons' | 'estoque';
 
 export interface SideNavGestaoProps {
   abaAtiva: AbaNavegacaoGestao;
@@ -50,6 +51,12 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
       label: 'Visão Geral',
       sublabel: 'Dashboard M01',
       icon: LayoutDashboard,
+    },
+    {
+      id: 'cardapio',
+      label: 'Cardápio',
+      sublabel: 'Produtos M02',
+      icon: UtensilsCrossed,
     },
     {
       id: 'equipe',
