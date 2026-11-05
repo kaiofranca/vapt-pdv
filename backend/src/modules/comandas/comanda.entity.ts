@@ -10,11 +10,12 @@ export interface ItemComandaEntidade {
   nome_copiado: string;
   preco_copiado: string;
   quantidade: number;
+  observacao?: string | null;
 }
 
 export interface ComandaEntidade {
   id: number;
-  mesa: string;
+  mesa: number;
   nome_cliente: string | null;
   garcom_id: number;
   status: StatusComandaTipo;
@@ -25,6 +26,8 @@ export interface ComandaEntidade {
   aberta_em: Date;
   fechada_em: Date | null;
   paga_em: Date | null;
+  cancelada_em?: Date | null;
+  motivo_cancelamento?: string | null;
   itens: ItemComandaEntidade[];
   integracao_caixa_pendente?: boolean;
   integracao_gestao_pendente?: boolean;
@@ -40,6 +43,7 @@ export interface CriarComandaDados {
 export interface LancarItemDados {
   produto_id: number;
   quantidade: number;
+  observacao?: string | null;
 }
 
 export interface AjustarItemDados {
@@ -50,6 +54,10 @@ export interface FecharComandaDados {
   aplicar_taxa_servico: boolean;
 }
 
+export interface CancelarComandaDados {
+  motivo?: string | null;
+}
+
 export interface PagarComandaDados {
   forma_pagamento: FormaPagamentoTipo;
   documento_cliente?: string | null;
@@ -57,7 +65,7 @@ export interface PagarComandaDados {
 
 export interface FiltrosListagemComandas {
   status?: StatusComandaTipo;
-  mesa?: string;
+  mesa?: number | string;
   de?: string;
   ate?: string;
   limit?: number;
@@ -71,11 +79,12 @@ export interface RegistroItemComandaBanco {
   nome_copiado: string;
   preco_copiado: unknown;
   quantidade: number;
+  observacao?: string | null;
 }
 
 export interface RegistroComandaBanco {
   id: number;
-  mesa: string;
+  mesa: number;
   nome_cliente: string | null;
   garcom_id: number;
   status: StatusComandaTipo;
@@ -86,6 +95,8 @@ export interface RegistroComandaBanco {
   aberta_em: Date;
   fechada_em: Date | null;
   paga_em: Date | null;
+  cancelada_em?: Date | null;
+  motivo_cancelamento?: string | null;
   itens?: RegistroItemComandaBanco[];
 }
 
@@ -97,6 +108,9 @@ export function formatarValorMonetario(valor: unknown): string {
     typeof (valor as { toFixed?: unknown }).toFixed === 'function'
   ) {
     return (valor as { toFixed: (casas: number) => string }).toFixed(2);
+  }
+  if (typeof valor === 'number') {
+    return valor.toFixed(2);
   }
   if (typeof valor === 'string') {
     const texto = valor.trim();
@@ -116,48 +130,34 @@ export function formatarValorMonetarioOpcional(valor: unknown): string | null {
   return formatarValorMonetario(valor);
 }
 
-export function normalizarMesa(mesa: string | number): string {
+export function normalizarMesa(mesa: string | number): number {
+  let num: number;
   if (typeof mesa === 'number') {
-    if (!Number.isFinite(mesa) || !Number.isInteger(mesa) || mesa < 1 || mesa > 2147483647) {
-      throw ErroDominio.validacao(
-        'O número da mesa deve ser um inteiro maior ou igual a 1.',
-        {
-          mesa: 'O número da mesa deve ser um inteiro maior ou igual a 1.',
-        },
-      );
-    }
-    return String(mesa);
-  }
-
-  if (typeof mesa === 'string') {
+    num = mesa;
+  } else if (typeof mesa === 'string') {
     const mesaLimpa = mesa.trim();
-    if (!mesaLimpa) {
-      throw ErroDominio.validacao('A identificação da mesa não pode ser vazia.', {
-        mesa: 'O campo não pode ser vazio.',
+    if (!/^\d+$/.test(mesaLimpa)) {
+      throw ErroDominio.validacao('O número da mesa deve ser um inteiro maior ou igual a 1.', {
+        mesa: 'O número da mesa deve ser um inteiro maior ou igual a 1.',
       });
     }
-    if (mesaLimpa.length > 50) {
-      throw ErroDominio.validacao(
-        'A identificação da mesa não pode exceder 50 caracteres.',
-        {
-          mesa: 'O campo deve ter no máximo 50 caracteres.',
-        },
-      );
-    }
-    if (/^(?:[+-]?(?:0+(?:\.\d+)?|\d+\.\d+)|-\d+)$/.test(mesaLimpa)) {
-      throw ErroDominio.validacao(
-        'O número da mesa deve ser um inteiro maior ou igual a 1.',
-        {
-          mesa: 'O número da mesa deve ser um inteiro maior ou igual a 1.',
-        },
-      );
-    }
-    return mesaLimpa;
+    num = parseInt(mesaLimpa, 10);
+  } else {
+    throw ErroDominio.validacao('A identificação da mesa é inválida.', {
+      mesa: 'Informe um número inteiro positivo.',
+    });
   }
 
-  throw ErroDominio.validacao('A identificação da mesa é inválida.', {
-    mesa: 'Informe uma string não vazia ou um número inteiro positivo.',
-  });
+  if (!Number.isFinite(num) || !Number.isInteger(num) || num < 1 || num > 2147483647) {
+    throw ErroDominio.validacao(
+      'O número da mesa deve ser um inteiro maior ou igual a 1.',
+      {
+        mesa: 'O número da mesa deve ser um inteiro maior ou igual a 1.',
+      },
+    );
+  }
+
+  return num;
 }
 
 export function normalizarNomeCliente(nomeCliente?: string | null): string | null {
@@ -180,6 +180,38 @@ export function normalizarNomeCliente(nomeCliente?: string | null): string | nul
   }
 
   return nomeLimpo;
+}
+
+export function normalizarObservacao(observacao?: string | null): string | null {
+  if (observacao === undefined || observacao === null) {
+    return null;
+  }
+  const limpa = observacao.trim();
+  if (!limpa) {
+    return null;
+  }
+  if (limpa.length > 240) {
+    throw ErroDominio.validacao('A observação não pode exceder 240 caracteres.', {
+      observacao: 'A observação deve ter no máximo 240 caracteres.',
+    });
+  }
+  return limpa;
+}
+
+export function normalizarMotivoCancelamento(motivo?: string | null): string | null {
+  if (motivo === undefined || motivo === null) {
+    return null;
+  }
+  const limpo = motivo.trim();
+  if (!limpo) {
+    return null;
+  }
+  if (limpo.length < 3 || limpo.length > 240) {
+    throw ErroDominio.validacao('O motivo de cancelamento deve ter entre 3 e 240 caracteres.', {
+      motivo: 'O motivo deve ter entre 3 e 240 caracteres.',
+    });
+  }
+  return limpo;
 }
 
 const REGEX_ISO_8601 =

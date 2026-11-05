@@ -32,11 +32,12 @@ export interface ItemComanda {
   nome_copiado: string;
   preco_copiado: string; // "12.50"
   quantidade: number;
+  observacao?: string | null;
 }
 
 export interface Comanda {
   id: number;
-  mesa: string;
+  mesa: number | string;
   nome_cliente: string | null;
   garcom_id: number;
   status: StatusComanda;
@@ -47,7 +48,12 @@ export interface Comanda {
   aberta_em: string;
   fechada_em: string | null;
   paga_em: string | null;
+  cancelada_em?: string | null;
+  motivo_cancelamento?: string | null;
   itens?: ItemComanda[];
+  integracao_caixa_pendente?: boolean;
+  integracao_gestao_pendente?: boolean;
+  avisos?: string[];
 }
 
 export interface ApiErrorDetail {
@@ -88,6 +94,7 @@ export interface AbrirComandaDto {
 export interface LancarItemDto {
   produto_id: number;
   quantidade: number;
+  observacao?: string | null;
 }
 
 export interface AjustarItemDto {
@@ -98,6 +105,18 @@ export interface FecharComandaDto {
   aplicar_taxa_servico: boolean;
 }
 
+export interface CancelarComandaDto {
+  motivo?: string;
+}
+
+export interface TransferirMesaDto {
+  nova_mesa: number | string;
+}
+
+export interface MesclarComandaDto {
+  comanda_origem_id: number;
+}
+
 export interface PagarComandaDto {
   forma_pagamento: FormaPagamento;
   documento_cliente?: string | null;
@@ -105,7 +124,7 @@ export interface PagarComandaDto {
 
 export interface ListarComandasFiltros {
   status?: StatusComanda;
-  mesa?: string;
+  mesa?: string | number;
   de?: string;
   ate?: string;
   limit?: number;
@@ -205,4 +224,39 @@ export interface ExportarRelatorioFiltros {
   formato?: FormatoRelatorioExportar;
   de?: string;
   ate?: string;
+}
+
+// Tipos do KDS (Cozinha & Bar)
+export type SetorKds = 'cozinha' | 'bar';
+export type StatusFichaKds = 'recebido' | 'em_preparo' | 'pronto' | 'entregue' | 'cancelado';
+
+export interface FichaKds {
+  id: number;
+  comanda_id: number;
+  item_comanda_id: number;
+  mesa: number;
+  garcom_id: number;
+  nome_garcom?: string | null;
+  setor: SetorKds;
+  produto_id: number;
+  nome_produto: string;
+  quantidade: number;
+  observacao?: string | null;
+  status: StatusFichaKds;
+  recebido_em: string;
+  iniciado_em?: string | null;
+  pronto_em?: string | null;
+  entregue_em?: string | null;
+}
+
+export interface PendenciasKdsResposta {
+  comanda_id: number;
+  possui_pendencias: boolean;
+  total_pendencias: number;
+  fichas_pendentes: Array<{
+    id: number;
+    nome_produto: string;
+    setor: string;
+    status: string;
+  }>;
 }

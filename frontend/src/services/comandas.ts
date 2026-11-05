@@ -44,6 +44,12 @@ export const comandasApi = {
   pagar: (comandaId: number, dto: PagarComandaDto) =>
     apiClient.post<Comanda>(`/comandas/${comandaId}/pagar`, dto),
 
-  cancelar: (comandaId: number) =>
-    apiClient.post<Comanda>(`/comandas/${comandaId}/cancelar`),
+  cancelar: (comandaId: number, motivo?: string) =>
+    apiClient.post<Comanda>(`/comandas/${comandaId}/cancelar`, motivo ? { motivo } : {}),
+
+  transferirMesa: (comandaId: number, novaMesa: number | string) =>
+    apiClient.patch<Comanda>(`/comandas/${comandaId}/transferir-mesa`, { nova_mesa: novaMesa }),
+
+  mesclar: (comandaDestinoId: number, comandaOrigemId: number) =>
+    apiClient.post<Comanda>(`/comandas/${comandaDestinoId}/mesclar`, { comanda_origem_id: comandaOrigemId }),
 };

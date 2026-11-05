@@ -68,7 +68,7 @@ enum FormaPagamento {
 
 model Comanda {
   id              Int             @id @default(autoincrement())
-  mesa            String
+  mesa            Int
   nome_cliente    String?
   garcom_id       Int
   status          StatusComanda   @default(aberta)
@@ -79,6 +79,8 @@ model Comanda {
   aberta_em       DateTime        @default(now())
   fechada_em      DateTime?
   paga_em         DateTime?
+  cancelada_em    DateTime?
+  motivo_cancelamento String?         @db.VarChar(240)
   itens           ItemComanda[]
 
   @@index([status])
@@ -94,6 +96,7 @@ model ItemComanda {
   nome_copiado  String
   preco_copiado Decimal @db.Decimal(10, 2)
   quantidade    Int
+  observacao    String?         @db.VarChar(240)
   comanda       Comanda @relation(fields: [comanda_id], references: [id], onDelete: Cascade)
 
   @@index([comanda_id])

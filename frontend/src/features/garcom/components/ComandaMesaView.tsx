@@ -664,7 +664,7 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
       {/* Dupla validação para cancelar a comanda */}
       <ModalCancelarComanda
         isOpen={modalCancelarAberto}
-        mesa={comanda.mesa}
+        mesa={String(comanda.mesa)}
         isLoading={cancelarComandaMut.isPending}
         onClose={() => setModalCancelarAberto(false)}
         onConfirmar={handleCancelarComanda}

@@ -27,11 +27,12 @@ interface ItemComandaSimulado {
   nome_copiado: string;
   preco_copiado: Prisma.Decimal;
   quantidade: number;
+  observacao?: string | null;
 }
 
 interface ComandaSimulada {
   id: number;
-  mesa: string;
+  mesa: number | string;
   nome_cliente: string | null;
   garcom_id: number;
   status: StatusComandaTipo;
@@ -42,6 +43,8 @@ interface ComandaSimulada {
   aberta_em: Date;
   fechada_em: Date | null;
   paga_em: Date | null;
+  cancelada_em?: Date | null;
+  motivo_cancelamento?: string | null;
   itens?: ItemComandaSimulado[];
 }
 
@@ -218,6 +221,7 @@ function criarPrismaComComandasMock(opcoes: {
           nome_copiado: data.nome_copiado,
           preco_copiado: data.preco_copiado,
           quantidade: data.quantidade,
+          observacao: (data as any).observacao ?? null,
         };
         if (!comanda.itens) {
           comanda.itens = [];
@@ -289,7 +293,7 @@ function criarPrismaComComandasMock(opcoes: {
         where?: { mesa?: string; status?: StatusComandaTipo };
       }) => {
         const encontrada = comandas.find((c) => {
-          if (params?.where?.mesa !== undefined && c.mesa !== params.where.mesa) {
+          if (params?.where?.mesa !== undefined && Number(c.mesa) !== Number(params.where.mesa)) {
             return false;
           }
           if (params?.where?.status !== undefined && c.status !== params.where.status) {
@@ -318,7 +322,7 @@ function criarPrismaComComandasMock(opcoes: {
         // Simula também o índice único parcial no banco (status = 'aberta' por mesa)
         const conflitoIndiceParcial = comandas.find(
           (c) =>
-            c.mesa === data.mesa &&
+            Number(c.mesa) === Number(data.mesa) &&
             (data.status ?? 'aberta') === 'aberta' &&
             c.status === 'aberta',
         );
@@ -333,7 +337,7 @@ function criarPrismaComComandasMock(opcoes: {
 
         const nova: ComandaSimulada = {
           id: proximoIdComanda++,
-          mesa: data.mesa,
+          mesa: Number(data.mesa),
           nome_cliente: data.nome_cliente ?? null,
           garcom_id: data.garcom_id,
           status: data.status ?? 'aberta',
@@ -344,6 +348,8 @@ function criarPrismaComComandasMock(opcoes: {
           aberta_em: new Date(),
           fechada_em: null,
           paga_em: null,
+          cancelada_em: null,
+          motivo_cancelamento: null,
           itens: [],
         };
         comandas.push(nova);
@@ -382,7 +388,7 @@ function criarPrismaComComandasMock(opcoes: {
         }
 
         if (params?.where?.mesa !== undefined) {
-          resultado = resultado.filter((c) => c.mesa === params.where?.mesa);
+          resultado = resultado.filter((c) => Number(c.mesa) === Number(params.where?.mesa));
         }
 
         if (params?.where?.aberta_em?.gte !== undefined) {
@@ -538,7 +544,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
           garcom_id: 1,
           nome_cliente: 'Carlos',
         },
@@ -548,7 +554,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       const corpo = resposta.json();
       expect(corpo).toEqual({
         id: 1,
-        mesa: '10',
+        mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
         nome_cliente: 'Carlos',
         garcom_id: 1,
         status: 'aberta',
@@ -584,7 +592,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(resposta.statusCode).toBe(201);
       const corpo = resposta.json();
       expect(corpo.id).toBe(1);
-      expect(corpo.mesa).toBe('5');
+      expect(corpo.mesa).toBe(5);
       expect(corpo.nome_cliente).toBeNull();
       expect(corpo.status).toBe('aberta');
       expect(corpo.itens).toEqual([]);
@@ -592,42 +600,51 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       await app.close();
     });
 
-    it('Abrir comanda normaliza espaços de mesa e nome_cliente (aceitando até 50/100 caracteres após trim e convertendo vazio para null)', async () => {
+    it('Abrir comanda normaliza espaços de mesa e nome_cliente e rejeita mesa não numérica', async () => {
       const { prisma } = criarPrismaComComandasMock({
         usuariosIniciais: [garcomAtivoPadrao],
       });
       const app = await buildApp({ prisma, logger: false });
 
-      const mesa50 = 'M'.repeat(50);
       const cliente100 = 'C'.repeat(100);
 
       const resLimitesComEspacos = await app.inject({
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: `  ${mesa50}  `,
+          mesa: '  12  ',
           garcom_id: 1,
           nome_cliente: `  ${cliente100}  `,
         },
       });
 
       expect(resLimitesComEspacos.statusCode).toBe(201);
-      expect(resLimitesComEspacos.json().mesa).toBe(mesa50);
+      expect(resLimitesComEspacos.json().mesa).toBe(12);
       expect(resLimitesComEspacos.json().nome_cliente).toBe(cliente100);
 
       const resNomeVazio = await app.inject({
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '  Varanda 01  ',
+          mesa: '  15  ',
           garcom_id: 1,
           nome_cliente: '   ',
         },
       });
 
       expect(resNomeVazio.statusCode).toBe(201);
-      expect(resNomeVazio.json().mesa).toBe('Varanda 01');
+      expect(resNomeVazio.json().mesa).toBe(15);
       expect(resNomeVazio.json().nome_cliente).toBeNull();
+
+      const resMesaInvalida = await app.inject({
+        method: 'POST',
+        url: '/comandas',
+        payload: {
+          mesa: 'Varanda 01',
+          garcom_id: 1,
+        },
+      });
+      expect(resMesaInvalida.statusCode).toBe(400);
 
       await app.close();
     });
@@ -639,7 +656,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         comandasIniciais: [
           {
             id: 1,
-            mesa: '10',
+            mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
             nome_cliente: 'Cliente Antigo 1',
             garcom_id: 1,
             status: 'fechada',
@@ -654,7 +673,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
           },
           {
             id: 2,
-            mesa: '10',
+            mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
             nome_cliente: 'Cliente Antigo 2',
             garcom_id: 1,
             status: 'paga',
@@ -669,7 +690,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
           },
           {
             id: 3,
-            mesa: '10',
+            mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
             nome_cliente: 'Cliente Antigo 3',
             garcom_id: 1,
             status: 'cancelada',
@@ -690,7 +713,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
           garcom_id: 1,
           nome_cliente: 'Novo Cliente',
         },
@@ -699,7 +722,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(resposta.statusCode).toBe(201);
       const corpo = resposta.json();
       expect(corpo.id).toBe(4);
-      expect(corpo.mesa).toBe('10');
+      expect(corpo.mesa).toBe(10);
       expect(corpo.status).toBe('aberta');
       expect(corpo.nome_cliente).toBe('Novo Cliente');
 
@@ -712,7 +735,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         comandasIniciais: [
           {
             id: 1,
-            mesa: '10',
+            mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
             nome_cliente: 'Carlos',
             garcom_id: 1,
             status: 'aberta',
@@ -733,7 +758,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
           garcom_id: 1,
         },
       });
@@ -741,8 +766,8 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(resposta.statusCode).toBe(409);
       const corpo = resposta.json();
       expect(corpo.erro.codigo).toBe('MESA_OCUPADA');
-      expect(corpo.erro.detalhes).toMatchObject({
-        mesa: '10',
+      expect(corpo.erro.detalhes).toEqual({
+        mesa: 10,
         comanda_id: 1,
       });
 
@@ -769,7 +794,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
           garcom_id: 1,
         },
       });
@@ -777,7 +802,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(resposta.statusCode).toBe(409);
       const corpo = resposta.json();
       expect(corpo.erro.codigo).toBe('MESA_OCUPADA');
-      expect(corpo.erro.detalhes).toEqual({ mesa: '10' });
+      expect(corpo.erro.detalhes).toEqual({ mesa: 10 });
 
       await app.close();
     });
@@ -922,7 +947,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
           garcom_id: 1,
           nome_cliente: 'C'.repeat(101),
         },
@@ -935,7 +960,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         method: 'POST',
         url: '/comandas',
         payload: {
-          mesa: '10',
+          mesa: 10,
         },
       });
       expect(resSemGarcom.statusCode).toBe(400);
@@ -950,7 +975,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
     const comandasCenario: ComandaSimulada[] = [
       {
         id: 1,
-        mesa: '10',
+        mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
         nome_cliente: 'Ana',
         garcom_id: 1,
         status: 'paga',
@@ -974,7 +1001,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       },
       {
         id: 2,
-        mesa: '10',
+        mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
         nome_cliente: 'Bruno',
         garcom_id: 1,
         status: 'aberta',
@@ -1004,7 +1033,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       },
       {
         id: 4,
-        mesa: '10',
+        mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
         nome_cliente: 'Daniel',
         garcom_id: 1,
         status: 'fechada',
@@ -1041,6 +1072,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
           nome_copiado: 'Cerveja Pilsen',
           preco_copiado: '12.50',
           quantidade: 2,
+          observacao: null,
         },
       ]);
 
@@ -1101,7 +1133,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       const lista = resposta.json();
       expect(lista).toHaveLength(1);
       expect(lista[0].id).toBe(2);
-      expect(lista[0].mesa).toBe('10');
+      expect(lista[0].mesa).toBe(10);
       expect(lista[0].status).toBe('aberta');
       expect(lista[0].nome_cliente).toBe('Bruno');
 
@@ -1223,7 +1255,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         comandasIniciais: [
           {
             id: 1,
-            mesa: '10',
+            mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
             nome_cliente: 'Carlos',
             garcom_id: 1,
             status: 'aberta',
@@ -1266,7 +1300,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       const corpo = resposta.json();
       expect(corpo).toEqual({
         id: 1,
-        mesa: '10',
+        mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
         nome_cliente: 'Carlos',
         garcom_id: 1,
         status: 'aberta',
@@ -1284,6 +1320,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
             nome_copiado: 'Porção de Batata',
             preco_copiado: '25.50',
             quantidade: 1,
+            observacao: null,
           },
           {
             id: 5,
@@ -1291,6 +1328,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
             nome_copiado: 'Cerveja Artesanal',
             preco_copiado: '18.00',
             quantidade: 2,
+            observacao: null,
           },
         ],
       });
@@ -1349,7 +1387,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(servicoUsuariosDublê.validarGarcom).toHaveBeenCalledTimes(1);
       expect(servicoUsuariosDublê.validarGarcom).toHaveBeenCalledWith(77);
       expect(usuarioMock.findUnique).not.toHaveBeenCalled();
-      expect(comanda.mesa).toBe('20');
+      expect(comanda.mesa).toBe(20);
       expect(comanda.garcom_id).toBe(77);
     });
 
@@ -1458,7 +1496,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
 
     const comandaAbertaPadrao: ComandaSimulada = {
       id: 1,
-      mesa: '10',
+      mesa: 10,
+        cancelada_em: null,
+        motivo_cancelamento: null,
       nome_cliente: 'Cliente Teste',
       garcom_id: 1,
       status: 'aberta',

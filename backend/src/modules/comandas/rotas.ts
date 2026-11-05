@@ -4,15 +4,18 @@ import { Type } from '@sinclair/typebox';
 import { RespostaErroSchema } from '../../shared/erros';
 import {
   AjustarItemBodySchema,
+  CancelarComandaBodySchema,
   ComandaSchema,
   CriarComandaBodySchema,
   FecharComandaBodySchema,
   ItemComandaSchema,
   LancarItemBodySchema,
   ListarComandasQuerySchema,
+  MesclarComandaBodySchema,
   PagarComandaBodySchema,
   ParametroIdComandaSchema,
   ParametroItemComandaSchema,
+  TransferirMesaBodySchema,
 } from './schemas';
 import { ServicoComandas } from './comandas.service';
 import { ComandasController, serializarComanda, serializarItem } from './comandas.controller';
@@ -38,7 +41,7 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
         tags: ['Comandas'],
         summary: 'Abrir nova comanda',
         description:
-          'Abre uma nova comanda em uma mesa livre com um garçom responsável ativo.',
+          'Abre uma nova comanda para uma mesa específica, vinculada a um garçom ativo.',
         body: CriarComandaBodySchema,
         response: {
           201: ComandaSchema,
@@ -57,12 +60,12 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
     {
       schema: {
         tags: ['Comandas'],
-        summary: 'Listar comandas',
+        summary: 'Listar comandas com filtros',
         description:
-          'Lista comandas ordenadas da mais recente para a mais antiga, com suporte a filtros combinados por status, mesa e período de abertura.',
+          'Retorna lista paginada de comandas com filtros opcionais por status, mesa e intervalo de abertura.',
         querystring: ListarComandasQuerySchema,
         response: {
-          200: Type.Array(ComandaSchema),
+          200: Type.Array(ComandaSchema, { description: 'Lista de comandas encontradas' }),
           400: RespostaErroSchema,
           500: RespostaErroSchema,
         },
@@ -76,9 +79,9 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
     {
       schema: {
         tags: ['Comandas'],
-        summary: 'Consultar detalhes da comanda',
+        summary: 'Buscar comanda por ID',
         description:
-          'Retorna os detalhes de uma comanda específica e a lista de seus itens.',
+          'Retorna o estado detalhado de uma comanda, incluindo todos os itens lançados e timestamps de ciclo de vida.',
         params: ParametroIdComandaSchema,
         response: {
           200: ComandaSchema,
@@ -189,11 +192,13 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
         description:
           'Cancela uma comanda aberta sem movimentar estoque e liberando a mesa.',
         params: ParametroIdComandaSchema,
+        
         response: {
           200: ComandaSchema,
           400: RespostaErroSchema,
           404: RespostaErroSchema,
           409: RespostaErroSchema,
+          422: RespostaErroSchema,
           500: RespostaErroSchema,
         },
       },
@@ -221,5 +226,49 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
       },
     },
     async (request, reply) => controller.pagar(request, reply),
+  );
+
+  app.patch(
+    '/comandas/:id/transferir-mesa',
+    {
+      schema: {
+        tags: ['Comandas'],
+        summary: 'Transferir comanda para outra mesa',
+        description:
+          'Transfere a comanda aberta para outra mesa desocupada.',
+        params: ParametroIdComandaSchema,
+        body: TransferirMesaBodySchema,
+        response: {
+          200: ComandaSchema,
+          400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          409: RespostaErroSchema,
+          500: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => controller.transferirMesa(request, reply),
+  );
+
+  app.post(
+    '/comandas/:id/mesclar',
+    {
+      schema: {
+        tags: ['Comandas'],
+        summary: 'Mesclar comanda com outra comanda aberta',
+        description:
+          'Mescla todos os itens de outra comanda aberta nesta comanda, cancelando a comanda de origem.',
+        params: ParametroIdComandaSchema,
+        body: MesclarComandaBodySchema,
+        response: {
+          200: ComandaSchema,
+          400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          409: RespostaErroSchema,
+          500: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => controller.mesclarComandas(request, reply),
   );
 };

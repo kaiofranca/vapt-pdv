@@ -66,7 +66,7 @@ export const ModoGarcomPage: React.FC = () => {
   // Ao abrir mesa com sucesso na API Fastify
   const handleMesaAbertaComSucesso = (novaComanda: Comanda) => {
     setIsModalAbrirOpen(false);
-    setMesaAtiva(novaComanda.mesa);
+    setMesaAtiva(String(novaComanda.mesa));
     setComandaAtivaId(novaComanda.id);
     setVisualizandoComanda(true);
     refetchComandas();
@@ -75,7 +75,7 @@ export const ModoGarcomPage: React.FC = () => {
 
   // Ao clicar em uma mesa com comanda aberta
   const handleVerComanda = (comanda: Comanda) => {
-    setMesaAtiva(comanda.mesa);
+    setMesaAtiva(String(comanda.mesa));
     setComandaAtivaId(comanda.id);
     setVisualizandoComanda(true);
   };

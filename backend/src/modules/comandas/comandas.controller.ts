@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import {
   AjustarItemDados,
+  CancelarComandaDados,
   ComandaEntidade,
   CriarComandaDados,
   FecharComandaDados,
@@ -38,12 +39,20 @@ export function serializarComanda(comanda: ComandaEntidade) {
         : comanda.paga_em instanceof Date
           ? comanda.paga_em.toISOString()
           : String(comanda.paga_em),
+    cancelada_em:
+      comanda.cancelada_em === null || comanda.cancelada_em === undefined
+        ? null
+        : comanda.cancelada_em instanceof Date
+          ? comanda.cancelada_em.toISOString()
+          : String(comanda.cancelada_em),
+    motivo_cancelamento: comanda.motivo_cancelamento ?? null,
     itens: comanda.itens.map((item) => ({
       id: item.id,
       produto_id: item.produto_id,
       nome_copiado: item.nome_copiado,
       preco_copiado: item.preco_copiado,
       quantidade: item.quantidade,
+      observacao: item.observacao ?? null,
     })),
     ...(comanda.integracao_caixa_pendente !== undefined
       ? { integracao_caixa_pendente: comanda.integracao_caixa_pendente }
@@ -62,6 +71,7 @@ export function serializarItem(item: ItemComandaEntidade) {
     nome_copiado: item.nome_copiado,
     preco_copiado: item.preco_copiado,
     quantidade: item.quantidade,
+    observacao: item.observacao ?? null,
   };
 }
 
@@ -115,7 +125,8 @@ export class ComandasController {
 
   async cancelar(request: FastifyRequest, reply: FastifyReply) {
     const { id } = request.params as { id: number };
-    const comanda = await this.service.cancelar(id);
+    const dados = request.body as CancelarComandaDados | undefined;
+    const comanda = await this.service.cancelar(id, dados);
     return reply.send(serializarComanda(comanda));
   }
 
@@ -123,6 +134,20 @@ export class ComandasController {
     const { id } = request.params as { id: number };
     const dados = request.body as PagarComandaDados;
     const comanda = await this.service.pagar(id, dados);
+    return reply.send(serializarComanda(comanda));
+  }
+
+  async transferirMesa(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = request.params as { id: number };
+    const { nova_mesa } = request.body as { nova_mesa: string | number };
+    const comanda = await this.service.transferirMesa(id, nova_mesa);
+    return reply.send(serializarComanda(comanda));
+  }
+
+  async mesclarComandas(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = request.params as { id: number };
+    const { comanda_origem_id } = request.body as { comanda_origem_id: number };
+    const comanda = await this.service.mesclarComandas(id, comanda_origem_id);
     return reply.send(serializarComanda(comanda));
   }
 }
