@@ -20,7 +20,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
 import { ToggleSwitch } from '../../components/ui/ToggleSwitch';
-import { ModalCancelarComanda } from '../../components/ui/ModalCancelarComanda';
+import { ModalCancelarComanda } from './components/ModalCancelarComanda';
 import { LogoMark } from '../../components/ui/Logo';
 import { formatCurrency } from '../../lib/utils';
 import { useSessionStore } from '../../stores/useSessionStore';
@@ -243,12 +243,13 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  const handleConfirmarCancelamento = async () => {
+  const handleConfirmarCancelamento = async (motivo?: string) => {
     if (!comandaParaCancelar) return;
     const comanda = comandaParaCancelar;
     try {
       await cancelarComandaMut.mutateAsync(comanda.id);
-      showToast('sucesso', `Comanda da Mesa ${comanda.mesa} cancelada. Mesa liberada.`);
+      const motivoAviso = motivo ? ` (Motivo: ${motivo})` : '';
+      showToast('sucesso', `Comanda da Mesa ${comanda.mesa} cancelada${motivoAviso}. Mesa liberada.`);
       if (comandaAtivaId === comanda.id) {
         setComandaAtivaId(null);
       }
