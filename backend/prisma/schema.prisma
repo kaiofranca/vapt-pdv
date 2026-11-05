@@ -44,6 +44,7 @@ model MovimentoEstoque {
   produto_id Int
   quantidade Int
   motivo     String
+  tipo       String?  @default("saida")
   comanda_id Int?
   criado_em  DateTime @default(now())
 

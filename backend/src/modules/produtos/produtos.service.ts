@@ -243,6 +243,8 @@ export class ProdutosService implements ServicoProdutos {
 
   async baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void> {
     if (
+      !dados ||
+      typeof dados !== 'object' ||
       !Number.isFinite(dados.comanda_id) ||
       !Number.isInteger(dados.comanda_id) ||
       dados.comanda_id < 1
@@ -256,6 +258,31 @@ export class ProdutosService implements ServicoProdutos {
       throw ErroDominio.validacao('Itens para baixa de estoque não informados.', {
         itens: 'A lista de itens deve conter pelo menos um item.',
       });
+    }
+
+    for (let i = 0; i < dados.itens.length; i++) {
+      const item = dados.itens[i];
+      if (
+        !item ||
+        typeof item !== 'object' ||
+        !Number.isFinite(item.produto_id) ||
+        !Number.isInteger(item.produto_id) ||
+        item.produto_id < 1
+      ) {
+        throw ErroDominio.validacao(`Identificador de produto inválido no item ${i}.`, {
+          [`itens.${i}.produto_id`]: 'O ID do produto deve ser um inteiro maior ou igual a 1.',
+        });
+      }
+
+      if (
+        !Number.isFinite(item.quantidade) ||
+        !Number.isInteger(item.quantidade) ||
+        item.quantidade < 1
+      ) {
+        throw ErroDominio.validacao(`Quantidade inválida no item ${i}.`, {
+          [`itens.${i}.quantidade`]: 'A quantidade deve ser um inteiro maior ou igual a 1.',
+        });
+      }
     }
 
     return this.repository.baixarEstoque(dados, tx);

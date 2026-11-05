@@ -16,12 +16,16 @@ import { rotasSaude } from './modules/saude/rotas';
 import { moduloUsuarios } from './modules/usuarios';
 import { moduloProdutos } from './modules/produtos';
 import { moduloComandas } from './modules/comandas';
+import type { ICaixaGateway } from './shared/gateways/caixa.gateway';
+import type { IGestaoGateway } from './shared/gateways/gestao.gateway';
 
 export interface OpcoesApp {
   prisma?: ClienteBanco;
   nodeEnv?: AmbienteNode;
   logLevel?: NivelLog;
   logger?: boolean | FastifyLoggerOptions;
+  caixaGateway?: ICaixaGateway;
+  gestaoGateway?: IGestaoGateway;
 }
 
 export function criarOpcoesLogger(
@@ -198,7 +202,11 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
   await app.register(moduloProdutos, { prisma });
-  await app.register(moduloComandas, { prisma });
+  await app.register(moduloComandas, {
+    prisma,
+    caixaGateway: opcoes.caixaGateway,
+    gestaoGateway: opcoes.gestaoGateway,
+  });
 
   return app;
 }

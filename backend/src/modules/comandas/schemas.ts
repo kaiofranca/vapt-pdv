@@ -74,6 +74,21 @@ export const ComandaSchema = Type.Object(
     itens: Type.Array(ItemComandaSchema, {
       description: 'Itens lançados na comanda',
     }),
+    integracao_caixa_pendente: Type.Optional(
+      Type.Boolean({
+        description: 'Indica se a sincronização com o caixa-service falhou e está pendente',
+      }),
+    ),
+    integracao_gestao_pendente: Type.Optional(
+      Type.Boolean({
+        description: 'Indica se a sincronização com o gestao-service falhou e está pendente',
+      }),
+    ),
+    avisos: Type.Optional(
+      Type.Array(Type.String(), {
+        description: 'Lista de avisos operacionais, como falha de sincronização com satélites',
+      }),
+    ),
   },
   { description: 'Dados completos da comanda' },
 );
@@ -240,7 +255,6 @@ export const ParametroItemComandaSchema = Type.Object(
 );
 
 export type ParametroItemComandaTipo = Static<typeof ParametroItemComandaSchema>;
-
 
 export const PagarComandaBodySchema = Type.Object(
   {

@@ -152,6 +152,8 @@ export const rotasProdutos: FastifyPluginAsync<OpcoesRotasProdutos> = async (
         response: {
           200: Type.Object({ status: Type.Literal('ok') }),
           400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          409: RespostaErroSchema,
           500: RespostaErroSchema,
         },
       },

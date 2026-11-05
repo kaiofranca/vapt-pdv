@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { ErroDominio } from '../../shared/erros';
 import type { ServicoUsuarios } from '../usuarios/servico';
@@ -23,6 +24,8 @@ import {
   StatusComandaTipo,
 } from './comanda.entity';
 import { IComandasRepository } from './comandas.repository';
+import { CaixaGateway, ICaixaGateway } from '../../shared/gateways/caixa.gateway';
+import { GestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 
 export interface ServicoComandas {
   abrir(dados: CriarComandaDados): Promise<ComandaEntidade>;
@@ -42,11 +45,19 @@ export interface ServicoComandas {
 }
 
 export class ComandasService implements ServicoComandas {
+  private readonly caixaGateway?: ICaixaGateway;
+  private readonly gestaoGateway?: IGestaoGateway;
+
   constructor(
     private readonly repository: IComandasRepository,
     private readonly servicoUsuarios: ServicoUsuarios,
     private readonly servicoProdutos?: ServicoProdutos,
-  ) {}
+    caixaGateway?: ICaixaGateway,
+    gestaoGateway?: IGestaoGateway,
+  ) {
+    this.caixaGateway = caixaGateway ?? new CaixaGateway();
+    this.gestaoGateway = gestaoGateway ?? new GestaoGateway();
+  }
 
   private formatarItemComanda(registro: RegistroItemComandaBanco): ItemComandaEntidade {
     return {
@@ -520,7 +531,7 @@ export class ComandasService implements ServicoComandas {
       });
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const comandaFormatada = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
 
       if (!comanda) {
@@ -577,6 +588,47 @@ export class ComandasService implements ServicoComandas {
 
       return this.formatarComanda(comandaFechada);
     });
+
+    // Notificação síncrona pós-commit ao caixa-service via CaixaGateway (ADR-07, RN17)
+    if (this.caixaGateway) {
+      try {
+        const payloadCaixa = {
+          mesa: Number(comandaFormatada.mesa),
+          garcom_id: comandaFormatada.garcom_id,
+          nome_cliente: comandaFormatada.nome_cliente,
+          aplicar_taxa_servico: dados.aplicar_taxa_servico,
+          subtotal: comandaFormatada.subtotal,
+          taxa_servico: comandaFormatada.taxa_servico,
+          total: comandaFormatada.total,
+          itens: comandaFormatada.itens.map((it) => ({
+            item_comanda_id: it.id,
+            produto_id: it.produto_id,
+            nome: it.nome_copiado,
+            preco_unitario: it.preco_copiado,
+            quantidade: it.quantidade,
+          })),
+        };
+
+        const resNotificacao = await this.caixaGateway.notificarFechamento(id, payloadCaixa);
+        if (!resNotificacao.sucesso) {
+          console.warn(
+            `[CaixaGateway] Falha ao notificar fechamento da comanda #${id} ao caixa-service: ${resNotificacao.erro}. Degradação graciosa ativada.`,
+          );
+          comandaFormatada.integracao_caixa_pendente = true;
+          comandaFormatada.avisos = ['integracao_caixa_pendente: true'];
+        } else {
+          comandaFormatada.integracao_caixa_pendente = false;
+        }
+      } catch (err: any) {
+        console.warn(
+          `[CaixaGateway] Erro inesperado ao notificar fechamento da comanda #${id}: ${err?.message}. Degradação graciosa ativada.`,
+        );
+        comandaFormatada.integracao_caixa_pendente = true;
+        comandaFormatada.avisos = ['integracao_caixa_pendente: true'];
+      }
+    }
+
+    return comandaFormatada;
   }
 
   async cancelar(id: number): Promise<ComandaEntidade> {
@@ -635,7 +687,7 @@ export class ComandasService implements ServicoComandas {
       );
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const comandaFormatada = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
 
       if (!comanda) {
@@ -662,6 +714,7 @@ export class ComandasService implements ServicoComandas {
           {
             comanda_id: id,
             itens: itensBaixa,
+            motivo: `VENDA_COMANDA #${id}`,
           },
           tx,
         );
@@ -680,5 +733,64 @@ export class ComandasService implements ServicoComandas {
 
       return this.formatarComanda(comandaPaga);
     });
+
+    // Notificação síncrona/assíncrona pós-commit ao gestao-service via GestaoGateway (ADR-01, ADR-07)
+    if (this.gestaoGateway) {
+      try {
+        const payloadGestao = {
+          evento_id: crypto.randomUUID(),
+          evento: 'comanda.paga',
+          versao: 1,
+          ocorrido_em:
+            comandaFormatada.paga_em instanceof Date
+              ? comandaFormatada.paga_em.toISOString()
+              : String(comandaFormatada.paga_em || new Date().toISOString()),
+          data_hora:
+            comandaFormatada.paga_em instanceof Date
+              ? comandaFormatada.paga_em.toISOString()
+              : String(comandaFormatada.paga_em || new Date().toISOString()),
+          timestamp: new Date().toISOString(),
+          comanda_id: comandaFormatada.id,
+          mesa: Number(comandaFormatada.mesa),
+          garcom_id: comandaFormatada.garcom_id,
+          forma_pagamento: comandaFormatada.forma_pagamento,
+          subtotal: comandaFormatada.subtotal || '0.00',
+          valor_subtotal: comandaFormatada.subtotal || '0.00',
+          taxa_servico: comandaFormatada.taxa_servico || '0.00',
+          total: comandaFormatada.total || '0.00',
+          valor_total: comandaFormatada.total || '0.00',
+          itens: comandaFormatada.itens.map((item) => ({
+            produto_id: item.produto_id,
+            nome: item.nome_copiado,
+            nome_copiado: item.nome_copiado,
+            preco_unitario: item.preco_copiado,
+            preco_copiado: item.preco_copiado,
+            quantidade: item.quantidade,
+            subtotal: new Prisma.Decimal(item.preco_copiado)
+              .mul(item.quantidade)
+              .toFixed(2),
+          })),
+        };
+
+        const resGestao = await this.gestaoGateway.notificarComandaPaga(payloadGestao);
+        if (!resGestao.sucesso) {
+          console.warn(
+            `[GestaoGateway] Falha ao notificar pagamento da comanda #${id} ao gestao-service: ${resGestao.erro}. Degradação graciosa ativada.`,
+          );
+          comandaFormatada.integracao_gestao_pendente = true;
+          comandaFormatada.avisos = comandaFormatada.avisos ?? [];
+          comandaFormatada.avisos.push('integracao_gestao_pendente: true');
+        }
+      } catch (err: any) {
+        console.warn(
+          `[GestaoGateway] Erro inesperado ao notificar pagamento da comanda #${id}: ${err?.message}. Degradação graciosa ativada.`,
+        );
+        comandaFormatada.integracao_gestao_pendente = true;
+        comandaFormatada.avisos = comandaFormatada.avisos ?? [];
+        comandaFormatada.avisos.push('integracao_gestao_pendente: true');
+      }
+    }
+
+    return comandaFormatada;
   }
 }
