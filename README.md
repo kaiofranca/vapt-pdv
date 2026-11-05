@@ -39,8 +39,8 @@ A API e interface do VaptPDV estão disponíveis publicamente na AWS:
 * **Linguagem & Runtime:** [TypeScript 5](https://www.typescriptlang.org/) / [Node.js 20 LTS](https://nodejs.org/)
 * **Framework Web:** [Fastify 5](https://fastify.dev/) (Alta performance e validação declarativa via TypeBox)
 * **ORM & Banco de Dados:** [Prisma ORM 6](https://www.prisma.io/) com [PostgreSQL 16](https://www.postgresql.org/) (`NUMERIC(10,2)` para precisão monetária contábil)
-* **Frontend Web/PWA:** Servido via `@fastify/static` (Modo Garçom mobile-first e Modo Caixa desktop)
-* **Testes Automatizados:** [Vitest](https://vitest.dev/) (135 testes automatizados com cobertura integral de regras de negócio)
+* **Frontend Web/PWA:** React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand (Modo Garçom mobile-first, Modo Caixa desktop, Painel TV KDS para cozinha/bar e Painel Executivo de Gestão)
+* **Testes Automatizados:** [Vitest](https://vitest.dev/) (**331 testes automatizados passando verde** no ecossistema: 180 no PDV Core, 75 no Frontend Web/PWA, 22 no `kds-service`, 39 no `caixa-service` e 15 no `gestao-service`)
 * **Hospedagem Cloud (IaaS):** [AWS EC2](https://aws.amazon.com/ec2/) (Ubuntu Server LTS)
 * **Gerenciador de Processos:** [PM2](https://pm2.keymetrics.io/)
 
