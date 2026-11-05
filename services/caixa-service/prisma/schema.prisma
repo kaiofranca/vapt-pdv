@@ -1,0 +1,89 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model CobrancaComanda {
+  id                  Int                @id @default(autoincrement())
+  comandaId           Int                @unique @map("comanda_id")
+  mesa                Int                @map("mesa")
+  garcomId            Int                @map("garcom_id")
+  nomeCliente         String?            @map("nome_cliente") @db.VarChar(120)
+  status              String             @default("aguardando_pagamento") @db.VarChar(30)
+  aplicarTaxaServico  Boolean            @default(true) @map("aplicar_taxa_servico")
+  subtotal            Decimal            @map("subtotal") @db.Decimal(10, 2)
+  taxaServico         Decimal            @map("taxa_servico") @db.Decimal(10, 2)
+  total               Decimal            @map("total") @db.Decimal(10, 2)
+  valorPago           Decimal            @default(0.00) @map("valor_pago") @db.Decimal(10, 2)
+  saldoRestante       Decimal            @map("saldo_restante") @db.Decimal(10, 2)
+  trocoTotal          Decimal            @default(0.00) @map("troco_total") @db.Decimal(10, 2)
+  modoDivisao         String             @default("integral") @map("modo_divisao") @db.VarChar(20)
+  quantidadePagadores Int                @default(1) @map("quantidade_pagadores")
+  itensSnapshot       Json               @map("itens_snapshot")
+  divisaoDetalhes     Json?              @map("divisao_detalhes")
+  fechadaEm           DateTime           @default(now()) @map("fechada_em") @db.Timestamptz
+  pagaEm              DateTime?          @map("paga_em") @db.Timestamptz
+
+  pagamentos          PagamentoParcela[]
+  recibo              ReciboVenda?
+
+  @@index([status, fechadaEm(sort: Desc)], name: "cobrancas_comanda_status_idx")
+  @@map("cobrancas_comanda")
+}
+
+model PagamentoParcela {
+  id             Int             @id @default(autoincrement())
+  cobrancaId     Int             @map("cobranca_id")
+  comandaId      Int             @map("comanda_id")
+  numeroParcela  Int             @map("numero_parcela")
+  pagadorLabel   String?         @map("pagador_label") @db.VarChar(120)
+  formaPagamento String          @map("forma_pagamento") @db.VarChar(20)
+  valorAplicado  Decimal         @map("valor_aplicado") @db.Decimal(10, 2)
+  valorRecebido  Decimal         @map("valor_recebido") @db.Decimal(10, 2)
+  troco          Decimal         @default(0.00) @map("troco") @db.Decimal(10, 2)
+  registradoEm   DateTime        @default(now()) @map("registrado_em") @db.Timestamptz
+
+  cobranca       CobrancaComanda @relation(fields: [cobrancaId], references: [id], onDelete: Restrict)
+
+  @@index([cobrancaId, numeroParcela(sort: Asc)], name: "pagamentos_parcela_cobranca_idx")
+  @@map("pagamentos_parcela")
+}
+
+model ReciboVenda {
+  id                 Int             @id @default(autoincrement())
+  codigoAutenticacao String          @unique @map("codigo_autenticacao") @db.VarChar(64)
+  comandaId          Int             @unique @map("comanda_id")
+  cobrancaId         Int             @unique @map("cobranca_id")
+  resumoRecibo       Json            @map("resumo_recibo")
+  emitidoEm          DateTime        @default(now()) @map("emitido_em") @db.Timestamptz
+
+  cobranca           CobrancaComanda @relation(fields: [cobrancaId], references: [id], onDelete: Restrict)
+
+  @@map("recibos_venda")
+}
+
+model EventoProcessado {
+  eventoId     String   @id @map("evento_id") @db.Uuid
+  evento       String   @db.VarChar(60)
+  processadoEm DateTime @default(now()) @map("processado_em") @db.Timestamptz
+
+  @@map("eventos_processados")
+}
+
+model OutboxEvento {
+  id            String    @id @default(uuid()) @map("id") @db.Uuid
+  tipoEvento    String    @map("tipo_evento") @db.VarChar(60)
+  chaveAgregado String    @map("chave_agregado") @db.VarChar(80)
+  payload       Json      @map("payload")
+  status        String    @default("PENDENTE") @map("status") @db.VarChar(20)
+  tentativas    Int       @default(0) @map("tentativas")
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  publicadoEm   DateTime? @map("publicado_em") @db.Timestamptz
+
+  @@index([status, criadoEm(sort: Asc)], name: "caixa_outbox_pendentes_idx")
+  @@map("outbox_eventos")
+}

@@ -1,0 +1,88 @@
+import 'dotenv/config';
+
+export type AmbienteNode = 'development' | 'production' | 'test';
+export type NivelLog = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
+
+export interface ConfigAmbiente {
+  DATABASE_URL: string;
+  PORT: number;
+  NODE_ENV: AmbienteNode;
+  LOG_LEVEL: NivelLog;
+  CORE_API_URL: string;
+  GESTAO_API_URL: string;
+}
+
+const AMBIENTES_VALIDOS: ReadonlySet<AmbienteNode> = new Set([
+  'development',
+  'production',
+  'test',
+]);
+
+const NIVEIS_LOG_VALIDOS: ReadonlySet<NivelLog> = new Set([
+  'fatal',
+  'error',
+  'warn',
+  'info',
+  'debug',
+  'trace',
+  'silent',
+]);
+
+export function validarEnv(rawEnv: NodeJS.ProcessEnv = process.env): ConfigAmbiente {
+  const databaseUrl = rawEnv.DATABASE_URL?.trim();
+  if (!databaseUrl && rawEnv.NODE_ENV !== 'test') {
+    throw new Error(
+      'Variável de ambiente obrigatória ausente: DATABASE_URL. Configure a string de conexão do PostgreSQL (caixa_db).',
+    );
+  }
+
+  const nodeEnvRaw = (rawEnv.NODE_ENV?.trim() || 'development') as AmbienteNode;
+  if (!AMBIENTES_VALIDOS.has(nodeEnvRaw)) {
+    throw new Error(
+      `Variável de ambiente inválida: NODE_ENV="${rawEnv.NODE_ENV}". Valores aceitos: development, production, test.`,
+    );
+  }
+
+  const logLevelRaw = (rawEnv.LOG_LEVEL?.trim() || 'info') as NivelLog;
+  if (!NIVEIS_LOG_VALIDOS.has(logLevelRaw)) {
+    throw new Error(
+      `Variável de ambiente inválida: LOG_LEVEL="${rawEnv.LOG_LEVEL}". Valores aceitos: fatal, error, warn, info, debug, trace, silent.`,
+    );
+  }
+
+  const portRaw = rawEnv.PORT?.trim() || '3002';
+  const port = Number(portRaw);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `Variável de ambiente inválida: PORT="${rawEnv.PORT}". Informe um número inteiro entre 1 e 65535.`,
+    );
+  }
+
+  const coreApiUrl = rawEnv.CORE_API_URL?.trim() || 'http://localhost:3000';
+  const gestaoApiUrl = rawEnv.GESTAO_API_URL?.trim() || 'http://localhost:3003';
+
+  return {
+    DATABASE_URL: databaseUrl || 'postgresql://fake:fake@localhost:5432/caixa_db',
+    PORT: port,
+    NODE_ENV: nodeEnvRaw,
+    LOG_LEVEL: logLevelRaw,
+    CORE_API_URL: coreApiUrl,
+    GESTAO_API_URL: gestaoApiUrl,
+  };
+}
+
+export function carregarEnv(
+  rawEnv: NodeJS.ProcessEnv = process.env,
+  encerrar: (codigo: number) => never = process.exit,
+): ConfigAmbiente {
+  try {
+    return validarEnv(rawEnv);
+  } catch (erro) {
+    const mensagem =
+      erro instanceof Error
+        ? erro.message
+        : 'Falha ao validar variáveis de ambiente do caixa-service.';
+    console.error(`[Configuração caixa-service] ${mensagem}`);
+    return encerrar(1);
+  }
+}
