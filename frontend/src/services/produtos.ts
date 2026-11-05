@@ -21,6 +21,12 @@ export const produtosApi = {
   inativar: (id: number) =>
     apiClient.post<Produto>(`/produtos/${id}/inativar`),
 
+  repor: (id: number, quantidade: number, motivo?: string) =>
+    apiClient.post<{ produto: Produto; movimento: unknown }>(`/produtos/${id}/repor`, {
+      quantidade,
+      motivo,
+    }),
+
   consultarDisponibilidade: (id: number, quantidade: number) =>
     apiClient.get<{
       id: number;

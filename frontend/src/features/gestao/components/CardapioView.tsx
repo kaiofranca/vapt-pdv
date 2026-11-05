@@ -14,12 +14,14 @@ import {
   Coffee,
   Cake,
   Package,
+  PackagePlus,
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { useProdutos } from '../../../hooks/useProdutos';
 import { formatCurrency } from '../../../lib/utils';
 import { ProdutoModal } from './ProdutoModal';
 import { InativarProdutoDialog } from './InativarProdutoDialog';
+import { ReporEstoqueModal, type ProdutoParaReposicao } from './ReporEstoqueModal';
 import type {
   Produto,
   FiltroCategoriaCardapio,
@@ -39,6 +41,7 @@ export const CardapioView: React.FC = () => {
   const [isModalProdutoAberto, setIsModalProdutoAberto] = useState(false);
   const [produtoParaEditar, setProdutoParaEditar] = useState<Produto | null>(null);
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null);
+  const [produtoParaRepor, setProdutoParaRepor] = useState<ProdutoParaReposicao | null>(null);
 
   // Estado de Toast / Notificação
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
@@ -134,6 +137,16 @@ export const CardapioView: React.FC = () => {
     setProdutoParaInativar(p);
   };
 
+  const handleAbrirReposicao = (p: Produto) => {
+    setProdutoParaRepor({
+      id: p.id,
+      nome: p.nome,
+      categoria: p.categoria,
+      estoque: p.estoque,
+      estoque_minimo: p.estoque_minimo,
+    });
+  };
+
   const handleSalvoComSucesso = (p: Produto, modo: 'criado' | 'atualizado') => {
     exibirToast(
       modo === 'criado'
@@ -144,6 +157,11 @@ export const CardapioView: React.FC = () => {
 
   const handleInativadoComSucesso = (p: Produto) => {
     exibirToast(`Produto "${p.nome}" inativado com sucesso (RN14).`);
+  };
+
+  const handleRepostoComSucesso = (p: Produto, quantidade: number) => {
+    exibirToast(`Reposição de ${quantidade} unidades de "${p.nome}" confirmada com sucesso!`);
+    refetch();
   };
 
   return (
@@ -464,9 +482,21 @@ export const CardapioView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Ações: Editar e Inativar (sem DELETE físico - RN14) */}
+                      {/* Ações: Repor, Editar e Inativar (sem DELETE físico - RN14) */}
                       <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5 justify-end">
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          {/* Botão Repor Estoque (M06) */}
+                          <button
+                            type="button"
+                            onClick={() => handleAbrirReposicao(prod)}
+                            title="Repor estoque (M06)"
+                            aria-label={`Repor estoque do produto ${prod.nome}`}
+                            className="p-2 rounded-lg text-brand-coffee hover:bg-brand/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center dark:text-amber-300"
+                          >
+                            <PackagePlus className="w-4 h-4" />
+                          </button>
+
+                          {/* Botão Editar */}
                           <button
                             type="button"
                             onClick={() => handleAbrirEdicao(prod)}
@@ -477,6 +507,7 @@ export const CardapioView: React.FC = () => {
                             <Pencil className="w-4 h-4" />
                           </button>
 
+                          {/* Botão Inativar */}
                           {prod.ativo ? (
                             <button
                               type="button"
@@ -515,6 +546,14 @@ export const CardapioView: React.FC = () => {
         onClose={() => setProdutoParaInativar(null)}
         produtoParaInativar={produtoParaInativar}
         onInativadoComSucesso={handleInativadoComSucesso}
+      />
+
+      {/* Modal de Reposição de Estoque (M06) */}
+      <ReporEstoqueModal
+        isOpen={Boolean(produtoParaRepor)}
+        onClose={() => setProdutoParaRepor(null)}
+        produto={produtoParaRepor}
+        onRepostoComSucesso={handleRepostoComSucesso}
       />
     </div>
   );

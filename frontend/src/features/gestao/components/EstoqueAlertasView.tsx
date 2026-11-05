@@ -1,11 +1,25 @@
 import React, { useState, useMemo } from 'react';
-import { Package, AlertTriangle, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
+import {
+  Package,
+  AlertTriangle,
+  AlertCircle,
+  RefreshCw,
+  CheckCircle2,
+  PackagePlus,
+  X,
+} from 'lucide-react';
 import { useAlertasEstoque } from '../../../hooks/useGestao';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import {
+  ReporEstoqueModal,
+  type ProdutoParaReposicao,
+} from './ReporEstoqueModal';
 
 export const EstoqueAlertasView: React.FC = () => {
   const [filtroNivel, setFiltroNivel] = useState<'todos' | 'zerado' | 'baixo'>('todos');
+  const [produtoParaRepor, setProdutoParaRepor] = useState<ProdutoParaReposicao | null>(null);
+  const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
   const {
     data: alertasData,
@@ -14,6 +28,13 @@ export const EstoqueAlertasView: React.FC = () => {
     refetch,
     isFetching,
   } = useAlertasEstoque({ apenas_ativos: true });
+
+  const exibirToast = (msg: string) => {
+    setToastMensagem(msg);
+    setTimeout(() => {
+      setToastMensagem(null);
+    }, 4000);
+  };
 
   const formatarData = (iso?: string): string => {
     if (!iso) return '—';
@@ -41,8 +62,32 @@ export const EstoqueAlertasView: React.FC = () => {
     return alertasData?.alertas?.filter((a) => a.nivel === 'baixo').length ?? 0;
   }, [alertasData]);
 
+  const handleRepostoComSucesso = (_produtoAtualizado: unknown, quantidade: number) => {
+    exibirToast(`Reposição de ${quantidade} unidades confirmada com sucesso!`);
+    refetch();
+  };
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 animate-fadeIn">
+      {/* Toast flutuante */}
+      {toastMensagem && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-success text-white shadow-soft font-semibold text-sm animate-slideDown"
+        >
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <span>{toastMensagem}</span>
+          <button
+            onClick={() => setToastMensagem(null)}
+            className="ml-2 hover:opacity-80 p-0.5"
+            aria-label="Fechar notificação"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* ─────────────────────────────────────────────────────────────
           CABEÇALHO & ATUALIZAÇÃO
           ───────────────────────────────────────────────────────────── */}
@@ -101,52 +146,59 @@ export const EstoqueAlertasView: React.FC = () => {
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          CARDS DE RESUMO DO ESTOQUE
+          CARDS DE RESUMO (KPIs)
           ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Total Críticos */}
-        <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
+        {/* Card 1: Total em Alerta */}
+        <div
+          onClick={() => setFiltroNivel('todos')}
+          className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
+            filtroNivel === 'todos'
+              ? 'border-brand bg-surface shadow-soft ring-2 ring-brand/20'
+              : 'border-border bg-surface hover:border-brand/40'
+          }`}
+        >
           <div className="flex items-center justify-between text-text-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">
-              Total em Alerta
+              Total Crítico
             </span>
-            <Package className="w-4 h-4 text-text-2" />
+            <Package className="w-4 h-4 text-brand" />
           </div>
           <div className="text-2xl font-black text-text tabular-nums font-mono">
             {alertasData?.alertas?.length ?? 0}
           </div>
-          <div className="text-xs text-text-2 mt-1">Produtos precisando de reposição</div>
+          <div className="text-xs text-text-2 mt-1">Produtos exigindo atenção</div>
         </div>
 
-        {/* Esgotados / Zerados */}
+        {/* Card 2: Estoque Zerado */}
         <div
           onClick={() => setFiltroNivel('zerado')}
-          className={`rounded-[20px] p-5 border shadow-soft cursor-pointer transition-all ${
+          className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
             filtroNivel === 'zerado'
-              ? 'border-danger bg-danger-soft/30'
+              ? 'border-danger bg-danger-soft/40 shadow-soft ring-2 ring-danger/20'
               : 'border-border bg-surface hover:border-danger/40'
           }`}
         >
-          <div className="flex items-center justify-between text-danger-text mb-2">
+          <div className="flex items-center justify-between text-danger mb-2">
             <span className="text-xs font-extrabold uppercase tracking-wider">
               Estoque Zerado
             </span>
             <Badge variant="danger" size="sm">
-              Esgotado
+              Ruptura
             </Badge>
           </div>
-          <div className="text-2xl font-black text-danger-text tabular-nums font-mono">
+          <div className="text-2xl font-black text-danger tabular-nums font-mono">
             {contagemZerados}
           </div>
-          <div className="text-xs text-text-2 mt-1">Saldo igual a 0 unidades</div>
+          <div className="text-xs text-text-2 mt-1">Vendas travadas no salão</div>
         </div>
 
-        {/* Abaixo do Mínimo */}
+        {/* Card 3: Estoque Baixo */}
         <div
           onClick={() => setFiltroNivel('baixo')}
-          className={`rounded-[20px] p-5 border shadow-soft cursor-pointer transition-all ${
+          className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
             filtroNivel === 'baixo'
-              ? 'border-brand bg-brand-soft/30'
+              ? 'border-brand bg-brand-soft/40 shadow-soft ring-2 ring-brand/20'
               : 'border-border bg-surface hover:border-brand/40'
           }`}
         >
@@ -257,6 +309,7 @@ export const EstoqueAlertasView: React.FC = () => {
                   <th className="py-3 px-3 text-center">Nível</th>
                   <th className="py-3 px-3 text-center min-w-[140px]">Nível Visual</th>
                   <th className="py-3 px-3 text-right">Último Movimento</th>
+                  <th className="py-3 px-3 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -309,6 +362,26 @@ export const EstoqueAlertasView: React.FC = () => {
                       <td className="py-3 px-3 text-right font-mono text-text-2 tabular-nums">
                         {formatarData(alerta.ultimo_movimento_em)}
                       </td>
+                      <td className="py-3 px-3 text-right">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() =>
+                            setProdutoParaRepor({
+                              id: alerta.produto_id,
+                              nome: alerta.nome_produto,
+                              categoria: alerta.categoria,
+                              estoque: alerta.estoque_atual,
+                              estoque_minimo: alerta.estoque_minimo,
+                            })
+                          }
+                          leftIcon={<PackagePlus className="w-3.5 h-3.5" />}
+                          className="h-8 px-2.5 text-xs shadow-soft shrink-0"
+                          aria-label={`Repor estoque de ${alerta.nome_produto}`}
+                        >
+                          Repor
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -317,6 +390,14 @@ export const EstoqueAlertasView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Reposição de Estoque (M06) */}
+      <ReporEstoqueModal
+        isOpen={Boolean(produtoParaRepor)}
+        onClose={() => setProdutoParaRepor(null)}
+        produto={produtoParaRepor}
+        onRepostoComSucesso={handleRepostoComSucesso}
+      />
     </div>
   );
 };

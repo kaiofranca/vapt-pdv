@@ -53,3 +53,24 @@ export function useInativarProduto() {
     },
   });
 }
+
+export function useReporEstoque() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      quantidade,
+      motivo,
+    }: {
+      id: number;
+      quantidade: number;
+      motivo?: string;
+    }) => produtosApi.repor(id, quantidade, motivo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUTOS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['alertas-estoque'] });
+      queryClient.invalidateQueries({ queryKey: ['gestao', 'alertas-estoque'] });
+    },
+  });
+}
