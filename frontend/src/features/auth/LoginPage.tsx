@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Utensils,
   Monitor,
+  BarChart3,
   ChevronRight,
   UserPlus,
   RefreshCw,
@@ -71,9 +72,9 @@ export function LoginPage() {
   // Agrupamento dos colaboradores ativos por perfil real vindo do banco
   const garcons = useMemo(() => usuarios.filter((u) => u.perfil === 'garcom'), [usuarios]);
   const caixas = useMemo(() => usuarios.filter((u) => u.perfil === 'caixa'), [usuarios]);
+  const gerentes = useMemo(() => usuarios.filter((u) => u.perfil === 'gerente'), [usuarios]);
 
   // Colaborador em destaque para "Último acesso"
-  // Prioriza quem foi salvo no localStorage, ou o primeiro garçom/caixa ativo retornado pelo banco
   const operadorDestaque = useMemo(() => {
     if (ultimoAcesso) {
       const match = usuarios.find((u) => u.id === ultimoAcesso.id);
@@ -96,8 +97,14 @@ export function LoginPage() {
         tempoTexto: 'turno disponível',
       };
     }
+    if (gerentes.length > 0) {
+      return {
+        usuario: gerentes[0],
+        tempoTexto: 'turno disponível',
+      };
+    }
     return null;
-  }, [ultimoAcesso, usuarios, garcons, caixas]);
+  }, [ultimoAcesso, usuarios, garcons, caixas, gerentes]);
 
   const handleEntrarComUsuario = (usuario: Usuario) => {
     try {
@@ -122,6 +129,7 @@ export function LoginPage() {
       await criarUsuarioMut.mutateAsync({ nome: 'Ana', perfil: 'garcom' });
       await criarUsuarioMut.mutateAsync({ nome: 'Rodrigo', perfil: 'garcom' });
       await criarUsuarioMut.mutateAsync({ nome: 'Marina', perfil: 'caixa' });
+      await criarUsuarioMut.mutateAsync({ nome: 'Carlos', perfil: 'gerente' });
       await refetch();
     } finally {
       setIsSeeding(false);
@@ -141,7 +149,7 @@ export function LoginPage() {
             Bar &amp; Restaurante
           </h1>
           <p className="text-[#C9B8A6] text-xs lg:text-sm leading-relaxed mb-10">
-            Salão, caixa e cozinha no mesmo ritmo.
+            Salão, caixa, cozinha e gestão executiva no mesmo ritmo.
           </p>
 
           {/* Lista de Recursos com Ícones Lineares */}
@@ -153,6 +161,10 @@ export function LoginPage() {
             <div className="flex items-center gap-3">
               <Monitor className="w-4 h-4 text-[#C9B8A6] shrink-0" />
               <span>Caixa no balcão</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-4 h-4 text-[#C9B8A6] shrink-0" />
+              <span>Gestão e Analytics BI</span>
             </div>
           </div>
         </div>
@@ -181,14 +193,14 @@ export function LoginPage() {
           ÁREA PRINCIPAL DIREITA — Seleção de Operador
           ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 bg-bg p-5 sm:p-8 lg:p-12 overflow-y-auto flex flex-col justify-between">
-        <div className="max-w-3xl w-full">
+        <div className="max-w-4xl w-full">
           {/* Título da Tela */}
           <div className="mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">
               Quem está entrando?
             </h2>
             <p className="text-xs sm:text-sm text-text-2 mt-1">
-              Escolha seu perfil para abrir o turno.
+              Escolha seu perfil para abrir o turno de trabalho.
             </p>
           </div>
 
@@ -197,7 +209,8 @@ export function LoginPage() {
             <div className="space-y-4 animate-pulse">
               <div className="h-4 w-28 bg-surface-2 rounded" />
               <div className="h-20 bg-surface rounded-[20px] border border-border" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                <div className="h-16 bg-surface rounded-[16px] border border-border" />
                 <div className="h-16 bg-surface rounded-[16px] border border-border" />
                 <div className="h-16 bg-surface rounded-[16px] border border-border" />
               </div>
@@ -284,7 +297,7 @@ export function LoginPage() {
               )}
 
               {/* Seções por Perfil Real do Banco */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Coluna 1: Garçons */}
                 {garcons.length > 0 && (
                   <div>
@@ -339,6 +352,35 @@ export function LoginPage() {
                   </div>
                 )}
 
+                {/* Coluna 3: Gestão & Gerência */}
+                {gerentes.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-text-2 mb-3">Gestão &amp; BI</div>
+                    <div className="space-y-2.5">
+                      {gerentes.map((gerente) => (
+                        <button
+                          key={gerente.id}
+                          type="button"
+                          onClick={() => handleEntrarComUsuario(gerente)}
+                          className="w-full bg-surface border border-border hover:border-brand rounded-[16px] p-3.5 flex items-center justify-between shadow-soft hover:shadow-card transition-all text-left group active:scale-[0.98]"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-brand text-on-brand font-black text-xs flex items-center justify-center shrink-0 shadow-soft">
+                              {obterIniciais(gerente.nome)}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-bold text-sm text-text truncate group-hover:text-brand-text transition-colors block">
+                                {gerente.nome}
+                              </span>
+                              <span className="text-[11px] text-text-2">Gerência</span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-text-2 group-hover:text-brand-text group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
