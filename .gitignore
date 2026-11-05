@@ -29,7 +29,8 @@ pgdata/
 _bmad/render/
 _bmad/config.user.toml
 _bmad/custom/*.user.toml
-*.agents/
+.bmad-loop/
+*.agent/
 .agents/
 _bmad/
 _bmad-output/
