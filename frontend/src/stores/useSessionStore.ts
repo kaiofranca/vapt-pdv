@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { PerfilUsuario, Usuario } from '../types/api';
 
-export type ModoOperacao = 'login' | 'garcom' | 'caixa' | 'gestao';
+export type ModoOperacao = 'login' | 'garcom' | 'caixa' | 'gestao' | 'kds';
 
 interface SessionState {
   modo: ModoOperacao;
@@ -34,6 +34,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       garcom: 'garcom',
       caixa: 'caixa',
       gerente: 'gestao',
+      cozinha: 'kds',
     };
     const modoDestino = modoPorPerfil[usuario.perfil] || 'login';
     set({

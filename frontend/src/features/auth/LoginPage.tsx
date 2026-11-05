@@ -7,6 +7,7 @@ import {
   UserPlus,
   RefreshCw,
   AlertCircle,
+  ChefHat,
 } from 'lucide-react';
 import { useUsuariosAtivos, useCriarUsuario } from '../../hooks/useUsuarios';
 import { useSessionStore } from '../../stores/useSessionStore';
@@ -73,6 +74,7 @@ export function LoginPage() {
   const garcons = useMemo(() => usuarios.filter((u) => u.perfil === 'garcom'), [usuarios]);
   const caixas = useMemo(() => usuarios.filter((u) => u.perfil === 'caixa'), [usuarios]);
   const gerentes = useMemo(() => usuarios.filter((u) => u.perfil === 'gerente'), [usuarios]);
+  const cozinheiros = useMemo(() => usuarios.filter((u) => u.perfil === 'cozinha'), [usuarios]);
 
   // Colaborador em destaque para "Último acesso"
   const operadorDestaque = useMemo(() => {
@@ -130,6 +132,7 @@ export function LoginPage() {
       await criarUsuarioMut.mutateAsync({ nome: 'Rodrigo', perfil: 'garcom' });
       await criarUsuarioMut.mutateAsync({ nome: 'Marina', perfil: 'caixa' });
       await criarUsuarioMut.mutateAsync({ nome: 'Carlos', perfil: 'gerente' });
+      await criarUsuarioMut.mutateAsync({ nome: 'Chef Thiago', perfil: 'cozinha' });
       await refetch();
     } finally {
       setIsSeeding(false);
@@ -161,6 +164,10 @@ export function LoginPage() {
             <div className="flex items-center gap-3">
               <Monitor className="w-4 h-4 text-[#C9B8A6] shrink-0" />
               <span>Caixa no balcão</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <ChefHat className="w-4 h-4 text-[#C9B8A6] shrink-0" />
+              <span>Cozinha e Bar (KDS)</span>
             </div>
             <div className="flex items-center gap-3">
               <BarChart3 className="w-4 h-4 text-[#C9B8A6] shrink-0" />
@@ -297,7 +304,7 @@ export function LoginPage() {
               )}
 
               {/* Seções por Perfil Real do Banco */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Coluna 1: Garçons */}
                 {garcons.length > 0 && (
                   <div>
@@ -373,6 +380,35 @@ export function LoginPage() {
                                 {gerente.nome}
                               </span>
                               <span className="text-[11px] text-text-2">Gerência</span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-text-2 group-hover:text-brand-text group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Coluna 4: Cozinha / KDS */}
+                {cozinheiros.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold text-text-2 mb-3">Cozinha / KDS</div>
+                    <div className="space-y-2.5">
+                      {cozinheiros.map((cozinheiro) => (
+                        <button
+                          key={cozinheiro.id}
+                          type="button"
+                          onClick={() => handleEntrarComUsuario(cozinheiro)}
+                          className="w-full bg-surface border border-border hover:border-brand rounded-[16px] p-3.5 flex items-center justify-between shadow-soft hover:shadow-card transition-all text-left group active:scale-[0.98]"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black text-xs flex items-center justify-center shrink-0 shadow-soft">
+                              {obterIniciais(cozinheiro.nome)}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-bold text-sm text-text truncate group-hover:text-brand-text transition-colors block">
+                                {cozinheiro.nome}
+                              </span>
+                              <span className="text-[11px] text-text-2">Cozinha</span>
                             </div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-text-2 group-hover:text-brand-text group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
