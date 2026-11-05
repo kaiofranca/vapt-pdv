@@ -47,7 +47,24 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   const app = Fastify({
     logger: loggerConfig,
+    ajv: {
+      customOptions: {
+        allErrors: true,
+        removeAdditional: false,
+        coerceTypes: true,
+      },
+    },
   }).withTypeProvider<TypeBoxTypeProvider>();
+
+  // Headers de CORS para permitir integração com frontend e outros serviços
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (request.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
 
   const prisma = opcoes.prisma ?? obterPrisma();
 
