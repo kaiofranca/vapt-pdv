@@ -5,6 +5,7 @@ import {
   BaixaEstoqueDados,
   FiltrosListagemProdutos,
   ProdutoEntidade,
+  ReposicaoEstoqueResultado,
 } from './produtos.entity';
 
 /**
@@ -60,6 +61,17 @@ export interface IProdutosRepository {
    * Decrementa produtos e grava movimentos contábeis na mesma transação.
    */
   baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void>;
+
+  /**
+   * Reposição manual de estoque transacional (M05 / M06 / RF33 / RN10).
+   * Incrementa o saldo do produto e gera o registro em movimentos_estoque com tipo ENTRADA_REPOSICAO.
+   */
+  reporEstoque(
+    id: number,
+    quantidade: number,
+    motivo?: string,
+    tx?: ClienteBanco,
+  ): Promise<ReposicaoEstoqueResultado>;
 }
 
 /**
@@ -261,5 +273,65 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
     } else {
       await this.executarEmTransacao(executar);
     }
+  }
+
+  async reporEstoque(
+    id: number,
+    quantidade: number,
+    motivo?: string,
+    tx?: ClienteBanco,
+  ): Promise<ReposicaoEstoqueResultado> {
+    const executar = async (contexto: ClienteBanco) => {
+      const repoProdutos = this.obterRepositorio(contexto);
+      const repoMovimentos = this.obterRepositorioMovimentos(contexto);
+
+      const produtoExistente = await repoProdutos.findUnique({
+        where: { id },
+      });
+
+      if (!produtoExistente) {
+        throw ErroDominio.naoEncontrado(`Produto com ID ${id} não encontrado.`, {
+          produto_id: id,
+        });
+      }
+
+      const produtoAtualizado = await repoProdutos.update({
+        where: { id },
+        data: {
+          estoque: {
+            increment: quantidade,
+          },
+        },
+      });
+
+      const motivoFinal = motivo ?? 'ENTRADA_REPOSICAO_MANUAL';
+
+      const movimentoCriado = await repoMovimentos.create({
+        data: {
+          produto_id: id,
+          quantidade,
+          tipo: 'ENTRADA_REPOSICAO',
+          motivo: motivoFinal,
+        },
+      });
+
+      return {
+        produto: this.formatarProduto(produtoAtualizado),
+        movimento: {
+          id: movimentoCriado.id,
+          produto_id: movimentoCriado.produto_id,
+          quantidade: movimentoCriado.quantidade,
+          tipo: movimentoCriado.tipo,
+          motivo: movimentoCriado.motivo,
+          comanda_id: movimentoCriado.comanda_id ?? null,
+          criado_em: movimentoCriado.criado_em,
+        },
+      };
+    };
+
+    if (tx) {
+      return executar(tx);
+    }
+    return this.executarEmTransacao(executar);
   }
 }

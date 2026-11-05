@@ -62,3 +62,8 @@ export interface MovimentoEstoqueEntidade {
   comanda_id?: number | null;
   criado_em: Date;
 }
+
+export interface ReposicaoEstoqueResultado {
+  produto: ProdutoEntidade;
+  movimento: MovimentoEstoqueEntidade;
+}

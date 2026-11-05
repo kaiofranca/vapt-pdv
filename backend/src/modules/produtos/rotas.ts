@@ -11,6 +11,8 @@ import {
   ListarProdutosQuerySchema,
   ProdutoIdParamsSchema,
   ProdutoRespostaSchema,
+  ReporEstoqueBodySchema,
+  ReporEstoqueRespostaSchema,
 } from './schemas';
 import { ServicoProdutos } from './produtos.service';
 import { ProdutosController } from './produtos.controller';
@@ -159,5 +161,25 @@ export const rotasProdutos: FastifyPluginAsync<OpcoesRotasProdutos> = async (
       },
     },
     async (request, reply) => controller.baixarEstoque(request, reply),
+  );
+
+  app.post(
+    '/produtos/:id/repor',
+    {
+      schema: {
+        tags: ['Produtos'],
+        summary: 'Repor estoque de produto',
+        description: 'Incrementa o saldo físico de estoque e gera movimento contábil do tipo ENTRADA_REPOSICAO (M05 / M06).',
+        params: ProdutoIdParamsSchema,
+        body: ReporEstoqueBodySchema,
+        response: {
+          200: ReporEstoqueRespostaSchema,
+          400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          500: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => controller.repor(request, reply),
   );
 };

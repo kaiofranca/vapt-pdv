@@ -8,6 +8,7 @@ import {
   DisponibilidadeProduto,
   FiltrosListagemProdutos,
   ProdutoEntidade,
+  ReposicaoEstoqueResultado,
 } from './produtos.entity';
 import { IProdutosRepository } from './produtos.repository';
 
@@ -51,6 +52,7 @@ export interface ServicoProdutos {
   inativar(id: number): Promise<ProdutoEntidade>;
   consultarDisponibilidade(id: number, quantidade?: number): Promise<DisponibilidadeProduto>;
   baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void>;
+  repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado>;
 }
 
 /**
@@ -286,5 +288,18 @@ export class ProdutosService implements ServicoProdutos {
     }
 
     return this.repository.baixarEstoque(dados, tx);
+  }
+
+  async repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado> {
+    if (!Number.isInteger(quantidade) || quantidade < 1) {
+      throw ErroDominio.validacao(
+        'A quantidade a repor deve ser um número inteiro maior ou igual a 1.',
+        {
+          quantidade: 'Valor inválido. Informe um número inteiro positivo.',
+        },
+      );
+    }
+
+    return this.repository.reporEstoque(id, quantidade, motivo);
   }
 }

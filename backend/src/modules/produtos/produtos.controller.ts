@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import {
   AtualizarProdutoBodyTipo,
   BaixaEstoqueBodyTipo,
+  ReporEstoqueBodyTipo,
   ConsultarDisponibilidadeQueryTipo,
   CriarProdutoBodyTipo,
   ListarProdutosQueryTipo,
@@ -79,5 +80,25 @@ export class ProdutosController {
     const dados = request.body as BaixaEstoqueBodyTipo;
     await this.service.baixarEstoque(dados);
     return reply.status(200).send({ status: 'ok' });
+  }
+
+  async repor(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = request.params as ProdutoIdParamsTipo;
+    const { quantidade, motivo } = request.body as ReporEstoqueBodyTipo;
+    const resultado = await this.service.repor(id, quantidade, motivo);
+    return reply.status(200).send({
+      produto: this.serializarProduto(resultado.produto),
+      movimento: {
+        id: resultado.movimento.id,
+        produto_id: resultado.movimento.produto_id,
+        quantidade: resultado.movimento.quantidade,
+        tipo: resultado.movimento.tipo ?? 'ENTRADA_REPOSICAO',
+        motivo: resultado.movimento.motivo,
+        criado_em:
+          resultado.movimento.criado_em instanceof Date
+            ? resultado.movimento.criado_em.toISOString()
+            : String(resultado.movimento.criado_em),
+      },
+    });
   }
 }
