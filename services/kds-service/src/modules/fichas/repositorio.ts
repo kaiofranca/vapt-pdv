@@ -125,5 +125,32 @@ export class FichasRepositorio {
 
     return resultado;
   }
+
+  async atualizarStatusFicha(
+    id: number,
+    status: string,
+    camposData: {
+      iniciadoEm?: Date;
+      prontoEm?: Date;
+      entregueEm?: Date;
+    },
+  ): Promise<FichaRegistro> {
+    const data: any = { status };
+    if (camposData.iniciadoEm !== undefined) data.iniciadoEm = camposData.iniciadoEm;
+    if (camposData.prontoEm !== undefined) data.prontoEm = camposData.prontoEm;
+    if (camposData.entregueEm !== undefined) data.entregueEm = camposData.entregueEm;
+
+    return this.prisma.fichaPreparo.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async buscarFichasPorComandaId(comandaId: number): Promise<FichaRegistro[]> {
+    return this.prisma.fichaPreparo.findMany({
+      where: { comandaId },
+      orderBy: { recebidoEm: 'asc' },
+    });
+  }
 }
 

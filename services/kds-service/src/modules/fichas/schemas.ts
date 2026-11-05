@@ -52,3 +52,61 @@ export const FichaRespostaSchema = Type.Object(
 
 export type FichaResposta = Static<typeof FichaRespostaSchema>;
 
+// Story 14.4: Transições de status
+export const StatusFichaEnum = Type.Union([
+  Type.Literal('recebido'),
+  Type.Literal('em_preparo'),
+  Type.Literal('pronto'),
+  Type.Literal('entregue'),
+  Type.Literal('cancelado'),
+]);
+
+export type StatusFicha = Static<typeof StatusFichaEnum>;
+
+export const AtualizarStatusFichaSchema = Type.Object(
+  {
+    status: StatusFichaEnum,
+    alterado_por: Type.Optional(Type.String({ maxLength: 120 })),
+  },
+  { description: 'Payload para transição de status da ficha' },
+);
+
+export type AtualizarStatusFichaInput = Static<typeof AtualizarStatusFichaSchema>;
+
+export const ParamsFichaIdSchema = Type.Object({
+  id: Type.Integer({ minimum: 1, description: 'ID da ficha de preparo' }),
+});
+
+// Story 14.5: Consulta de pendências por comanda
+export const ParamsComandaIdSchema = Type.Object({
+  comandaId: Type.Integer({ minimum: 1, description: 'ID da comanda' }),
+});
+
+export const ItemPendenciaSchema = Type.Object({
+  ficha_id: Type.Integer(),
+  item_comanda_id: Type.Integer(),
+  nome_produto: Type.String(),
+  quantidade: Type.Integer(),
+  estacao: Type.String(),
+  status: Type.String(),
+});
+
+export type ItemPendencia = Static<typeof ItemPendenciaSchema>;
+
+export const RespostaPendenciasComandaSchema = Type.Object({
+  comanda_id: Type.Integer(),
+  mesa: Type.Integer(),
+  possui_pendencias: Type.Boolean(),
+  totais: Type.Object({
+    recebido: Type.Integer(),
+    em_preparo: Type.Integer(),
+    pronto: Type.Integer(),
+    entregue: Type.Integer(),
+    cancelado: Type.Integer(),
+  }),
+  itens: Type.Array(ItemPendenciaSchema),
+});
+
+export type RespostaPendenciasComanda = Static<typeof RespostaPendenciasComandaSchema>;
+
+

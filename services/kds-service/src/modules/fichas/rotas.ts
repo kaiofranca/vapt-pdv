@@ -1,7 +1,14 @@
 import { FastifyPluginAsync } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
-import { CriarFichaSchema, FichaRespostaSchema } from './schemas';
+import {
+  AtualizarStatusFichaSchema,
+  CriarFichaSchema,
+  FichaRespostaSchema,
+  ParamsComandaIdSchema,
+  ParamsFichaIdSchema,
+  RespostaPendenciasComandaSchema,
+} from './schemas';
 import { FichasRepositorio } from './repositorio';
 import { FichasServico } from './servico';
 import { RespostaErroSchema } from '../../shared/erros';
@@ -96,6 +103,71 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
       },
     },
     filaHandler,
+  );
+
+  // PATCH /kds/fichas/:id/status — Transição de estado de preparo (Story 14.4)
+  servidor.patch(
+    '/kds/fichas/:id/status',
+    {
+      schema: {
+        tags: ['Fichas'],
+        summary: 'Atualização do status de preparo de uma ficha KDS',
+        params: ParamsFichaIdSchema,
+        body: AtualizarStatusFichaSchema,
+        response: {
+          200: FichaRespostaSchema,
+          400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          422: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const ficha = await servico.atualizarStatus(
+        request.params.id,
+        request.body.status,
+        request.body.alterado_por,
+      );
+      return reply.status(200).send(ficha);
+    },
+  );
+
+  // GET /kds/comandas/:comandaId/pendencias e alias /status-preparo — Consulta de pendências (Story 14.5)
+  const pendenciasHandler = async (request: any, reply: any) => {
+    const pendencias = await servico.consultarPendenciasComanda(request.params.comandaId);
+    return reply.status(200).send(pendencias);
+  };
+
+  servidor.get(
+    '/kds/comandas/:comandaId/pendencias',
+    {
+      schema: {
+        tags: ['Comandas'],
+        summary: 'Verificação de pendências de preparo da comanda no KDS',
+        params: ParamsComandaIdSchema,
+        response: {
+          200: RespostaPendenciasComandaSchema,
+          400: RespostaErroSchema,
+        },
+      },
+    },
+    pendenciasHandler,
+  );
+
+  servidor.get(
+    '/kds/comandas/:comandaId/status-preparo',
+    {
+      schema: {
+        tags: ['Comandas'],
+        summary: 'Alias para verificação de pendências (/kds/comandas/:comandaId/pendencias)',
+        params: ParamsComandaIdSchema,
+        response: {
+          200: RespostaPendenciasComandaSchema,
+          400: RespostaErroSchema,
+        },
+      },
+    },
+    pendenciasHandler,
   );
 };
 

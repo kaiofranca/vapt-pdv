@@ -1,5 +1,6 @@
 import { FichasRepositorio, FichaRegistro } from './repositorio';
-import { CriarFichaInput, FichaResposta } from './schemas';
+import { CriarFichaInput, FichaResposta, RespostaPendenciasComanda, StatusFicha } from './schemas';
+import { ErroDominio } from '../../shared/erros';
 
 export interface FichaFilaItem extends FichaResposta {
   tempo_decorrido_segundos: number;
@@ -96,6 +97,107 @@ export class FichasServico {
     return {
       fichas,
       resumo,
+    };
+  }
+
+  async atualizarStatus(
+    id: number,
+    novoStatus: StatusFicha,
+    _alteradoPor?: string,
+  ): Promise<FichaResposta> {
+    const ficha = await this.repositorio.buscarPorId(id);
+    if (!ficha) {
+      throw ErroDominio.naoEncontrado(`Ficha de preparo #${id} não encontrada.`);
+    }
+
+    // Idempotência: transição para o mesmo status
+    if (ficha.status === novoStatus) {
+      return serializarFicha(ficha);
+    }
+
+    // Estados terminais imutáveis (RN20)
+    if (ficha.status === 'entregue' || ficha.status === 'cancelado') {
+      throw ErroDominio.transicaoInvalida(
+        `Fichas no estado '${ficha.status}' são finais e não permitem novas transições.`,
+      );
+    }
+
+    // Validação da máquina de estados linear + cancelamento pré-entrega
+    const transicoesValidas: Record<string, string[]> = {
+      recebido: ['em_preparo', 'cancelado'],
+      em_preparo: ['pronto', 'cancelado'],
+      pronto: ['entregue', 'cancelado'],
+    };
+
+    const permitidas = transicoesValidas[ficha.status] || [];
+    if (!permitidas.includes(novoStatus)) {
+      throw ErroDominio.transicaoInvalida(
+        `Transição de estado inválida no KDS: não é permitido alterar de '${ficha.status}' para '${novoStatus}'.`,
+      );
+    }
+
+    const agora = new Date();
+    const camposData: { iniciadoEm?: Date; prontoEm?: Date; entregueEm?: Date } = {};
+
+    if (novoStatus === 'em_preparo') {
+      camposData.iniciadoEm = agora;
+    } else if (novoStatus === 'pronto') {
+      camposData.prontoEm = agora;
+    } else if (novoStatus === 'entregue') {
+      camposData.entregueEm = agora;
+    }
+
+    const atualizada = await this.repositorio.atualizarStatusFicha(id, novoStatus, camposData);
+    return serializarFicha(atualizada);
+  }
+
+  async consultarPendenciasComanda(comandaId: number): Promise<RespostaPendenciasComanda> {
+    const registros = await this.repositorio.buscarFichasPorComandaId(comandaId);
+
+    const totais = {
+      recebido: 0,
+      em_preparo: 0,
+      pronto: 0,
+      entregue: 0,
+      cancelado: 0,
+    };
+
+    if (registros.length === 0) {
+      return {
+        comanda_id: comandaId,
+        mesa: 0,
+        possui_pendencias: false,
+        totais,
+        itens: [],
+      };
+    }
+
+    const mesa = registros[0].mesa;
+
+    const itens = registros.map((reg) => {
+      const statusKey = reg.status as keyof typeof totais;
+      if (totais[statusKey] !== undefined) {
+        totais[statusKey]++;
+      }
+
+      return {
+        ficha_id: reg.id,
+        item_comanda_id: reg.itemComandaId,
+        nome_produto: reg.nomeProduto,
+        quantidade: reg.quantidade,
+        estacao: reg.setor,
+        status: reg.status,
+      };
+    });
+
+    const possui_pendencias = totais.recebido > 0 || totais.em_preparo > 0;
+
+    return {
+      comanda_id: comandaId,
+      mesa,
+      possui_pendencias,
+      totais,
+      itens,
     };
   }
 }
