@@ -2,7 +2,7 @@
 
 > **Propósito:** Ponto único de retomada para qualquer desenvolvedor ou agente de IA ao abrir o repositório em outra máquina ou nova sessão. Atualize este arquivo e `_bmad-output/implementation-artifacts/sprint-status.yaml` sempre que uma story mudar de estado.
 
-**Última atualização:** 2026-11-04 (*Correct Course M2 aplicado: Core Salão `:3000` + KDS `:3001` + Caixa `:3002` + Gestão `:3003`; revisão crítica e correções 100% implementadas no contrato de APIs e eventos*)  
+**Última atualização:** 2026-11-04 (*Estação Frontend do Modo Gestão & BI concluída: Stories 16.1 Shell/Dashboard M01 e 16.2 Telas Analíticas Curva ABC M10, Garçons M11, Estoque M05 e Exportação M15 100% implementadas e testadas com 20 testes no Vitest e build de produção validado*)  
 **Módulo atual:** Módulo 1 — Computação em Nuvem (`entrega-1-cloud`) — **CÓDIGO E TESTES 100% CONCLUÍDOS (`done`)**  
 **Próximo Passo:** Atualização do build final na instância AWS EC2 pelos discentes, gravação do vídeo demonstrativo e criação da tag `entrega-1-cloud`; início da implementação dos 3 microsserviços satélites por estação do Módulo 2 (`kds-service` `:3001`, `caixa-service` `:3002`, `gestao-service` `:3003`).  
 **Status do Épico 1:** 
@@ -78,7 +78,7 @@
 
 Conforme `ADR-01` (*Correct Course M2*), o Módulo 2 preserva o **`vapt-pdv-core` (`:3000`, `vaptpdv_db`)** como núcleo de Salão/Garçom e catálogo base (com rotas de fronteira `/usuarios/:id/validar-garcom`, `/produtos/:id/disponibilidade` e `/produtos/baixa-estoque`) e integra via HTTP REST síncrono (`AbortSignal.timeout(2000)`, degradação graciosa e fail-fast `503`) os **3 Microsserviços Satélites** com bancos exclusivos (`Database-per-Service`):
 
-| ID | Serviço / Escopo | Porta e Banco Exclusivo | Status | Referência Arquitetural |
+| ID | Sub-História / Escopo | Porta e Banco Exclusivo | Status | Responsável / Referência |
 | :--- | :--- | :--- | :--- | :--- |
 | `"14"` | Microsserviço **`kds-service`** (Fila de Cozinha/Bar `K01–K04`, SLA e `POST /kds/fichas`) | `:3001` (`kds_db`) | `done` (Stories 14.1 a 14.5 concluídas com 23 testes passando verde) | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
 | `"15"` | Microsserviço **`caixa-service`** (Fila de Recebimento `C04`, Fechamento 10% `C06`, Split Payment `C11`, Pagamento com Troco `C07`/`C10` e Recibo Operacional `.paper` `C12` — `RN19`) | `:3002` (`caixa_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
@@ -89,17 +89,26 @@ Conforme `ADR-01` (*Correct Course M2*), o Módulo 2 preserva o **`vapt-pdv-core
 
 | ID | Escopo | Status | Referência Arquitetural |
 | :--- | :--- | :--- | :--- |
-| `"18"` | `Dockerfile` multi-stage enxuto (`node:20-alpine`, `USER node`) para `vapt-pdv-core`, `kds-service`, `caixa-service` e `gestao-service` | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
-| `"19"` | `docker-compose.yml` completo com os 4 serviços, bancos PostgreSQL (`vaptpdv_db`, `kds_db`, `caixa_db`, `gestao_db`), rede isolada `vaptpdv-net` e `healthcheck` (`service_healthy`) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
-| `"20"` | Documentação comparativa (VM Nativa M1 vs. Containers M3) e prova de persistência de volumes na AWS EC2 | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`18.1`** | `Dockerfile` multi-stage enxuto para `vapt-pdv-core` com build do Frontend embutido (`node:20-alpine`, `USER node`, <220MB) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`18.2`** | `Dockerfile` multi-stage enxuto para os satélites `kds-service`, `caixa-service` e `gestao-service` (<160MB cada) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`19.1`** | Rede `vaptpdv-net` e 4 containers PostgreSQL 16 isolados com volumes persistentes nomeados (`pgdata_*`) e `pg_isready` | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`19.2`** | `docker-compose.yml` orquestrando os 4 microsserviços com `depends_on: { service_healthy }`, variáveis seguras e limites de CPU/RAM | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.1`** | Script de teste automatizado de persistência de dados (`scripts/testar-persistencia-docker.sh`) pós-ciclo `down` e `up` | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.2`** | Estudo técnico comparativo de engenharia: deploy IaaS na VM vs. Containers Docker Compose | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.3`** | Roteiro do vídeo demonstrativo e preparação da tag Git `entrega-3-containers` | `backlog` | Checklist da Disciplina |
 
 ### Épico 4 — Módulo 4: Mensageria e Streaming (`entrega-4-mensageria`)
 
 | ID | Escopo | Status | Referência Arquitetural |
 | :--- | :--- | :--- | :--- |
-| `"21"` | Container `rabbitmq:3.13-management-alpine`, exchange `vaptpdv.eventos` (`topic`), DLX/DLQ e produtor com **Transactional Outbox (`outbox_eventos`)** (`ADR-09`) | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
-| `"22"` | Consumidores idempotentes (`ADR-10`, `ack` manual) para `produtos.comanda.paga` (no módulo `produtos` do Core), `kds.item.lancado`, `pdv.item.pronto` e `gestao.eventos` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
-| `"23"` | Análise comparativa Mensageria (RabbitMQ) vs. Streaming (Kafka/Redpanda) e prova de tolerância a falhas assíncrona na AWS EC2 | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
+| **`21.1`** | Container `rabbitmq:3.13-management-alpine`, exchange topic `vaptpdv.eventos`, DLX `vaptpdv.dlx`, 5 filas duráveis e `vaptpdv.dlq` | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
+| **`21.2`** | **Transactional Outbox Pattern** (`outbox_eventos`) no Core e Caixa com worker `OutboxPublisher` e publisher confirms | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
+| **`22.1`** | Consumidor AMQP `kds.item.lancado` no KDS: criação de fichas com ack manual, desduplicação por `item_comanda_id` e emissão de `item.pronto` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.2`** | Consumidor AMQP `caixa.comanda.fechada` no Caixa: atualização da fila de cobranças com desduplicação por `comanda_id` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.3`** | Consumidor AMQP `produtos.comanda.paga` no Core: baixa atômica de estoque por `(comanda_id, produto_id)` e emissão de `estoque.movimentado` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.4`** | Consumidor AMQP `gestao.eventos` (routing `#`) no Gestão: ingestão contínua assíncrona das 5 projeções analíticas com ack manual | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`23.1`** | Validação prática de resiliência assíncrona: consumidores offline, fila durável, reconexão e reprocessamento sem perdas + DLQ | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
+| **`23.2`** | Estudo comparativo Mensageria Tradicional (RabbitMQ) vs Streaming (Kafka/Redpanda) e checklist da tag `entrega-4-mensageria` | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
 
 ---
 

@@ -26,6 +26,9 @@ export interface ComandaEntidade {
   fechada_em: Date | null;
   paga_em: Date | null;
   itens: ItemComandaEntidade[];
+  integracao_caixa_pendente?: boolean;
+  integracao_gestao_pendente?: boolean;
+  avisos?: string[];
 }
 
 export interface CriarComandaDados {

@@ -1,6 +1,8 @@
 import { ClienteBanco } from '../../shared/prisma';
 import type { ServicoUsuarios } from '../usuarios/servico';
 import type { ServicoProdutos } from '../produtos/servico';
+import type { ICaixaGateway } from '../../shared/gateways/caixa.gateway';
+import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 import { ComandasRepositoryPrisma } from './comandas.repository';
 import { ComandasService } from './comandas.service';
 
@@ -18,7 +20,15 @@ export class ServicoComandasPrisma extends ComandasService {
     prisma: ClienteBanco,
     servicoUsuarios: ServicoUsuarios,
     servicoProdutos?: ServicoProdutos,
+    caixaGateway?: ICaixaGateway,
+    gestaoGateway?: IGestaoGateway,
   ) {
-    super(new ComandasRepositoryPrisma(prisma), servicoUsuarios, servicoProdutos);
+    super(
+      new ComandasRepositoryPrisma(prisma),
+      servicoUsuarios,
+      servicoProdutos,
+      caixaGateway,
+      gestaoGateway,
+    );
   }
 }

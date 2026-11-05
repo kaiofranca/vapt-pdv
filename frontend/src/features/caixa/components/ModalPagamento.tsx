@@ -9,12 +9,15 @@ import {
   Clock,
   Trash2,
   AlertTriangle,
+  Users,
 } from 'lucide-react';
 import type { Comanda, FormaPagamento } from '../../../types/api';
 import { formatCurrency } from '../../../lib/utils';
 import { Button } from '../../../components/ui/Button';
 import { ToggleSwitch } from '../../../components/ui/ToggleSwitch';
 import { ComprovanteVenda, type ParcelaPagamento } from './ComprovanteVenda';
+import { ModoDinheiroTeclado } from './ModoDinheiroTeclado';
+import { ModalSplitPayment } from './ModalSplitPayment';
 import { usePagarComanda } from '../../../hooks/useComandas';
 import { ApiError } from '../../../services/apiClient';
 
@@ -63,6 +66,9 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
 
   // Confirmação de segurança: tentar sair com dinheiro na gaveta
   const [showConfirmacaoGaveta, setShowConfirmacaoGaveta] = useState<boolean>(false);
+
+  // Split payment (dividir por pessoas ou itens - C11)
+  const [isSplitOpen, setIsSplitOpen] = useState<boolean>(false);
 
   // Feedback de cópia do código Pix
   const [pixCopiado, setPixCopiado] = useState<boolean>(false);
@@ -142,36 +148,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  // Botões de cédulas rápidas
-  const handleCedulaRapida = (valorAdicional: number) => {
-    const atual = parseFloat(valorRecebidoInput.replace(',', '.') || '0');
-    const novo = atual + valorAdicional;
-    setValorRecebidoInput(novo.toFixed(2));
-  };
-
-  const handleValorExato = () => {
-    setValorRecebidoInput(valorParcelaInput);
-  };
-
-  // Teclado numérico touch para dinheiro (C07 Pagamento dinheiro.png)
-  const handleKeypad = (tecla: string) => {
-    if (tecla === 'C') {
-      setValorRecebidoInput('');
-      return;
-    }
-    if (tecla === ',') {
-      if (!valorRecebidoInput.includes(',') && !valorRecebidoInput.includes('.')) {
-        setValorRecebidoInput((prev) => (prev ? `${prev},` : '0,'));
-      }
-      return;
-    }
-    const partes = valorRecebidoInput.split(/[,.]/);
-    if (partes.length > 1 && partes[1].length >= 2) {
-      return;
-    }
-    setValorRecebidoInput((prev) => (prev === '0' ? tecla : `${prev}${tecla}`));
-  };
-
   // Copiar código Pix
   const handleCopiarPix = () => {
     navigator.clipboard.writeText(codigoPixSimulado);
@@ -216,6 +192,14 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
   const handleRemoverParcela = (id: string) => {
     setParcelas((prev) => prev.filter((p) => p.id !== id));
     onToast('sucesso', 'Parcela estornada do pagamento.');
+  };
+
+  // Aplica uma cota calculada pelo ModalSplitPayment (C11)
+  const handleAplicarCotaSplit = (valorCentavos: number, descricao: string) => {
+    const valorReais = (valorCentavos / 100).toFixed(2);
+    setValorParcelaInput(valorReais);
+    setValorRecebidoInput(valorReais);
+    onToast('sucesso', `${descricao}: valor R$ ${formatCurrency(valorCentavos / 100)} selecionado.`);
   };
 
   // Fechamento seguro do modal
@@ -397,6 +381,18 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               </div>
 
+              {/* Botão de Divisão de Conta (Split Payment - C11) */}
+              <Button
+                type="button"
+                variant="outline"
+                leftIcon={<Users className="w-4 h-4 text-brand-text" />}
+                onClick={() => setIsSplitOpen(true)}
+                className="w-full min-h-[44px] text-xs font-bold border-brand/50 text-brand-text hover:bg-brand-soft transition-colors"
+                data-testid="btn-abrir-split"
+              >
+                Dividir Conta (Split Payment)
+              </Button>
+
               {/* Barra de Progresso de Quitação */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
@@ -528,106 +524,15 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
 
               {/* Painel Específico da Forma Selecionada */}
               {formaAtiva === 'dinheiro' && (
-                <div className="p-4 rounded-card bg-surface-2/60 border border-border space-y-3">
-                  <div>
-                    <label className="text-xs font-bold uppercase text-text-2 tracking-wider block mb-1">
-                      Valor Entregue pelo Cliente (R$)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-text-2 text-sm">
-                        R$
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={valorRecebidoInput}
-                        onChange={(e) => setValorRecebidoInput(e.target.value)}
-                        className="w-full min-h-[44px] pl-10 pr-4 py-2 rounded-input bg-surface border border-border text-text font-black text-lg tabular-nums focus:outline-none focus:border-text focus:ring-1 focus:ring-text"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Cédulas Rápidas */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => handleCedulaRapida(10)}
-                      className="px-2.5 py-1.5 rounded-btn bg-surface border border-border text-xs font-bold text-text hover:bg-border/40"
-                    >
-                      +R$ 10
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCedulaRapida(20)}
-                      className="px-2.5 py-1.5 rounded-btn bg-surface border border-border text-xs font-bold text-text hover:bg-border/40"
-                    >
-                      +R$ 20
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCedulaRapida(50)}
-                      className="px-2.5 py-1.5 rounded-btn bg-surface border border-border text-xs font-bold text-text hover:bg-border/40"
-                    >
-                      +R$ 50
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCedulaRapida(100)}
-                      className="px-2.5 py-1.5 rounded-btn bg-surface border border-border text-xs font-bold text-text hover:bg-border/40"
-                    >
-                      +R$ 100
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleValorExato}
-                      className="px-3 py-1.5 rounded-btn bg-brand-soft border border-brand/30 text-xs font-bold text-brand-text hover:bg-brand/20 ml-auto"
-                    >
-                      Valor Exato
-                    </button>
-                  </div>
-
-                  {/* Teclado Numérico Touch (C07 Pagamento dinheiro.png) */}
-                  <div className="grid grid-cols-3 gap-1.5 pt-1">
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', ','].map((tecla) => (
-                      <button
-                        key={tecla}
-                        type="button"
-                        onClick={() => handleKeypad(tecla)}
-                        className={`h-9 rounded-btn font-mono font-bold text-sm border transition-colors flex items-center justify-center ${
-                          tecla === 'C'
-                            ? 'bg-danger-soft text-danger border-danger/30 hover:bg-danger/20'
-                            : 'bg-surface text-text border-border hover:bg-surface-2 active:bg-border/60'
-                        }`}
-                      >
-                        {tecla}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Badge de Troco em Destaque Verde */}
-                  {trocoCalculadoCentavos > 0 && (
-                    <div className="p-3 rounded-card bg-success-soft border border-success/30 text-center animate-fadeIn">
-                      <span className="text-xs uppercase font-bold text-success-text block leading-none">
-                        Troco a Devolver
-                      </span>
-                      <span className="text-2xl font-black text-success tabular-nums">
-                        {formatCurrency(trocoCalculadoCentavos / 100)}
-                      </span>
-                    </div>
-                  )}
-
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    leftIcon={<Banknote className="w-4 h-4" />}
-                    onClick={() => handleLancarParcela('dinheiro')}
-                    disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0}
-                  >
-                    Confirmar Dinheiro
-                  </Button>
-                </div>
+                <ModoDinheiroTeclado
+                  totalCentavos={totalCentavos}
+                  jaPagoCentavos={jaPagoCentavos}
+                  valorParcelaCentavos={valorParcelaCentavos}
+                  valorRecebidoInput={valorRecebidoInput}
+                  onValorRecebidoChange={setValorRecebidoInput}
+                  onConfirmar={() => handleLancarParcela('dinheiro')}
+                  disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0}
+                />
               )}
 
               {formaAtiva === 'pix' && (
@@ -862,6 +767,14 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal C11: Dividir a Conta (Split Payment) */}
+      <ModalSplitPayment
+        isOpen={isSplitOpen}
+        onClose={() => setIsSplitOpen(false)}
+        comanda={comanda}
+        onAplicarCota={handleAplicarCotaSplit}
+      />
     </div>
   );
 };

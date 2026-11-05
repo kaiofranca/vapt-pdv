@@ -116,3 +116,92 @@ export interface ListarUsuariosFiltros {
   perfil?: PerfilUsuario;
   ativo?: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────
+// TIPOS ANALÍTICOS DE GESTÃO & BI (:3003 /gestao e /analytics)
+// ─────────────────────────────────────────────────────────────
+
+export interface ResumoDiarioGestao {
+  data: string;
+  total_vendas: string;
+  total_subtotal: string;
+  total_taxa_servico: string;
+  quantidade_pedidos: number;
+  ticket_medio: string;
+  por_forma_pagamento: {
+    pix: string;
+    cartao: string;
+    dinheiro: string;
+  };
+}
+
+export type ClasseABC = 'A' | 'B' | 'C';
+
+export interface ItemRankingProduto {
+  posicao: number;
+  produto_id: number;
+  nome_produto: string;
+  categoria: string;
+  quantidade_vendida: number;
+  receita_gerada: string;
+  percentual_receita: string;
+  percentual_acumulado: string;
+  classe_abc: ClasseABC;
+}
+
+export interface RankingProdutosResposta {
+  receita_total_acumulada: string;
+  produtos: ItemRankingProduto[];
+}
+
+export interface ItemDesempenhoGarcom {
+  garcom_id: number;
+  garcom_nome: string;
+  comandas_atendidas: number;
+  total_vendido: string;
+  comissao_gerada: string;
+  ticket_medio: string;
+}
+
+export interface DesempenhoGarconsResposta {
+  garcons: ItemDesempenhoGarcom[];
+}
+
+export type NivelAlertaEstoque = 'baixo' | 'zerado';
+
+export interface ItemAlertaEstoque {
+  produto_id: number;
+  nome_produto: string;
+  categoria: string;
+  estoque_atual: number;
+  estoque_minimo: number;
+  nivel: NivelAlertaEstoque;
+  ultimo_movimento_em: string;
+}
+
+export interface AlertasEstoqueResposta {
+  alertas: ItemAlertaEstoque[];
+}
+
+export interface ResumoDiarioFiltros {
+  data?: string;
+}
+
+export interface RankingProdutosFiltros {
+  limite?: number;
+  categoria?: string;
+}
+
+export interface AlertasEstoqueFiltros {
+  apenas_ativos?: boolean;
+}
+
+export type TipoRelatorioExportar = 'faturamento' | 'produtos' | 'garcons' | 'alertas';
+export type FormatoRelatorioExportar = 'csv' | 'json';
+
+export interface ExportarRelatorioFiltros {
+  tipo?: TipoRelatorioExportar;
+  formato?: FormatoRelatorioExportar;
+  de?: string;
+  ate?: string;
+}

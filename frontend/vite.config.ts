@@ -30,7 +30,11 @@ export default defineConfig({
       '/produtos': { target: 'http://localhost:3000', changeOrigin: true },
       '/usuarios': { target: 'http://localhost:3000', changeOrigin: true },
       '/health': { target: 'http://localhost:3000', changeOrigin: true },
-      '/docs': { target: 'http://localhost:3000', changeOrigin: true }
+      '/docs': { target: 'http://localhost:3000', changeOrigin: true },
+      '/kds': { target: 'http://localhost:3001', changeOrigin: true },
+      '/caixa': { target: 'http://localhost:3002', changeOrigin: true },
+      '/gestao': { target: 'http://localhost:3003', changeOrigin: true },
+      '/analytics': { target: 'http://localhost:3003', changeOrigin: true }
     }
   }
 });

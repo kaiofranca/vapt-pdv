@@ -202,20 +202,36 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
       const repoMovimentos = this.obterRepositorioMovimentos(contexto);
       const repoProdutos = this.obterRepositorio(contexto);
 
-      // Idempotência por comanda_id (RN10 / RN18)
-      const movimentoExistente = await repoMovimentos.findFirst({
-        where: { comanda_id: dados.comanda_id },
-      });
-
-      if (movimentoExistente) {
-        return;
-      }
-
       for (const item of dados.itens) {
         if (!Number.isFinite(item.quantidade) || item.quantidade <= 0) {
           continue;
         }
 
+        // Idempotência estrita por (comanda_id, produto_id) - RN10 / RN18
+        const movimentoExistente = await repoMovimentos.findFirst({
+          where: {
+            comanda_id: dados.comanda_id,
+            produto_id: item.produto_id,
+          },
+        });
+
+        if (movimentoExistente) {
+          continue;
+        }
+
+        // Verifica existência do produto antes de efetuar a baixa
+        const produto = await repoProdutos.findUnique({
+          where: { id: item.produto_id },
+        });
+
+        if (!produto) {
+          throw ErroDominio.naoEncontrado(
+            `Produto com ID ${item.produto_id} não encontrado.`,
+            { produto_id: item.produto_id },
+          );
+        }
+
+        // Deduz estoque atomicamente
         await repoProdutos.update({
           where: { id: item.produto_id },
           data: {
@@ -225,11 +241,15 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           },
         });
 
+        const motivo = dados.motivo ?? `VENDA_COMANDA #${dados.comanda_id}`;
+
+        // Grava movimento de estoque com tipo 'saida' e motivo padronizado
         await repoMovimentos.create({
           data: {
             produto_id: item.produto_id,
             quantidade: -item.quantidade,
-            motivo: `VENDA_COMANDA #${dados.comanda_id}`,
+            tipo: 'saida',
+            motivo,
             comanda_id: dados.comanda_id,
           },
         });

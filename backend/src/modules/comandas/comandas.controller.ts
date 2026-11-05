@@ -45,6 +45,13 @@ export function serializarComanda(comanda: ComandaEntidade) {
       preco_copiado: item.preco_copiado,
       quantidade: item.quantidade,
     })),
+    ...(comanda.integracao_caixa_pendente !== undefined
+      ? { integracao_caixa_pendente: comanda.integracao_caixa_pendente }
+      : {}),
+    ...(comanda.integracao_gestao_pendente !== undefined
+      ? { integracao_gestao_pendente: comanda.integracao_gestao_pendente }
+      : {}),
+    ...(comanda.avisos !== undefined ? { avisos: comanda.avisos } : {}),
   };
 }
 
