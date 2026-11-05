@@ -60,7 +60,12 @@ export interface ApiErrorResponse {
   erro: ApiErrorDetail;
 }
 
-// DTOs de Entrada
+// DTOs de Entrada de Usuários
+
+export interface AtualizarUsuarioDto {
+  nome?: string;
+  perfil?: PerfilUsuario;
+}
 export interface CriarUsuarioDto {
   nome: string;
   perfil: PerfilUsuario;
@@ -116,10 +121,6 @@ export interface ListarUsuariosFiltros {
   perfil?: PerfilUsuario;
   ativo?: boolean;
 }
-
-// ─────────────────────────────────────────────────────────────
-// TIPOS ANALÍTICOS DE GESTÃO & BI (:3003 /gestao e /analytics)
-// ─────────────────────────────────────────────────────────────
 
 export interface ResumoDiarioGestao {
   data: string;

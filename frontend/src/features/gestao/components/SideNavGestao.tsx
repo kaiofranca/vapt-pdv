@@ -6,12 +6,13 @@ import {
   Package,
   FileSpreadsheet,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 import { LogoMark } from '../../../components/ui/Logo';
 import { ThemeToggle } from '../../../components/ui/ThemeToggle';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
-export type AbaNavegacaoGestao = 'visao-geral' | 'curva-abc' | 'garcons' | 'estoque';
+export type AbaNavegacaoGestao = 'visao-geral' | 'equipe' | 'curva-abc' | 'garcons' | 'estoque';
 
 export interface SideNavGestaoProps {
   abaAtiva: AbaNavegacaoGestao;
@@ -51,6 +52,12 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
       icon: LayoutDashboard,
     },
     {
+      id: 'equipe',
+      label: 'Equipe',
+      sublabel: 'Usuários M12',
+      icon: UserCog,
+    },
+    {
       id: 'curva-abc',
       label: 'Curva ABC',
       sublabel: 'Pareto 80/15/5 M10',
@@ -77,7 +84,6 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
       aria-label="Navegação da Gestão"
     >
       <div className="flex flex-col gap-6">
-        {/* Topo: Logotipo VaptPDV + Indicador de Modo */}
         <div className="flex items-center gap-3 px-2 pt-1">
           <div className="rounded-[14px] shadow-soft">
             <LogoMark size={40} />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SideNavGestao, type AbaNavegacaoGestao } from './components/SideNavGestao';
 import { VisaoGeralView } from './components/VisaoGeralView';
+import { EquipeView } from './components/EquipeView';
 import { CurvaAbcView } from './components/CurvaAbcView';
 import { DesempenhoGarconsView } from './components/DesempenhoGarconsView';
 import { EstoqueAlertasView } from './components/EstoqueAlertasView';
@@ -17,9 +18,7 @@ export const ModoGestaoPage: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg text-text font-sans selection:bg-brand selection:text-on-brand">
-      {/* ─────────────────────────────────────────────────────────────
-          BARRA LATERAL ESCURA FIXA (#3A2A21)
-          ───────────────────────────────────────────────────────────── */}
+
       <SideNavGestao
         abaAtiva={abaAtiva}
         onAbaChange={setAbaAtiva}
@@ -27,9 +26,6 @@ export const ModoGestaoPage: React.FC = () => {
         totalAlertasEstoque={totalAlertas}
       />
 
-      {/* ─────────────────────────────────────────────────────────────
-          ÁREA PRINCIPAL DE CONTEÚDO ANALÍTICO
-          ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 h-full overflow-y-auto px-6 py-6 lg:px-10 lg:py-8">
         <div className="max-w-7xl mx-auto">
           {abaAtiva === 'visao-geral' && (
@@ -39,6 +35,8 @@ export const ModoGestaoPage: React.FC = () => {
             />
           )}
 
+          {abaAtiva === 'equipe' && <EquipeView />}
+
           {abaAtiva === 'curva-abc' && <CurvaAbcView />}
 
           {abaAtiva === 'garcons' && <DesempenhoGarconsView />}
@@ -46,10 +44,7 @@ export const ModoGestaoPage: React.FC = () => {
           {abaAtiva === 'estoque' && <EstoqueAlertasView />}
         </div>
       </main>
-
-      {/* ─────────────────────────────────────────────────────────────
-          MODAL DE EXPORTAÇÃO DE RELATÓRIOS (M15)
-          ───────────────────────────────────────────────────────────── */}
+      
       <ModalExportacao
         isOpen={isModalExportacaoOpen}
         onClose={() => setIsModalExportacaoOpen(false)}
