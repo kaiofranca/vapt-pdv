@@ -32,6 +32,7 @@ _bmad/custom/*.user.toml
 .bmad-loop/
 *.agent/
 .agents/
+.agent/
 _bmad/
 _bmad-output/
 skills-lock.json

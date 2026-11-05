@@ -80,25 +80,10 @@ Conforme `ADR-01` (*Correct Course M2*), o Módulo 2 preserva o **`vapt-pdv-core
 
 | ID | Sub-História / Escopo | Porta e Banco Exclusivo | Status | Responsável / Referência |
 | :--- | :--- | :--- | :--- | :--- |
-| **`14.1`** | `kds-service` — Setup, Prisma DDL (`kds_db`), `/health` e OpenAPI | `:3001` (`kds_db`) | `in-progress` | Kaio França |
-| **`14.2`** | `kds-service` — Ingestão de Fichas (`POST /kds/fichas`) e Idempotência | `:3001` (`kds_db`) | `backlog` | Kaio França |
-| **`14.3`** | `kds-service` — Fila FIFO & SLA Visual (`GET /kds/fichas` — `K01`–`K04`) | `:3001` (`kds_db`) | `backlog` | Kaio França |
-| **`14.4`** | `kds-service` — Máquina de Estados & Pendências de Comanda | `:3001` (`kds_db`) | `backlog` | Kaio França |
-| **`14.5`** | `vapt-pdv-core` — Integração com `KdsGateway` e Degradação Graciosa | `:3000` → `:3001` | `backlog` | Kaio França |
-| **`14.6`** | `kds-frontend` — Interface TV `1920x1080` Escura (`/kds` — `K01`–`K04`) | `:3000`/`:3001` | `backlog` | Agente BMad / Kaio |
-| **`15.1`** | `caixa-service` — Setup, Prisma DDL (`caixa_db`), `/health` e OpenAPI | `:3002` (`caixa_db`) | **`done`** | Mateus Neri |
-| **`15.2`** | `caixa-service` — Fila de Contas e Fechamento com Taxa de 10% (`C04`/`C06`) | `:3002` (`caixa_db`) | **`done`** | Mateus Neri |
-| **`15.3`** | `caixa-service` — Motor de Split Payment com Conservação de Centavos (`C11`) | `:3002` (`caixa_db`) | **`done`** | Mateus Neri |
-| **`15.4`** | `caixa-service` — Pagamento com Troco e Baixa de Estoque no Core (`C07`/`C10`) | `:3002` (`caixa_db`) | **`done`** | Mateus Neri |
-| **`15.5`** | `caixa-service` — Emissão de Recibo Operacional Térmico `.paper` (`C12`) | `:3002` (`caixa_db`) | **`done`** | Mateus Neri |
-| **`15.6`** | `vapt-pdv-core` — Integração com `CaixaGateway` e Baixa de Estoque Atômica | `:3000` → `:3002` | **`done`** | Mateus Neri |
-| **`15.7`** | `caixa-frontend` — Modo Caixa v2: Split, Teclado Dinheiro e Recibo `.paper` | `:3000`/`:3002` | **`done`** | Agente BMad / Mateus |
-| **`16`** | `gestao-service` — Ingestão OLAP, Curva ABC 80/15/5, Garçons e Exportação | `:3003` (`gestao_db`) | **`done`** | Mateus Neri |
-| **`16.1`** | `gestao-frontend` — Shell Desktop `1440x900` e Dashboard Executivo (`M01`) | `:3000`/`:3003` | **`done`** | Agente BMad / Mateus |
-| **`16.2`** | `gestao-frontend` — Telas Analíticas: Curva ABC, Garçons, Estoque e Exportar | `:3000`/`:3003` | **`done`** | Agente BMad / Mateus |
-| **`17.1`** | Deploy Multi-Serviço — Setup Multi-Banco e PM2 na AWS EC2 | `:3000` a `:3003` | `backlog` | Discentes |
-| **`17.2`** | Prova de Resiliência — Bateria de Timeouts (2s), Fail-fast `503` e Degradação | `:3000` a `:3003` | `backlog` | Agente BMad / Discentes |
-| **`17.3`** | Documentação C4 Atualizada, Roteiro e Preparação da Tag `entrega-2` | Monorepo | `backlog` | Agente BMad |
+| `"14"` | Microsserviço **`kds-service`** (Fila de Cozinha/Bar `K01–K04`, SLA e `POST /kds/fichas`) | `:3001` (`kds_db`) | `done` (Stories 14.1 a 14.5 concluídas com 23 testes passando verde) | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
+| `"15"` | Microsserviço **`caixa-service`** (Fila de Recebimento `C04`, Fechamento 10% `C06`, Split Payment `C11`, Pagamento com Troco `C07`/`C10` e Recibo Operacional `.paper` `C12` — `RN19`) | `:3002` (`caixa_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
+| `"16"` | Microsserviço **`gestao-service`** (Estação `M01–M15`, Ingestão `POST /gestao/eventos`, Resumo Diário, Curva ABC, Desempenho de Garçons, Alertas de Estoque e Exportação) + Gateways HTTP Resilientes | `:3003` (`gestao_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
+| `"17"` | Deploy Multi-Serviço na AWS EC2, Diagrama C4 e Prova de Resiliência (`503` / Degradação Graciosa) do Módulo 2 | `:3000` a `:3003` | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
 
 ### Épico 3 — Módulo 3: Containers e Orquestração (`entrega-3-containers`)
 
