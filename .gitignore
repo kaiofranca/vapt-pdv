@@ -25,10 +25,7 @@ postgres-data/
 rabbitmq-data/
 pgdata/
 
-# Caches locais e arquivos de usuário do BMad
-_bmad/render/
-_bmad/config.user.toml
-_bmad/custom/*.user.toml
+# Arquivos e ferramentas de desenvolvimento/BMad/Agentes
 .bmad-loop/
 *.agent/
 .agents/
