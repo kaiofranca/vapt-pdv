@@ -11,15 +11,18 @@ import {
   AlertTriangle,
   Users,
 } from 'lucide-react';
-import type { Comanda, FormaPagamento } from '../../../types/api';
+import type { Comanda } from '../../../types/api';
 import { formatCurrency } from '../../../lib/utils';
 import { Button } from '../../../components/ui/Button';
 import { ToggleSwitch } from '../../../components/ui/ToggleSwitch';
 import { ComprovanteVenda, type ParcelaPagamento } from './ComprovanteVenda';
 import { ModoDinheiroTeclado } from './ModoDinheiroTeclado';
 import { ModalSplitPayment } from './ModalSplitPayment';
-import { usePagarComanda } from '../../../hooks/useComandas';
-import { ApiError } from '../../../services/apiClient';
+import {
+  caixaSatApi,
+  CaixaSatError,
+  type ReciboCompletoResposta,
+} from '../api/caixaSatApi';
 
 export interface ModalPagamentoProps {
   isOpen: boolean;
@@ -42,9 +45,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
   documentoClienteInicial = '',
   onToast,
 }) => {
-  const pagarMut = usePagarComanda();
-
-  // Estados locais do fluxo de pagamento
   const [etapa, setEtapa] = useState<'pagamento' | 'comprovante'>('pagamento');
   const [comandaPaga, setComandaPaga] = useState<Comanda | null>(null);
 
@@ -76,6 +76,13 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
   // Cronômetro Pix regressivo (5 minutos = 300 segundos)
   const [tempoPixRestante, setTempoPixRestante] = useState<number>(300);
 
+  // Estados de integração com satélite caixa-service (:3002)
+  const [trocoOficialSat, setTrocoOficialSat] = useState<string | null>(null);
+  const [reciboOficial, setReciboOficial] = useState<ReciboCompletoResposta | null>(null);
+  const [paperText, setPaperText] = useState<string | null>(null);
+  const [isProcessandoSat, setIsProcessandoSat] = useState<boolean>(false);
+  const [erroSat, setErroSat] = useState<string | null>(null);
+
   // Código Pix Copia-e-Cola simulado
   const codigoPixSimulado = useMemo(() => {
     const id = comanda ? comanda.id : '00';
@@ -102,7 +109,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
   const valorParcelaNum = parseFloat(valorParcelaInput.replace(',', '.'));
   const valorRecebidoCentavos = Number.isFinite(valorRecebidoNum) ? Math.round(valorRecebidoNum * 100) : 0;
   const valorParcelaCentavos = Number.isFinite(valorParcelaNum) ? Math.round(valorParcelaNum * 100) : 0;
-  const trocoCalculadoCentavos = Math.max(0, valorRecebidoCentavos - valorParcelaCentavos);
 
   // Inicializa valores ao abrir modal
   useEffect(() => {
@@ -114,6 +120,11 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
       setPixCopiado(false);
       setTempoPixRestante(300);
       setDocumentoCliente(documentoClienteInicial);
+      setTrocoOficialSat(null);
+      setReciboOficial(null);
+      setPaperText(null);
+      setErroSat(null);
+      setIsProcessandoSat(false);
 
       const totalFormatado = (totalCentavos / 100).toFixed(2);
       setValorParcelaInput(totalFormatado);
@@ -155,8 +166,10 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     setTimeout(() => setPixCopiado(false), 3000);
   };
 
-  // Adicionar parcela (Split Payment)
-  const handleLancarParcela = (forma: 'dinheiro' | 'pix' | 'cartao') => {
+  // Adicionar / Quitar parcela via satélite caixa-service :3002 (EARS-CXSAT-05, EARS-CXSAT-08, EARS-CXSAT-09, EARS-CXSAT-10)
+  const handleLancarParcela = async (forma: 'dinheiro' | 'pix' | 'cartao') => {
+    if (!comanda) return;
+
     if (!Number.isFinite(valorParcelaCentavos) || valorParcelaCentavos <= 0) {
       onToast('erro', 'Informe um valor válido maior que zero.');
       return;
@@ -167,25 +180,91 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
       return;
     }
 
-    if (forma === 'dinheiro' && (!Number.isFinite(valorRecebidoCentavos) || valorRecebidoCentavos < valorParcelaCentavos)) {
+    if (
+      forma === 'dinheiro' &&
+      (!Number.isFinite(valorRecebidoCentavos) || valorRecebidoCentavos < valorParcelaCentavos)
+    ) {
+      setErroSat('Valor insuficiente para troco.');
       onToast('erro', 'O valor recebido em dinheiro não pode ser menor que a parcela.');
       return;
     }
 
-    const novaParcela: ParcelaPagamento = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      forma,
-      subtipo: forma === 'cartao' ? subtipoCartao : undefined,
-      valorCentavos: valorParcelaCentavos,
-      valorRecebidoCentavos: forma === 'dinheiro' ? valorRecebidoCentavos : undefined,
-      trocoCentavos: forma === 'dinheiro' ? trocoCalculadoCentavos : undefined,
-    };
+    setIsProcessandoSat(true);
+    setErroSat(null);
 
-    setParcelas((prev) => [...prev, novaParcela]);
-    onToast(
-      'sucesso',
-      `Parcela de ${formatCurrency(valorParcelaCentavos / 100)} adicionada (${forma.toUpperCase()}).`
-    );
+    const valorAplicadoStr = (valorParcelaCentavos / 100).toFixed(2);
+    const valorRecebidoStr =
+      forma === 'dinheiro'
+        ? (valorRecebidoCentavos / 100).toFixed(2)
+        : valorAplicadoStr;
+
+    try {
+      const res = await caixaSatApi.pagarComanda(comanda.id, {
+        forma_pagamento: forma,
+        valor_aplicado: valorAplicadoStr,
+        valor_recebido: valorRecebidoStr,
+        numero_cota: parcelas.length + 1,
+        operador_nome: nomeOperador,
+      });
+
+      const trocoSatStr = res.parcela_registrada?.troco || res.troco_total || '0.00';
+      const trocoSatCentavos = Math.round(parseFloat(trocoSatStr) * 100);
+
+      const novaParcela: ParcelaPagamento = {
+        id: String(res.parcela_registrada?.id || Date.now()),
+        forma,
+        subtipo: forma === 'cartao' ? subtipoCartao : undefined,
+        valorCentavos: valorParcelaCentavos,
+        valorRecebidoCentavos: forma === 'dinheiro' ? valorRecebidoCentavos : undefined,
+        trocoCentavos: forma === 'dinheiro' ? trocoSatCentavos : undefined,
+      };
+
+      setParcelas((prev) => [...prev, novaParcela]);
+      setTrocoOficialSat(trocoSatStr);
+
+      onToast(
+        'sucesso',
+        `Parcela de ${formatCurrency(valorParcelaCentavos / 100)} quitada (:3002). Troco: R$ ${trocoSatStr}`
+      );
+
+      const novoJaPago = jaPagoCentavos + valorParcelaCentavos;
+      const estaQuitada =
+        res.status === 'paga' ||
+        parseFloat(res.saldo_restante || '0') <= 0 ||
+        novoJaPago >= totalCentavos;
+
+      if (estaQuitada) {
+        try {
+          const recibo = await caixaSatApi.obterRecibo(comanda.id);
+          setReciboOficial(recibo);
+          setPaperText(recibo.paper_text);
+        } catch {
+          // Fallback para recibo formatado local
+        }
+
+        const cPaga: Comanda = {
+          ...comanda,
+          status: 'paga',
+          forma_pagamento: forma,
+          paga_em: new Date().toISOString(),
+        };
+
+        setComandaPaga(cPaga);
+        setEtapa('comprovante');
+        onPagamentoConcluido(cPaga);
+        onToast('sucesso', `Venda concluída com sucesso! Mesa ${comanda.mesa} liberada.`);
+      }
+    } catch (err: any) {
+      const msg =
+        err instanceof CaixaSatError
+          ? err.message
+          : err?.message || 'Erro na comunicação com caixa-service (:3002).';
+      setErroSat(msg);
+      onToast('erro', msg);
+      // EARS-CXSAT-10: NÃO reseta os inputs do usuário para permitir nova tentativa
+    } finally {
+      setIsProcessandoSat(false);
+    }
   };
 
   // Remover parcela (estorno)
@@ -204,7 +283,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
 
   // Fechamento seguro do modal
   const handleTentarFechar = () => {
-    // Se há parcelas em dinheiro lançadas e a venda ainda não foi concluída
     const temDinheiroLancado = parcelas.some((p) => p.forma === 'dinheiro');
     if (etapa === 'pagamento' && temDinheiroLancado) {
       setShowConfirmacaoGaveta(true);
@@ -233,56 +311,56 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, showConfirmacaoGaveta, parcelas, etapa]);
 
-  // Concluir Venda (Baixar estoque e quitar comanda na API)
+  // Concluir Venda (Liquidação final com obtenção do recibo térmico .paper de 48 colunas)
   const handleConcluirVenda = async () => {
     if (!comanda) return;
 
     if (faltaPagarCentavos > 0) {
+      // Se não há parcelas lançadas ainda, lança a forma ativa diretamente
+      if (parcelas.length === 0) {
+        await handleLancarParcela(formaAtiva);
+        return;
+      }
       onToast('erro', `Falta quitar ${formatCurrency(faltaPagarCentavos / 100)} antes de concluir.`);
       return;
     }
 
-    // Identifica a forma de pagamento predominante para o contrato REST
-    let formaFinal: FormaPagamento = 'dinheiro';
-    if (parcelas.length === 1) {
-      formaFinal = parcelas[0].forma;
-    } else if (parcelas.length > 1) {
-      // Conta a forma com maior soma de centavos
-      const somaPorForma: Record<FormaPagamento, number> = {
-        dinheiro: 0,
-        pix: 0,
-        cartao: 0,
-      };
-      parcelas.forEach((p) => {
-        somaPorForma[p.forma] += p.valorCentavos;
-      });
-      if (somaPorForma.pix > somaPorForma.dinheiro && somaPorForma.pix >= somaPorForma.cartao) {
-        formaFinal = 'pix';
-      } else if (somaPorForma.cartao > somaPorForma.dinheiro && somaPorForma.cartao >= somaPorForma.pix) {
-        formaFinal = 'cartao';
-      } else {
-        formaFinal = 'dinheiro';
-      }
-    }
+    setIsProcessandoSat(true);
+    setErroSat(null);
 
     try {
-      const comandaQuitada = await pagarMut.mutateAsync({
-        comandaId: comanda.id,
-        dto: {
-          forma_pagamento: formaFinal,
-          documento_cliente: documentoCliente.trim() || undefined,
-        },
-      });
+      // Busca recibo canônico térmico gerado por :3002
+      let recibo = reciboOficial;
+      if (!recibo) {
+        try {
+          recibo = await caixaSatApi.obterRecibo(comanda.id);
+          setReciboOficial(recibo);
+          setPaperText(recibo.paper_text);
+        } catch {
+          // Fallback gracioso silencioso
+        }
+      }
 
-      setComandaPaga(comandaQuitada);
+      const cPaga: Comanda = {
+        ...comanda,
+        status: 'paga',
+        forma_pagamento: formaAtiva,
+        paga_em: new Date().toISOString(),
+      };
+
+      setComandaPaga(cPaga);
       setEtapa('comprovante');
-      onPagamentoConcluido(comandaQuitada);
+      onPagamentoConcluido(cPaga);
       onToast('sucesso', `Venda concluída com sucesso! Mesa ${comanda.mesa} liberada.`);
-    } catch (err) {
-      onToast(
-        'erro',
-        err instanceof ApiError ? `${err.codigo}: ${err.message}` : 'Erro ao processar pagamento.'
-      );
+    } catch (err: any) {
+      const msg =
+        err instanceof CaixaSatError
+          ? err.message
+          : err?.message || 'Erro ao concluir venda no satélite.';
+      setErroSat(msg);
+      onToast('erro', msg);
+    } finally {
+      setIsProcessandoSat(false);
     }
   };
 
@@ -316,7 +394,7 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
             </div>
             <div>
               <h1 id="titulo-modal-pagamento" className="text-xl font-black text-text leading-tight">
-                {etapa === 'comprovante' ? 'Comprovante da Venda' : 'Fechamento e Pagamento'}
+                {etapa === 'comprovante' ? 'Comprovante da Venda (.paper)' : 'Fechamento e Pagamento (:3002)'}
               </h1>
               <p className="text-xs text-text-2">
                 Mesa {comanda.mesa} · Comanda #{comanda.id} · Operador: {nomeOperador}
@@ -333,6 +411,17 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           </button>
         </div>
 
+        {/* Alerta de erro retornado pelo caixa-service com preservação de dados (EARS-CXSAT-10, AC-CXSAT-04) */}
+        {erroSat && etapa === 'pagamento' && (
+          <div
+            role="alert"
+            className="p-3 my-2 rounded-input bg-danger-soft border border-danger/30 text-danger text-xs flex items-center gap-2 animate-fadeIn font-semibold"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{erroSat}</span>
+          </div>
+        )}
+
         {/* Corpo do Modal: Se etapa === 'comprovante', renderiza o recibo */}
         {etapa === 'comprovante' && comandaPaga ? (
           <div className="flex-1 min-h-0 overflow-y-auto py-2">
@@ -341,6 +430,8 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
               parcelas={parcelas}
               nomeOperador={nomeOperador}
               documentoCliente={documentoCliente}
+              paperText={paperText || undefined}
+              reciboOficial={reciboOficial}
               onNovaVenda={() => {
                 if (onNovaVenda) {
                   onNovaVenda();
@@ -359,102 +450,112 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 <span className="text-xs font-bold uppercase text-text-2 tracking-wider">
                   Resumo da Venda
                 </span>
-                <div className="p-3.5 rounded-card bg-surface-2/60 border border-border space-y-2">
-                  <div className="flex justify-between text-xs text-text-2">
-                    <span>Subtotal</span>
-                    <span className="font-semibold text-text tabular-nums">
-                      {formatCurrency(comanda.subtotal || totalCentavos / 100)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs text-text-2">
-                    <span>Gorjeta (10%)</span>
-                    <span className="font-semibold text-text tabular-nums">
-                      {formatCurrency(comanda.taxa_servico || '0.00')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-2 border-t border-border">
-                    <span className="font-extrabold text-sm text-text">Total da Conta</span>
-                    <span className="font-black text-xl text-text tabular-nums">
-                      {formatCurrency(totalCentavos / 100)}
-                    </span>
-                  </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-text-2">Total a Pagar</span>
+                  <span className="text-2xl font-black text-text tabular-nums">
+                    {formatCurrency(totalCentavos / 100)}
+                  </span>
                 </div>
               </div>
 
-              {/* Botão de Divisão de Conta (Split Payment - C11) */}
+              {/* Barra de Progresso da Quitação */}
+              <div className="space-y-1.5 p-3 rounded-card bg-surface-2/60 border border-border">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-text-2">Progresso do Pagamento</span>
+                  <span className="text-text font-bold tabular-nums">{percentualQuitado}%</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-border overflow-hidden p-0.5">
+                  <div
+                    className="h-full rounded-full bg-success transition-all duration-300"
+                    style={{ width: `${percentualQuitado}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs pt-1">
+                  <span className="text-text-2">
+                    Pago: <strong className="text-text">{formatCurrency(jaPagoCentavos / 100)}</strong>
+                  </span>
+                  <span className="text-text-2">
+                    Falta:{' '}
+                    <strong className="text-danger font-bold">
+                      {formatCurrency(faltaPagarCentavos / 100)}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Troco Oficial Calculado pelo Satélite :3002 */}
+              {trocoOficialSat && parseFloat(trocoOficialSat) > 0 && (
+                <div
+                  className="p-3 rounded-card bg-success-soft border border-success/30 flex items-center justify-between animate-fadeIn"
+                  data-testid="troco-oficial-sat"
+                >
+                  <span className="text-xs font-bold text-success uppercase">
+                    Troco Oficial Satélite (:3002)
+                  </span>
+                  <span className="text-lg font-black text-success tabular-nums">
+                    {formatCurrency(parseFloat(trocoOficialSat))}
+                  </span>
+                </div>
+              )}
+
+              {/* Botão C11: Dividir a Conta */}
               <Button
-                type="button"
                 variant="outline"
+                fullWidth
                 leftIcon={<Users className="w-4 h-4 text-brand-text" />}
                 onClick={() => setIsSplitOpen(true)}
-                className="w-full min-h-[44px] text-xs font-bold border-brand/50 text-brand-text hover:bg-brand-soft transition-colors"
-                data-testid="btn-abrir-split"
+                className="font-bold text-xs min-h-[44px]"
               >
                 Dividir Conta (Split Payment)
               </Button>
 
-              {/* Barra de Progresso de Quitação */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-success-text">
-                    Já Pago: {formatCurrency(jaPagoCentavos / 100)}
-                  </span>
-                  <span className={faltaPagarCentavos > 0 ? 'text-danger-text' : 'text-success-text'}>
-                    {faltaPagarCentavos > 0
-                      ? `Falta: ${formatCurrency(faltaPagarCentavos / 100)}`
-                      : 'Quitado Integralmente'}
-                  </span>
+              {/* Lista de Parcelas Já Lançadas */}
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+                <div className="flex justify-between items-center text-xs font-bold text-text-2 uppercase tracking-wider">
+                  <span>Parcelas Lançadas ({parcelas.length})</span>
+                  {parcelas.length > 0 && <span>Soma: {formatCurrency(jaPagoCentavos / 100)}</span>}
                 </div>
-                <div className="w-full h-3 rounded-full bg-surface-2 border border-border overflow-hidden">
-                  <div
-                    className="h-full bg-success transition-all duration-300 rounded-full"
-                    style={{ width: `${percentualQuitado}%` }}
-                  />
-                </div>
-              </div>
 
-              {/* Histórico de Parcelas Lançadas (Splits) */}
-              <div className="flex-1 flex flex-col min-h-[140px]">
-                <span className="text-xs font-bold uppercase text-text-2 tracking-wider mb-1.5 block">
-                  Pagamentos Registrados ({parcelas.length})
-                </span>
-                <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 max-h-[190px]">
-                  {parcelas.length > 0 ? (
-                    parcelas.map((parc) => (
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[220px]">
+                  {parcelas.length === 0 ? (
+                    <div className="p-4 rounded-card border border-dashed border-border text-center text-xs text-text-2">
+                      Nenhuma parcela lançada. Selecione a forma ao lado para quitar integral ou parcialmente.
+                    </div>
+                  ) : (
+                    parcelas.map((parc, index) => (
                       <div
                         key={parc.id}
-                        className="p-2.5 rounded-input bg-surface border border-border flex items-center justify-between text-xs shadow-sm"
+                        className="p-3 rounded-input bg-surface-2/60 border border-border flex items-center justify-between"
                       >
-                        <div>
-                          <span className="font-bold text-text block capitalize">
-                            {parc.forma === 'cartao'
-                              ? `Cartão (${parc.subtipo})`
-                              : parc.forma}
-                          </span>
-                          <span className="font-extrabold text-text tabular-nums">
-                            {formatCurrency(parc.valorCentavos / 100)}
-                          </span>
-                          {parc.trocoCentavos !== undefined && parc.trocoCentavos > 0 && (
-                            <span className="text-[10px] text-success block">
-                              (Troco: {formatCurrency(parc.trocoCentavos / 100)})
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-text-2">#{index + 1}</span>
+                          <div>
+                            <span className="text-xs font-bold text-text block uppercase">
+                              {parc.forma} {parc.subtipo ? `(${parc.subtipo})` : ''}
                             </span>
-                          )}
+                            {parc.trocoCentavos !== undefined && parc.trocoCentavos > 0 && (
+                              <span className="text-[11px] text-success font-medium">
+                                Troco: {formatCurrency(parc.trocoCentavos / 100)}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <button
-                          onClick={() => handleRemoverParcela(parc.id)}
-                          className="p-1.5 text-danger hover:bg-danger-soft rounded transition-colors"
-                          title="Estornar parcela"
-                          aria-label="Remover parcela"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-text tabular-nums">
+                            {formatCurrency(parc.valorCentavos / 100)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverParcela(parc.id)}
+                            className="p-1 rounded text-text-2 hover:text-danger hover:bg-danger-soft transition-colors"
+                            aria-label={`Remover parcela ${index + 1}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))
-                  ) : (
-                    <div className="p-4 rounded-card bg-surface-2/40 border border-dashed border-border text-center text-xs text-text-2">
-                      Nenhum pagamento registrado ainda. Selecione uma forma ao lado para quitar.
-                    </div>
                   )}
                 </div>
               </div>
@@ -531,72 +632,58 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                   valorRecebidoInput={valorRecebidoInput}
                   onValorRecebidoChange={setValorRecebidoInput}
                   onConfirmar={() => handleLancarParcela('dinheiro')}
-                  disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0}
+                  disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0 || isProcessandoSat}
                 />
               )}
 
               {formaAtiva === 'pix' && (
                 <div className="p-4 rounded-card bg-surface-2/60 border border-border flex flex-col items-center text-center space-y-3">
-                  {/* QR Code Dinâmico Simulado com fundo branco fixo */}
                   <div className="p-3 rounded-card bg-white border border-border shadow-sm flex flex-col items-center">
                     <div className="w-36 h-36 bg-white flex items-center justify-center relative">
                       <QrCode className="w-32 h-32 text-[#2B2019]" />
                     </div>
                     <span className="text-[10px] text-gray-500 font-semibold mt-1">
-                      QR Code de demonstração
+                      QR Code Pix Satélite :3002
                     </span>
                   </div>
 
-                  {/* Cronômetro Regressivo */}
-                  <div className="flex items-center gap-1.5 text-xs text-brand-text font-bold bg-brand-soft px-3 py-1 rounded-full border border-brand/20">
-                    <Clock className="w-3.5 h-3.5 animate-pulse" />
-                    <span>Aguardando pagamento · expira em {formatarTempo(tempoPixRestante)}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-text-2">
+                    <Clock className="w-3.5 h-3.5 text-brand" />
+                    <span>Expira em:</span>
+                    <strong className="text-text font-mono font-bold">
+                      {formatarTempo(tempoPixRestante)}
+                    </strong>
                   </div>
 
-                  {/* Código Pix Copia-e-Cola */}
-                  <div className="w-full flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={codigoPixSimulado}
-                      className="flex-1 min-h-[40px] px-3 py-1.5 rounded-input bg-surface border border-border text-[11px] text-text-2 font-mono truncate"
-                    />
-                    <button
-                      onClick={handleCopiarPix}
-                      className="px-3 py-1.5 rounded-input bg-surface border border-border text-xs font-bold text-text hover:bg-surface-2 flex items-center gap-1 transition-colors shrink-0"
-                      title="Copiar código Pix"
-                    >
-                      {pixCopiado ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-success" />
-                          <span className="text-success">Copiado</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copiar</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    fullWidth
+                    leftIcon={pixCopiado ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                    onClick={handleCopiarPix}
+                    className="min-h-[40px] text-xs font-bold"
+                  >
+                    {pixCopiado ? 'Código Pix Copiado!' : 'Copiar Código Pix'}
+                  </Button>
 
                   <Button
                     variant="primary"
                     fullWidth
-                    leftIcon={<Check className="w-4 h-4" />}
                     onClick={() => handleLancarParcela('pix')}
-                    disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0}
+                    disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0 || isProcessandoSat}
+                    isLoading={isProcessandoSat}
+                    className="min-h-[44px] font-bold"
                   >
-                    Confirmar Recebimento Pix
+                    Confirmar Recebimento Pix ({formatCurrency(valorParcelaCentavos / 100)})
                   </Button>
                 </div>
               )}
 
               {formaAtiva === 'cartao' && (
-                <div className="p-4 rounded-card bg-surface-2/60 border border-border space-y-3">
+                <div className="p-4 rounded-card bg-surface-2/60 border border-border space-y-4">
                   <div>
-                    <label className="text-xs font-bold uppercase text-text-2 tracking-wider block mb-1.5">
-                      Tipo de Operação no POS
+                    <label className="text-xs font-bold uppercase text-text-2 tracking-wider block mb-2">
+                      Modalidade do Cartão
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -637,9 +724,10 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                     fullWidth
                     leftIcon={<CreditCard className="w-4 h-4" />}
                     onClick={() => handleLancarParcela('cartao')}
-                    disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0}
+                    disabled={valorParcelaCentavos <= 0 || faltaPagarCentavos <= 0 || isProcessandoSat}
+                    isLoading={isProcessandoSat}
                   >
-                    Confirmar Operação com Cartão
+                    Confirmar Operação com Cartão ({formatCurrency(valorParcelaCentavos / 100)})
                   </Button>
                 </div>
               )}
@@ -672,7 +760,7 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-text block">Imprimir Cupom</span>
-                      <span className="text-[11px] text-text-2">Via de consumo do cliente</span>
+                      <span className="text-[11px] text-text-2">Via térmica oficial .paper</span>
                     </div>
                     <ToggleSwitch
                       checked={imprimirViaCliente}
@@ -696,8 +784,8 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                   variant="primary"
                   size="action"
                   fullWidth
-                  disabled={faltaPagarCentavos > 0 || pagarMut.isPending}
-                  isLoading={pagarMut.isPending}
+                  disabled={faltaPagarCentavos > 0 || isProcessandoSat}
+                  isLoading={isProcessandoSat}
                   leftIcon={<Check className="w-6 h-6" />}
                   onClick={handleConcluirVenda}
                   className="font-black text-lg h-[64px]"
@@ -709,7 +797,7 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
 
                 {faltaPagarCentavos === 0 && (
                   <p className="text-[11px] text-center text-success font-semibold mt-2">
-                    Quitação integral conferida! Clique para baixar estoque e liberar a mesa.
+                    Quitação integral conferida! Clique para emitir recibo e liberar a mesa.
                   </p>
                 )}
               </div>

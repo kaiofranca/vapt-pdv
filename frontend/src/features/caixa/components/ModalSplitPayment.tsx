@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   CheckSquare,
@@ -6,12 +6,20 @@ import {
   Minus,
   CreditCard,
   Percent,
+  AlertTriangle,
+  RotateCw,
 } from 'lucide-react';
 import type { Comanda, ItemComanda } from '../../../types/api';
 import { formatCurrency } from '../../../lib/utils';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { ToggleSwitch } from '../../../components/ui/ToggleSwitch';
+import {
+  caixaSatApi,
+  CaixaSatError,
+  calcularDivisaoLocal,
+  type CotaSat,
+} from '../api/caixaSatApi';
 
 export interface ModalSplitPaymentProps {
   isOpen: boolean;
@@ -19,6 +27,8 @@ export interface ModalSplitPaymentProps {
   comanda: Comanda | null;
   /** Callback acionado quando o operador escolhe uma cota calculada para pagar */
   onAplicarCota: (valorCentavos: number, descricao: string) => void;
+  /** Callback opcional quando a divisão é validada pelo satélite */
+  onDivisaoValidada?: (cotas: CotaSat[]) => void;
 }
 
 export type TipoDivisao = 'pessoas' | 'itens';
@@ -27,24 +37,32 @@ export interface CotaPessoa {
   indice: number;
   valorCentavos: number;
   valorFormatado: string;
+  rotulo?: string;
 }
 
 /**
  * Modal C11 - Dividir a Conta (Split Payment)
  * Suporta:
- * 1. Divisão por número de pessoas (2 a 20) com conservação exata de centavos (RN19/RN24)
+ * 1. Divisão por número de pessoas (2 a 20) com conservação exata de centavos (RN19/RN24) via satélite :3002
  * 2. Divisão por itens selecionados (com ou sem taxa de 10%)
+ * 3. Degradação graciosa em caso de indisponibilidade do serviço (:3002)
  */
 export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
   isOpen,
   onClose,
   comanda,
   onAplicarCota,
+  onDivisaoValidada,
 }) => {
   const [tipoDivisao, setTipoDivisao] = useState<TipoDivisao>('pessoas');
   const [numPessoas, setNumPessoas] = useState<number>(2);
   const [itensSelecionados, setItensSelecionados] = useState<Record<number, boolean>>({});
   const [incluirTaxaItens, setIncluirTaxaItens] = useState<boolean>(true);
+
+  // Estados de integração com o satélite caixa-service (:3002)
+  const [cotasSat, setCotasSat] = useState<CotaSat[] | null>(null);
+  const [isDividindoSat, setIsDividindoSat] = useState<boolean>(false);
+  const [erroSat, setErroSat] = useState<string | null>(null);
 
   const itens: ItemComanda[] = useMemo(() => comanda?.itens || [], [comanda]);
 
@@ -55,8 +73,17 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     return Math.round(val * 100);
   }, [comanda]);
 
-  // Cálculo das cotas por pessoas com conservação de centavos
-  const cotasPessoas: CotaPessoa[] = useMemo(() => {
+  // Limpa estados ao reabrir modal
+  useEffect(() => {
+    if (isOpen) {
+      setCotasSat(null);
+      setErroSat(null);
+      setIsDividindoSat(false);
+    }
+  }, [isOpen, comanda]);
+
+  // Cálculo padrão local das cotas por pessoas com conservação de centavos (fallback imediato)
+  const cotasLocais: CotaPessoa[] = useMemo(() => {
     if (totalComandaCentavos <= 0 || numPessoas < 2) return [];
 
     const baseCentavos = Math.floor(totalComandaCentavos / numPessoas);
@@ -70,10 +97,57 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
         indice: i + 1,
         valorCentavos: cota,
         valorFormatado: formatCurrency(cota / 100),
+        rotulo: `Pessoa ${i + 1}`,
       });
     }
     return lista;
   }, [totalComandaCentavos, numPessoas]);
+
+  // Cotas exibidas: se o satélite retornou cotas, usa as cotas do satélite (:3002); senão, locais
+  const cotasExibidas: CotaPessoa[] = useMemo(() => {
+    if (cotasSat && cotasSat.length > 0) {
+      return cotasSat.map((c) => {
+        const valCentavos = Math.round(parseFloat(c.valor) * 100);
+        return {
+          indice: c.numero_cota,
+          valorCentavos: valCentavos,
+          valorFormatado: formatCurrency(parseFloat(c.valor)),
+          rotulo: c.rotulo || `Pessoa ${c.numero_cota}`,
+        };
+      });
+    }
+    return cotasLocais;
+  }, [cotasSat, cotasLocais]);
+
+  // Confirmação e cálculo de divisão pelo microsserviço satélite :3002 (RN19, EARS-CXSAT-03, EARS-CXSAT-04)
+  const handleConfirmarDivisaoSat = async () => {
+    if (!comanda) return;
+    setIsDividindoSat(true);
+    setErroSat(null);
+
+    try {
+      const res = await caixaSatApi.dividirComanda(comanda.id, {
+        tipo: 'igualitaria',
+        quantidade_pessoas: numPessoas,
+      });
+
+      setCotasSat(res.cotas);
+      if (onDivisaoValidada) {
+        onDivisaoValidada(res.cotas);
+      }
+    } catch (err: any) {
+      const msg =
+        err instanceof CaixaSatError
+          ? err.message
+          : err?.message || 'Falha ao conectar com o satélite caixa-service (:3002).';
+      setErroSat(msg);
+      // Fallback gracioso com conservação de centavos local
+      const fallback = calcularDivisaoLocal(totalComandaCentavos / 100, numPessoas);
+      setCotasSat(fallback);
+    } finally {
+      setIsDividindoSat(false);
+    }
+  };
 
   // Itens selecionados para rateio parcial
   const handleToggleItem = (itemId: number) => {
@@ -123,19 +197,21 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
 
   // Handlers do Stepper de Pessoas
   const handleDecrementarPessoas = () => {
+    setCotasSat(null);
     setNumPessoas((prev) => Math.max(2, prev - 1));
   };
 
   const handleIncrementarPessoas = () => {
+    setCotasSat(null);
     setNumPessoas((prev) => Math.min(20, prev + 1));
   };
 
   // Ao selecionar uma cota de pessoa para pagar
   const handleEscolherCotaPessoa = (cota: CotaPessoa) => {
-    onAplicarCota(
-      cota.valorCentavos,
-      `Cota ${cota.indice}/${numPessoas} (divisão igual)`
-    );
+    const rotuloCompleto = cota.rotulo
+      ? `${cota.rotulo} - Cota ${cota.indice}/${numPessoas} (divisão igual)`
+      : `Cota ${cota.indice}/${numPessoas} (divisão igual)`;
+    onAplicarCota(cota.valorCentavos, rotuloCompleto);
     onClose();
   };
 
@@ -173,6 +249,17 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
             {formatCurrency(totalComandaCentavos / 100)}
           </span>
         </div>
+
+        {/* Alerta de erro ou timeout do satélite :3002 com degradação graciosa */}
+        {erroSat && (
+          <div
+            role="alert"
+            className="p-3 rounded-input bg-danger-soft border border-danger/30 text-danger text-xs flex items-center gap-2 animate-fadeIn"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{erroSat} Usando modo de contingência local.</span>
+          </div>
+        )}
 
         {/* SegmentedControl para alternar entre Por Pessoas e Por Itens */}
         <div className="grid grid-cols-2 p-1 rounded-control bg-surface-2 border border-border">
@@ -213,7 +300,7 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
                   Número de Pessoas
                 </span>
                 <span className="text-xs text-text-2">
-                  Divisão igualitária preservando centavos exatos
+                  Divisão igualitária preservando centavos exatos (:3002)
                 </span>
               </div>
 
@@ -249,15 +336,29 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               </div>
             </div>
 
+            {/* Ação de confirmação com satélite :3002 e cabeçalho da lista */}
+            <div className="flex justify-between items-center text-xs font-bold text-text-2 uppercase tracking-wider">
+              <span>Cotas Individuais</span>
+              <div className="flex items-center gap-2">
+                <span>Soma: {formatCurrency(totalComandaCentavos / 100)}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleConfirmarDivisaoSat}
+                  isLoading={isDividindoSat}
+                  data-testid="btn-confirmar-divisao"
+                  leftIcon={<RotateCw className="w-3.5 h-3.5" />}
+                  className="min-h-[32px] text-[11px] py-1 px-2.5 font-bold"
+                >
+                  Confirmar Divisão
+                </Button>
+              </div>
+            </div>
+
             {/* Lista das Cotas Calculadas */}
             <div className="space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-text-2 uppercase tracking-wider">
-                <span>Cotas Individuais</span>
-                <span>Soma: {formatCurrency(totalComandaCentavos / 100)}</span>
-              </div>
-
               <div className="max-h-[220px] overflow-y-auto space-y-1.5 pr-1">
-                {cotasPessoas.map((cota) => (
+                {cotasExibidas.map((cota) => (
                   <div
                     key={cota.indice}
                     className="p-3 rounded-input bg-surface border border-border flex items-center justify-between hover:border-brand-edge transition-colors shadow-soft"
@@ -267,7 +368,7 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
                         {cota.indice}
                       </div>
                       <span className="font-semibold text-text text-sm">
-                        Pessoa {cota.indice}
+                        {cota.rotulo || `Pessoa ${cota.indice}`}
                       </span>
                     </div>
 
