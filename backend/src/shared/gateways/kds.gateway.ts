@@ -1,7 +1,8 @@
 /**
  * Gateway de Integração com o microsserviço satélite kds-service (:3001).
- * Responsável pelo despacho HTTP síncrono de fichas de preparo com timeout estrito de 2000ms.
- * (ADR-01, ADR-07, RN17, RN22)
+ * Responsável pelo despacho HTTP síncrono de fichas de preparo e checagem de pendências ativas
+ * com timeout estrito de 2000ms.
+ * (ADR-01, ADR-07, RN17, RN22, Story 2.2.9, RF23, C04)
  */
 
 export interface DespacharFichaInput {
@@ -24,8 +25,26 @@ export interface RespostaDespachoKds {
   erro?: string;
 }
 
+export interface ItemPendenciaKds {
+  id: number;
+  item_comanda_id: number;
+  produto_id?: number;
+  nome_produto: string;
+  setor: string;
+  status: string;
+  quantidade?: number;
+  recebido_em?: string;
+}
+
+export interface RespostaConsultaPendenciasKds {
+  possui_pendencias: boolean;
+  pendencias: ItemPendenciaKds[];
+  offline?: boolean;
+}
+
 export interface IKdsGateway {
   despacharFicha(dados: DespacharFichaInput): Promise<RespostaDespachoKds>;
+  consultarPendencias(comandaId: number): Promise<RespostaConsultaPendenciasKds>;
 }
 
 export class HttpKdsGateway implements IKdsGateway {
@@ -91,6 +110,60 @@ export class HttpKdsGateway implements IKdsGateway {
       };
     }
   }
+
+  async consultarPendencias(comandaId: number): Promise<RespostaConsultaPendenciasKds> {
+    if (process.env.KDS_SERVICE_URL === 'disabled') {
+      return { possui_pendencias: false, pendencias: [], offline: false };
+    }
+
+    const url = `${this.baseUrl}/kds/comandas/${comandaId}/pendencias`;
+    try {
+      const resposta = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(2000),
+      });
+
+      if (!resposta.ok) {
+        return { possui_pendencias: false, pendencias: [], offline: true };
+      }
+
+      const data: any = await resposta.json().catch(() => ({}));
+      const rawItens = Array.isArray(data.pendencias)
+        ? data.pendencias
+        : Array.isArray(data.itens)
+          ? data.itens
+          : [];
+
+      const pendencias: ItemPendenciaKds[] = rawItens.map((item: any) => ({
+        id: Number(item.id ?? item.ficha_id ?? 0),
+        item_comanda_id: Number(item.item_comanda_id ?? 0),
+        produto_id: Number(item.produto_id ?? 0),
+        nome_produto: String(item.nome_produto ?? ''),
+        setor: String(item.setor ?? item.estacao ?? 'cozinha'),
+        status: String(item.status ?? 'recebido'),
+        quantidade: item.quantidade !== undefined ? Number(item.quantidade) : 1,
+        recebido_em: String(item.recebido_em ?? ''),
+      }));
+
+      const itensPendentes = data.pendencias
+        ? pendencias
+        : pendencias.filter((it) => it.status !== 'entregue' && it.status !== 'cancelado');
+
+      const possui_pendencias =
+        data.possui_pendencias !== undefined
+          ? Boolean(data.possui_pendencias)
+          : itensPendentes.length > 0;
+
+      return {
+        possui_pendencias,
+        pendencias: itensPendentes,
+        offline: false,
+      };
+    } catch {
+      return { possui_pendencias: false, pendencias: [], offline: true };
+    }
+  }
 }
 
 export class FakeKdsGateway implements IKdsGateway {
@@ -98,6 +171,7 @@ export class FakeKdsGateway implements IKdsGateway {
   public simularTimeout = false;
   public simularErroConexao = false;
   public proximoStatusRetorno = 201;
+  public pendenciasPorComanda = new Map<number, RespostaConsultaPendenciasKds>();
 
   async despacharFicha(dados: DespacharFichaInput): Promise<RespostaDespachoKds> {
     if (this.simularTimeout) {
@@ -120,5 +194,19 @@ export class FakeKdsGateway implements IKdsGateway {
       statusCode: this.proximoStatusRetorno,
       fichaId: this.fichasDespachadas.length,
     };
+  }
+
+  async consultarPendencias(comandaId: number): Promise<RespostaConsultaPendenciasKds> {
+    if (this.simularTimeout || this.simularErroConexao) {
+      return { possui_pendencias: false, pendencias: [], offline: true };
+    }
+
+    return (
+      this.pendenciasPorComanda.get(comandaId) ?? {
+        possui_pendencias: false,
+        pendencias: [],
+        offline: false,
+      }
+    );
   }
 }
