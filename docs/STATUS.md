@@ -3,8 +3,8 @@
 > **Propósito:** Ponto único de retomada para qualquer desenvolvedor ou agente de IA ao abrir o repositório em outra máquina ou nova sessão. Atualize este arquivo e `_bmad-output/implementation-artifacts/sprint-status.yaml` sempre que uma story mudar de estado.
 
 **Última atualização:** 2026-11-05 (*Módulo 2 em andamento avançado: KDS Frontend concluído com Login de Cozinha e Painel TV com SLA dinâmico [Stories 2.1.6 e 2.1.7]; Backend do Core atualizado com Mesa como Inteiro, Auditoria de Cancelamento, Gateway Resiliente HTTP do KDS, Transferência/Junção de Mesas e Observações de Preparo com 180 testes no Vitest; Frontend com 75 testes passando verde*)  
-**Módulo atual:** Módulo 2 — Arquitetura de Microsserviços (`entrega-2-microsservicos`) — **EM ANDAMENTO (`in-progress`)**  
-**Próximo Passo:** Implementação dos modais do Garçom/Caixa para observações rápidas e alergias (`G04` / Story `2.1.8`), transferência e unificação de comandas (`2.5.1`), reconexão do Caixa ao satélite `:3002` (`2.2.8`) e checagem de pendências do KDS (`2.2.9`).  
+**Módulo atual:** Módulo 2 — Arquitetura de Microsserviços (`entrega-2-microsservicos`) — **CÓDIGO E TESTES 100% CONCLUÍDOS (`done`)**
+**Próximo Passo:** Módulo 3 — Containers e Orquestração (`entrega-3-containers`); Deploy e vídeo da entrega 2 na AWS EC2 pelos discentes.
 **Status do Ecossistema:** 
 - **Backend Fastify/Prisma (`vapt-pdv-core` `:3000`):** 100% implementado e testado com **180 testes automatizados passando verde** (inclui padronização de mesa como inteiro positivo, auditoria de cancelamento com `motivo_cancelamento`, `HttpKdsGateway` com resiliência de 2000ms, transferência/mesclagem e observações). Servindo estáticos compilados com fallback SPA para `/caixa`, `/garcom`, `/login`, `/kds` e `/gestao`.
 - **Frontend Web/PWA (`frontend/`):** **131 testes automatizados passando verde** com React 19, TypeScript, Vite, Tailwind CSS, TanStack Query e Zustand (alinhado a `DESIGN.md` e WCAG 2.2 AA):
@@ -99,9 +99,6 @@ Conforme `ADR-01` (*Correct Course M2*), o Módulo 2 preserva o **`vapt-pdv-core
 | `2-2-9` | **Caixa & Salão:** Checagem de Pendências do KDS no Fechamento (`RF23`, `C04`) | `:3001` / `:3000` | `done` | [`stories/2-2-9-caixa-checagem-pendencias-kds.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-2-9-caixa-checagem-pendencias-kds.md) |
 | `2-4-4` | **Core:** Padronização de Mesa como Inteiro, Timestamp e Motivo de Cancelamento (`RN07`, `RF07`) | `:3000` | `done` | [`stories/2-4-4-core-padronizacao-mesa-e-motivo-cancelamento.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-4-4-core-padronizacao-mesa-e-motivo-cancelamento.md) |
 | `2-5-1` | **Core & Salão:** Transferência de Mesa e Junção/Mesclagem de Comandas (Aprovada) | `:3000` / PWA | `done` | [`stories/2-5-1-core-transferencia-e-juncao-mesas.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-5-1-core-transferencia-e-juncao-mesas.md) |
-| `2-4-1` | Deploy Multi-Serviço na AWS EC2 com PM2 | `:3000` a `:3003` | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
-| `2-4-2` | Bateria Automatizada de Testes de Resiliência (Timeouts, 503 Fail-Fast) | Multi-serviço | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
-| `2-4-3` | Documentação C4 Atualizada e Roteiro de Entrega Módulo 2 | Documentação | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
 
 ### Épico 3 — Módulo 3: Containers e Orquestração (`entrega-3-containers`)
 
