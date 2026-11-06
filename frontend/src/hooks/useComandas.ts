@@ -59,18 +59,20 @@ export function useAbrirComanda() {
   });
 }
 
-export function useLancarItem() {
+export function useAdicionarItemComanda() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ comandaId, dto }: { comandaId: number; dto: LancarItemDto }) =>
-      comandasApi.lancarItem(comandaId, dto),
+      comandasApi.adicionarItemComanda(comandaId, dto),
     onSuccess: (_, { comandaId }) => {
       queryClient.invalidateQueries({ queryKey: COMANDAS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: [...COMANDAS_QUERY_KEY, comandaId] });
     },
   });
 }
+
+export const useLancarItem = useAdicionarItemComanda;
 
 export function useLancarItensLote() {
   const queryClient = useQueryClient();
@@ -145,14 +147,57 @@ export function usePagarComanda() {
   });
 }
 
+export interface CancelarComandaParametros {
+  comandaId: number;
+  motivo?: string;
+}
+
 export function useCancelarComanda() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (comandaId: number) => comandasApi.cancelar(comandaId),
-    onSuccess: (comandaCancelada, comandaId) => {
+    mutationFn: (args: number | CancelarComandaParametros) => {
+      if (typeof args === 'number') {
+        return comandasApi.cancelar(args);
+      }
+      return comandasApi.cancelar(args.comandaId, args.motivo);
+    },
+    onSuccess: (comandaCancelada, args) => {
+      const comandaId = typeof args === 'number' ? args : args.comandaId;
       queryClient.invalidateQueries({ queryKey: COMANDAS_QUERY_KEY });
       queryClient.setQueryData([...COMANDAS_QUERY_KEY, comandaId], comandaCancelada);
+    },
+  });
+}
+
+export function useTransferirMesa() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ comandaId, novaMesa }: { comandaId: number; novaMesa: number | string }) =>
+      comandasApi.transferirMesa(comandaId, novaMesa),
+    onSuccess: (comandaAtualizada, { comandaId }) => {
+      queryClient.invalidateQueries({ queryKey: COMANDAS_QUERY_KEY });
+      queryClient.setQueryData([...COMANDAS_QUERY_KEY, comandaId], comandaAtualizada);
+    },
+  });
+}
+
+export function useMesclarComandas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      comandaDestinoId,
+      comandaOrigemId,
+    }: {
+      comandaDestinoId: number;
+      comandaOrigemId: number;
+    }) => comandasApi.mesclarComandas(comandaDestinoId, comandaOrigemId),
+    onSuccess: (comandaAtualizada, { comandaDestinoId, comandaOrigemId }) => {
+      queryClient.invalidateQueries({ queryKey: COMANDAS_QUERY_KEY });
+      queryClient.setQueryData([...COMANDAS_QUERY_KEY, comandaDestinoId], comandaAtualizada);
+      queryClient.invalidateQueries({ queryKey: [...COMANDAS_QUERY_KEY, comandaOrigemId] });
     },
   });
 }

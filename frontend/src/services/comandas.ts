@@ -10,6 +10,9 @@ import type {
   ListarComandasFiltros,
 } from '../types/api';
 
+export const adicionarItemComanda = (comandaId: number, dto: LancarItemDto) =>
+  apiClient.post<ItemComanda>(`/comandas/${comandaId}/itens`, dto);
+
 export const comandasApi = {
   listar: (filtros?: ListarComandasFiltros) =>
     apiClient.get<Comanda[]>('/comandas', filtros as Record<string, string | number | boolean | undefined>),
@@ -22,6 +25,9 @@ export const comandasApi = {
 
   lancarItem: (comandaId: number, dto: LancarItemDto) =>
     apiClient.post<ItemComanda>(`/comandas/${comandaId}/itens`, dto),
+
+  adicionarItemComanda: (comandaId: number, dto: LancarItemDto) =>
+    adicionarItemComanda(comandaId, dto),
 
   lancarItensLote: async (comandaId: number, itens: LancarItemDto[]): Promise<ItemComanda[]> => {
     const resultados: ItemComanda[] = [];
@@ -47,9 +53,23 @@ export const comandasApi = {
   cancelar: (comandaId: number, motivo?: string) =>
     apiClient.post<Comanda>(`/comandas/${comandaId}/cancelar`, motivo ? { motivo } : {}),
 
+  cancelarComanda: (comandaId: number, motivo?: string) =>
+    apiClient.post<Comanda>(`/comandas/${comandaId}/cancelar`, motivo ? { motivo } : {}),
+
   transferirMesa: (comandaId: number, novaMesa: number | string) =>
-    apiClient.patch<Comanda>(`/comandas/${comandaId}/transferir-mesa`, { nova_mesa: novaMesa }),
+    apiClient.patch<Comanda>(`/comandas/${comandaId}/transferir-mesa`, {
+      nova_mesa: typeof novaMesa === 'string' && /^\d+$/.test(novaMesa.trim()) ? Number(novaMesa.trim()) : novaMesa,
+    }),
 
   mesclar: (comandaDestinoId: number, comandaOrigemId: number) =>
     apiClient.post<Comanda>(`/comandas/${comandaDestinoId}/mesclar`, { comanda_origem_id: comandaOrigemId }),
+
+  mesclarComandas: (comandaDestinoId: number, comandaOrigemId: number) =>
+    apiClient.post<Comanda>(`/comandas/${comandaDestinoId}/mesclar`, { comanda_origem_id: comandaOrigemId }),
 };
+
+export const transferirMesa = comandasApi.transferirMesa;
+export const mesclarComandas = comandasApi.mesclarComandas;
+
+export const cancelarComanda = (comandaId: number, motivo?: string) =>
+  comandasApi.cancelar(comandaId, motivo);

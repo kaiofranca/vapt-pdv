@@ -260,3 +260,21 @@ export interface PendenciasKdsResposta {
     status: string;
   }>;
 }
+
+
+export interface ItemPendenciaKds {
+  id: number;
+  item_comanda_id: number;
+  produto_id: number;
+  nome_produto: string;
+  setor: string;
+  status: string;
+  recebido_em: string;
+  quantidade?: number;
+}
+
+export interface RespostaChecagemPendenciasKds {
+  possui_pendencias: boolean;
+  pendencias: ItemPendenciaKds[];
+  offline?: boolean;
+}

@@ -10,19 +10,29 @@ import {
   Flame,
   CheckCircle2,
   Trash2,
+  FileText,
 } from 'lucide-react';
 import { ProdutoStepperCard } from './ProdutoStepperCard';
+import { BottomSheetObservacao } from './BottomSheetObservacao';
 import { ModalCancelarComanda } from '../../../components/ui/ModalCancelarComanda';
+import { ModalPendenciasKds, type ItemPendenciaModal } from './ModalPendenciasKds';
+import { obterPendenciasComanda } from '../../../services/kds';
 import { useComanda, useFecharComanda, useLancarItem, useCancelarComanda } from '../../../hooks/useComandas';
 import { useProdutosDisponiveis } from '../../../hooks/useProdutos';
 import { formatCurrency, formatElapsedTime } from '../../../lib/utils';
 import { ApiError } from '../../../services/apiClient';
+import type { Produto } from '../../../types/api';
 
 export interface ComandaMesaViewProps {
   comandaId: number;
   garcomNome?: string;
   onVoltar: () => void;
   onToast: (tipo: 'sucesso' | 'erro', msg: string) => void;
+}
+
+interface ItemCarrinhoNovo {
+  quantidade: number;
+  observacao?: string;
 }
 
 export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
@@ -51,12 +61,19 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
   const [busca, setBusca] = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState<string>('todos');
 
-  // Carrinho local de novos itens a lançar: Map<produtoId, quantidade>
-  const [carrinhoNovos, setCarrinhoNovos] = useState<Map<number, number>>(new Map());
+  // Carrinho local de novos itens a lançar: Map<produtoId, ItemCarrinhoNovo>
+  const [carrinhoNovos, setCarrinhoNovos] = useState<Map<number, ItemCarrinhoNovo>>(new Map());
+
+  // Bottom Sheet G04 de Observação e Alergia
+  const [produtoObservacao, setProdutoObservacao] = useState<Produto | null>(null);
+  const [isObservacaoOpen, setIsObservacaoOpen] = useState(false);
 
   // Menu de opções rápidas (...)
   const [menuOpcoesAberto, setMenuOpcoesAberto] = useState(false);
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
+  const [isModalPendenciasOpen, setIsModalPendenciasOpen] = useState(false);
+  const [pendenciasKds, setPendenciasKds] = useState<ItemPendenciaModal[]>([]);
+  const [isChecandoPendenciasKds, setIsChecandoPendenciasKds] = useState(false);
   const [isEnviandoItens, setIsEnviandoItens] = useState(false);
 
   // Extrai lista única de categorias
@@ -82,14 +99,22 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
 
   // Quantidade de um produto no carrinho de novos itens
   const getQtdNoCarrinho = (produtoId: number): number => {
-    return carrinhoNovos.get(produtoId) || 0;
+    return carrinhoNovos.get(produtoId)?.quantidade || 0;
+  };
+
+  // Observação de um produto no carrinho de novos itens
+  const getObsNoCarrinho = (produtoId: number): string | undefined => {
+    return carrinhoNovos.get(produtoId)?.observacao;
   };
 
   const handleIncrementar = (produtoId: number) => {
     setCarrinhoNovos((prev) => {
       const mapa = new Map(prev);
-      const atual = mapa.get(produtoId) || 0;
-      mapa.set(produtoId, atual + 1);
+      const atual = mapa.get(produtoId) || { quantidade: 0 };
+      mapa.set(produtoId, {
+        ...atual,
+        quantidade: atual.quantidade + 1,
+      });
       return mapa;
     });
   };
@@ -97,14 +122,40 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
   const handleDecrementar = (produtoId: number) => {
     setCarrinhoNovos((prev) => {
       const mapa = new Map(prev);
-      const atual = mapa.get(produtoId) || 0;
-      if (atual <= 1) {
+      const atual = mapa.get(produtoId);
+      if (!atual || atual.quantidade <= 1) {
         mapa.delete(produtoId);
       } else {
-        mapa.set(produtoId, atual - 1);
+        mapa.set(produtoId, {
+          ...atual,
+          quantidade: atual.quantidade - 1,
+        });
       }
       return mapa;
     });
+  };
+
+  const handleAbrirObservacao = (produto: Produto) => {
+    setProdutoObservacao(produto);
+    setIsObservacaoOpen(true);
+  };
+
+  const handleConfirmarObservacao = (obs: string) => {
+    if (produtoObservacao) {
+      const prodId = produtoObservacao.id;
+      setCarrinhoNovos((prev) => {
+        const mapa = new Map(prev);
+        const atual = mapa.get(prodId) || { quantidade: 0 };
+        const novaQtd = atual.quantidade > 0 ? atual.quantidade : 1;
+        mapa.set(prodId, {
+          quantidade: novaQtd,
+          observacao: obs.trim() ? obs.trim() : undefined,
+        });
+        return mapa;
+      });
+    }
+    setIsObservacaoOpen(false);
+    setProdutoObservacao(null);
   };
 
   // Resumo do carrinho de novos itens
@@ -112,11 +163,11 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     let totalQtd = 0;
     let totalValor = 0;
 
-    carrinhoNovos.forEach((qtd, prodId) => {
+    carrinhoNovos.forEach((item, prodId) => {
       const prod = produtos.find((p) => p.id === prodId);
       if (prod) {
-        totalQtd += qtd;
-        totalValor += Number(prod.preco) * qtd;
+        totalQtd += item.quantidade;
+        totalValor += Number(prod.preco) * item.quantidade;
       }
     });
 
@@ -129,10 +180,14 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     setIsEnviandoItens(true);
 
     try {
-      for (const [prodId, qtd] of carrinhoNovos.entries()) {
+      for (const [prodId, item] of carrinhoNovos.entries()) {
         await lancarItemMut.mutateAsync({
           comandaId,
-          dto: { produto_id: prodId, quantidade: qtd },
+          dto: {
+            produto_id: prodId,
+            quantidade: item.quantidade,
+            observacao: item.observacao || null,
+          },
         });
       }
 
@@ -151,8 +206,7 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     }
   };
 
-  // Confirmar e avisar o caixa (Fastify POST /comandas/:id/fechar)
-  const handleConfirmarPedirConta = async () => {
+  const executarFechamento = async () => {
     try {
       await fecharComandaMut.mutateAsync({
         comandaId,
@@ -168,6 +222,32 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         onToast('erro', 'Erro ao pedir a conta.');
       }
     }
+  };
+
+  // Confirmar e avisar o caixa (Fastify POST /comandas/:id/fechar) com checagem KDS
+  const handleConfirmarPedirConta = async () => {
+    setIsChecandoPendenciasKds(true);
+    try {
+      const res = await obterPendenciasComanda(comandaId);
+      if (res.possui_pendencias && res.pendencias.length > 0) {
+        setPendenciasKds(
+          res.pendencias.map((p) => ({
+            id: p.id,
+            nome_produto: p.nome_produto,
+            quantidade: p.quantidade,
+            setor: p.setor,
+            status: p.status,
+          }))
+        );
+        setIsModalPendenciasOpen(true);
+        return;
+      }
+    } catch {
+      // Degradação suave em caso de falha de rede/timeout
+    } finally {
+      setIsChecandoPendenciasKds(false);
+    }
+    await executarFechamento();
   };
 
   // Cancelar comanda (chamado somente após a dupla validação no modal)
@@ -272,10 +352,18 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           <div className="divide-y divide-border/60">
             {itensEnviados.map((item) => (
               <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                <span className="font-bold text-text">
-                  {item.nome_copiado} · {item.quantidade}x
-                </span>
-                <span className="font-extrabold text-text">
+                <div className="min-w-0 pr-2">
+                  <span className="font-bold text-text block">
+                    {item.nome_copiado} · {item.quantidade}x
+                  </span>
+                  {item.observacao && (
+                    <p className="text-[11px] text-brand-text italic flex items-center gap-1 mt-0.5">
+                      <FileText className="w-3 h-3 text-brand shrink-0" />
+                      <span>{item.observacao}</span>
+                    </p>
+                  )}
+                </div>
+                <span className="font-extrabold text-text shrink-0">
                   {formatCurrency(Number(item.preco_copiado) * item.quantidade)}
                 </span>
               </div>
@@ -339,10 +427,18 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           <div className="divide-y divide-border/60">
             {itensEnviados.map((item) => (
               <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                <span className="font-bold text-text">
-                  {item.nome_copiado} · {item.quantidade}x
-                </span>
-                <span className="font-black text-text">
+                <div className="min-w-0 pr-2">
+                  <span className="font-bold text-text block">
+                    {item.nome_copiado} · {item.quantidade}x
+                  </span>
+                  {item.observacao && (
+                    <p className="text-[11px] text-brand-text italic flex items-center gap-1 mt-0.5">
+                      <FileText className="w-3 h-3 text-brand shrink-0" />
+                      <span>{item.observacao}</span>
+                    </p>
+                  )}
+                </div>
+                <span className="font-black text-text shrink-0">
                   {formatCurrency(Number(item.preco_copiado) * item.quantidade)}
                 </span>
               </div>
@@ -533,14 +629,21 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
                   key={item.id}
                   className="bg-surface border border-border rounded-[20px] p-4 flex items-center justify-between shadow-soft"
                 >
-                  <div>
+                  <div className="min-w-0 pr-2">
                     <h4 className="font-extrabold text-sm text-text leading-snug">
                       {item.nome_copiado} · {item.quantidade}x
                     </h4>
-                    <p className="text-xs text-text-2 mt-0.5">Lançado na comanda</p>
+                    {item.observacao ? (
+                      <p className="text-xs text-brand-text italic flex items-center gap-1.5 mt-1 break-words">
+                        <FileText className="w-3.5 h-3.5 text-brand shrink-0" />
+                        <span>{item.observacao}</span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-text-2 mt-0.5">Lançado na comanda</p>
+                    )}
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <span className="bg-success-soft text-success text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 mb-1">
                       <CheckCircle2 className="w-3 h-3" />
                       Gravado
@@ -624,8 +727,10 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
                   key={prod.id}
                   produto={prod}
                   quantidade={getQtdNoCarrinho(prod.id)}
+                  observacao={getObsNoCarrinho(prod.id)}
                   onIncrementar={() => handleIncrementar(prod.id)}
                   onDecrementar={() => handleDecrementar(prod.id)}
+                  onAbrirObservacao={() => handleAbrirObservacao(prod)}
                 />
               ))}
             </div>
@@ -668,6 +773,36 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         isLoading={cancelarComandaMut.isPending}
         onClose={() => setModalCancelarAberto(false)}
         onConfirmar={handleCancelarComanda}
+      />
+
+      {/* Bottom Sheet G04 de Observação e Alergia */}
+      <BottomSheetObservacao
+        isOpen={isObservacaoOpen}
+        produtoNome={produtoObservacao?.nome || ''}
+        observacaoInicial={produtoObservacao ? getObsNoCarrinho(produtoObservacao.id) || '' : ''}
+        onConfirmar={handleConfirmarObservacao}
+        onClose={() => {
+          setIsObservacaoOpen(false);
+          setProdutoObservacao(null);
+        }}
+      />
+    
+      {/* Diálogo C04: Conflito de Encerramento (KDS :3001) */}
+      <ModalPendenciasKds
+        isOpen={isModalPendenciasOpen}
+        mesa={comanda?.mesa}
+        pendencias={pendenciasKds}
+        isLoading={fecharComandaMut.isPending || isChecandoPendenciasKds}
+        onAguardarEntrega={() => {
+          setIsModalPendenciasOpen(false);
+          setPendenciasKds([]);
+          setModoFechamento(false);
+        }}
+        onFecharMesmoAssim={async () => {
+          setIsModalPendenciasOpen(false);
+          setPendenciasKds([]);
+          await executarFechamento();
+        }}
       />
     </div>
   );
