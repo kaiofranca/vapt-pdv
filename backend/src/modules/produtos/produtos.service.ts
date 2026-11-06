@@ -8,6 +8,7 @@ import {
   DisponibilidadeProduto,
   FiltrosListagemProdutos,
   ProdutoEntidade,
+  ReposicaoEstoqueResultado,
 } from './produtos.entity';
 import { IProdutosRepository } from './produtos.repository';
 
@@ -51,6 +52,7 @@ export interface ServicoProdutos {
   inativar(id: number): Promise<ProdutoEntidade>;
   consultarDisponibilidade(id: number, quantidade?: number): Promise<DisponibilidadeProduto>;
   baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void>;
+  repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado>;
 }
 
 /**
@@ -243,6 +245,8 @@ export class ProdutosService implements ServicoProdutos {
 
   async baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void> {
     if (
+      !dados ||
+      typeof dados !== 'object' ||
       !Number.isFinite(dados.comanda_id) ||
       !Number.isInteger(dados.comanda_id) ||
       dados.comanda_id < 1
@@ -258,6 +262,44 @@ export class ProdutosService implements ServicoProdutos {
       });
     }
 
+    for (let i = 0; i < dados.itens.length; i++) {
+      const item = dados.itens[i];
+      if (
+        !item ||
+        typeof item !== 'object' ||
+        !Number.isFinite(item.produto_id) ||
+        !Number.isInteger(item.produto_id) ||
+        item.produto_id < 1
+      ) {
+        throw ErroDominio.validacao(`Identificador de produto inválido no item ${i}.`, {
+          [`itens.${i}.produto_id`]: 'O ID do produto deve ser um inteiro maior ou igual a 1.',
+        });
+      }
+
+      if (
+        !Number.isFinite(item.quantidade) ||
+        !Number.isInteger(item.quantidade) ||
+        item.quantidade < 1
+      ) {
+        throw ErroDominio.validacao(`Quantidade inválida no item ${i}.`, {
+          [`itens.${i}.quantidade`]: 'A quantidade deve ser um inteiro maior ou igual a 1.',
+        });
+      }
+    }
+
     return this.repository.baixarEstoque(dados, tx);
+  }
+
+  async repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado> {
+    if (!Number.isInteger(quantidade) || quantidade < 1) {
+      throw ErroDominio.validacao(
+        'A quantidade a repor deve ser um número inteiro maior ou igual a 1.',
+        {
+          quantidade: 'Valor inválido. Informe um número inteiro positivo.',
+        },
+      );
+    }
+
+    return this.repository.reporEstoque(id, quantidade, motivo);
   }
 }

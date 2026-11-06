@@ -123,6 +123,7 @@ erDiagram
         timestamptz fechada_em "NULLABLE"
         timestamptz paga_em "NULLABLE"
         timestamptz cancelada_em "NULLABLE"
+        varchar(240) motivo_cancelamento "NULLABLE (ex.: 'Cliente desistiu')"
     }
 
     ITENS_COMANDA {
@@ -346,7 +347,8 @@ CREATE TABLE comandas (
     aberta_em TIMESTAMPTZ NOT NULL DEFAULT now(),
     fechada_em TIMESTAMPTZ,
     paga_em TIMESTAMPTZ,
-    cancelada_em TIMESTAMPTZ
+    cancelada_em TIMESTAMPTZ,
+    motivo_cancelamento VARCHAR(240)
 );
 
 -- 4. Tabela de Itens da Comanda (Snapshot Imutável de Nome e Preço - RN04)

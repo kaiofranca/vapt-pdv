@@ -1,0 +1,40 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model FichaPreparo {
+  id            Int       @id @default(autoincrement())
+  comandaId     Int       @map("comanda_id")
+  itemComandaId Int       @unique @map("item_comanda_id")
+  mesa          Int
+  garcomId      Int       @map("garcom_id")
+  nomeGarcom    String?   @map("nome_garcom") @db.VarChar(120)
+  setor         String    @db.VarChar(30)
+  produtoId     Int       @map("produto_id")
+  nomeProduto   String    @map("nome_produto") @db.VarChar(140)
+  quantidade    Int
+  observacao    String?   @db.VarChar(240)
+  status        String    @default("recebido") @db.VarChar(20)
+  recebidoEm    DateTime  @default(now()) @map("recebido_em") @db.Timestamptz(6)
+  iniciadoEm    DateTime? @map("iniciado_em") @db.Timestamptz(6)
+  prontoEm      DateTime? @map("pronto_em") @db.Timestamptz(6)
+  entregueEm    DateTime? @map("entregue_em") @db.Timestamptz(6)
+
+  @@index([setor, status, recebidoEm(sort: Asc)], map: "fichas_preparo_fila_idx")
+  @@index([comandaId, status], map: "fichas_preparo_comanda_idx")
+  @@map("fichas_preparo")
+}
+
+model EventoProcessado {
+  eventoId     String   @id @map("evento_id") @db.Uuid
+  evento       String   @db.VarChar(60)
+  processadoEm DateTime @default(now()) @map("processado_em") @db.Timestamptz(6)
+
+  @@map("eventos_processados")
+}
+

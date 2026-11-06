@@ -1,20 +1,24 @@
 import React from 'react';
-import { Minus, Plus, Utensils, Beer, Coffee, IceCream, Pizza } from 'lucide-react';
+import { Minus, Plus, Utensils, Beer, Coffee, IceCream, Pizza, Pencil, FileText } from 'lucide-react';
 import { formatCurrency, cn } from '../../../lib/utils';
 import type { Produto } from '../../../types/api';
 
 export interface ProdutoStepperCardProps {
   produto: Produto;
   quantidade: number;
+  observacao?: string;
   onIncrementar: () => void;
   onDecrementar: () => void;
+  onAbrirObservacao?: () => void;
 }
 
 export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
   produto,
   quantidade,
+  observacao,
   onIncrementar,
   onDecrementar,
+  onAbrirObservacao,
 }) => {
   const isEsgotado = !produto.ativo || produto.estoque <= 0;
 
@@ -69,11 +73,34 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
           <div className="text-sm font-black text-text mt-0.5">
             {formatCurrency(produto.preco)}
           </div>
+          {observacao && (
+            <p className="text-[11px] text-brand-text italic truncate flex items-center gap-1 mt-1 font-medium max-w-[180px] sm:max-w-[220px]" title={observacao}>
+              <FileText className="w-3 h-3 text-brand shrink-0" />
+              <span className="truncate">{observacao}</span>
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Lado Direito: Stepper Âmbar ou Botão [+] Redondo (Fiel a G03) */}
-      <div className="shrink-0">
+      {/* Lado Direito: Ações (Observação + Stepper Âmbar ou Botão [+] Redondo) */}
+      <div className="shrink-0 flex items-center gap-2">
+        {!isEsgotado && onAbrirObservacao && (
+          <button
+            type="button"
+            onClick={onAbrirObservacao}
+            aria-label={observacao ? 'Editar observação' : 'Adicionar observação'}
+            className={cn(
+              'w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-all shadow-soft active:scale-95',
+              observacao
+                ? 'bg-brand-soft border-brand text-brand-text ring-1 ring-brand/30'
+                : 'bg-surface border-border text-text-2 hover:text-text hover:bg-surface-2'
+            )}
+            title={observacao ? `Observação: ${observacao}` : 'Adicionar observação'}
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+
         {isEsgotado ? (
           <span className="text-[11px] font-bold text-danger bg-danger-soft px-2 py-1 rounded-full">
             Esgotado
@@ -106,7 +133,7 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
           <button
             type="button"
             onClick={onIncrementar}
-            className="w-10 h-10 rounded-full border border-border bg-surface hover:bg-surface-2 flex items-center justify-center text-text active:scale-95 transition-all shadow-soft"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-border bg-surface hover:bg-surface-2 flex items-center justify-center text-text active:scale-95 transition-all shadow-soft"
             aria-label="Adicionar item"
           >
             <Plus className="w-4 h-4" />

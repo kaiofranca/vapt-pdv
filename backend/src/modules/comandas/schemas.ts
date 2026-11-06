@@ -34,6 +34,11 @@ export const ItemComandaSchema = Type.Object(
       description: 'Preço unitário congelado formatado com 2 casas decimais (ex.: "12.50")',
     }),
     quantidade: Type.Integer({ description: 'Quantidade lançada do item' }),
+    observacao: Type.Optional(
+      Type.Union([Type.String(), Type.Null()], {
+        description: 'Observações de preparo ou restrições alimentares/alergias (máx. 240 caracteres)',
+      }),
+    ),
   },
   { description: 'Item pertencente a uma comanda' },
 );
@@ -43,7 +48,7 @@ export type ItemComandaTipo = Static<typeof ItemComandaSchema>;
 export const ComandaSchema = Type.Object(
   {
     id: Type.Integer({ description: 'ID único da comanda' }),
-    mesa: Type.String({ description: 'Identificador ou número da mesa' }),
+    mesa: Type.Integer({ description: 'Número da mesa (inteiro positivo >= 1)' }),
     nome_cliente: Type.Union([Type.String(), Type.Null()], {
       description: 'Nome do cliente (opcional)',
     }),
@@ -71,9 +76,34 @@ export const ComandaSchema = Type.Object(
     paga_em: Type.Union([Type.String({ format: 'date-time' }), Type.Null()], {
       description: 'Data e hora de pagamento da comanda em UTC (null enquanto não paga)',
     }),
+    cancelada_em: Type.Optional(
+      Type.Union([Type.String({ format: 'date-time' }), Type.Null()], {
+        description: 'Data e hora de cancelamento da comanda em UTC',
+      }),
+    ),
+    motivo_cancelamento: Type.Optional(
+      Type.Union([Type.String(), Type.Null()], {
+        description: 'Justificativa textual do cancelamento da comanda',
+      }),
+    ),
     itens: Type.Array(ItemComandaSchema, {
       description: 'Itens lançados na comanda',
     }),
+    integracao_caixa_pendente: Type.Optional(
+      Type.Boolean({
+        description: 'Indica se a sincronização com o caixa-service falhou e está pendente',
+      }),
+    ),
+    integracao_gestao_pendente: Type.Optional(
+      Type.Boolean({
+        description: 'Indica se a sincronização com o gestao-service falhou e está pendente',
+      }),
+    ),
+    avisos: Type.Optional(
+      Type.Array(Type.String(), {
+        description: 'Lista de avisos operacionais, como falha de sincronização com satélites',
+      }),
+    ),
   },
   { description: 'Dados completos da comanda' },
 );
@@ -89,9 +119,8 @@ export const MesaEntradaSchema = Type.Union(
     }),
     Type.String({
       minLength: 1,
-      pattern:
-        '^\\s*(?!$)(?![+-]?(?:0+(?:\\.\\d+)?|\\d+\\.\\d+)\\s*$)(?!-\\d+\\s*$)\\S(?:.{0,48}\\S)?\\s*$',
-      description: 'Identificador da mesa em texto não vazio (máx. 50 caracteres após trim)',
+      pattern: '^\\s*[1-9]\\d*\\s*$',
+      description: 'Identificador da mesa como string numérica inteira positiva',
     }),
   ],
   { description: 'Identificador ou número da mesa' },
@@ -129,11 +158,10 @@ export const ListarComandasQuerySchema = Type.Object(
   {
     status: Type.Optional(StatusComandaSchema),
     mesa: Type.Optional(
-      Type.String({
-        minLength: 1,
-        pattern: '^\\s*\\S(?:.{0,48}\\S)?\\s*$',
-        description: 'Filtrar pelo identificador da mesa',
-      }),
+      Type.Union([
+        Type.Integer({ minimum: 1 }),
+        Type.String({ minLength: 1 }),
+      ], { description: 'Filtrar pelo número da mesa' }),
     ),
     de: Type.Optional(
       Type.String({
@@ -193,6 +221,12 @@ export const LancarItemBodySchema = Type.Object(
       maximum: 2147483647,
       description: 'Quantidade do produto a ser lançada (inteiro >= 1)',
     }),
+    observacao: Type.Optional(
+      Type.String({
+        maxLength: 240,
+        description: 'Observação ou exigência de preparo do cliente (máx. 240 caracteres)',
+      }),
+    ),
   },
   { additionalProperties: false, description: 'Dados para lançamento de item na comanda' },
 );
@@ -223,6 +257,43 @@ export const FecharComandaBodySchema = Type.Object(
 
 export type FecharComandaBodyTipo = Static<typeof FecharComandaBodySchema>;
 
+export const CancelarComandaBodySchema = Type.Object(
+  {
+    motivo: Type.Optional(
+      Type.String({
+        minLength: 3,
+        maxLength: 240,
+        description: 'Motivo do cancelamento (3 a 240 caracteres)',
+      }),
+    ),
+  },
+  { additionalProperties: false, description: 'Dados para cancelamento da comanda' },
+);
+
+export type CancelarComandaBodyTipo = Static<typeof CancelarComandaBodySchema>;
+
+export const TransferirMesaBodySchema = Type.Object(
+  {
+    nova_mesa: MesaEntradaSchema,
+  },
+  { additionalProperties: false, description: 'Dados para transferência de mesa' },
+);
+
+export type TransferirMesaBodyTipo = Static<typeof TransferirMesaBodySchema>;
+
+export const MesclarComandaBodySchema = Type.Object(
+  {
+    comanda_origem_id: Type.Integer({
+      minimum: 1,
+      maximum: 2147483647,
+      description: 'ID da comanda aberta que será incorporada e cancelada',
+    }),
+  },
+  { additionalProperties: false, description: 'Dados para junção/mesclagem de comandas' },
+);
+
+export type MesclarComandaBodyTipo = Static<typeof MesclarComandaBodySchema>;
+
 export const ParametroItemComandaSchema = Type.Object(
   {
     id: Type.Integer({
@@ -240,7 +311,6 @@ export const ParametroItemComandaSchema = Type.Object(
 );
 
 export type ParametroItemComandaTipo = Static<typeof ParametroItemComandaSchema>;
-
 
 export const PagarComandaBodySchema = Type.Object(
   {

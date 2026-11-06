@@ -20,7 +20,9 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
 import { ToggleSwitch } from '../../components/ui/ToggleSwitch';
-import { ModalCancelarComanda } from '../../components/ui/ModalCancelarComanda';
+import { ModalCancelarComanda } from './components/ModalCancelarComanda';
+import { ModalPendenciasKds, type ItemPendenciaModal } from './components/ModalPendenciasKds';
+import { obterPendenciasComanda } from '../../services/kds';
 import { LogoMark } from '../../components/ui/Logo';
 import { formatCurrency } from '../../lib/utils';
 import { useSessionStore } from '../../stores/useSessionStore';
@@ -79,6 +81,10 @@ export const ModoCaixaPage: React.FC = () => {
   const [comandaParaFechar, setComandaParaFechar] = useState<Comanda | null>(null);
   const [taxaFechamento, setTaxaFechamento] = useState<boolean>(true);
   const [comandaParaCancelar, setComandaParaCancelar] = useState<Comanda | null>(null);
+  const [isModalPendenciasOpen, setIsModalPendenciasOpen] = useState<boolean>(false);
+  const [pendenciasKds, setPendenciasKds] = useState<ItemPendenciaModal[]>([]);
+  const [comandaConflitoKds, setComandaConflitoKds] = useState<Comanda | null>(null);
+  const [isChecandoPendenciasKds, setIsChecandoPendenciasKds] = useState<boolean>(false);
 
   const [isModalClienteOpen, setIsModalClienteOpen] = useState<boolean>(false);
   const [isModalAbrirMesaOpen, setIsModalAbrirMesaOpen] = useState<boolean>(false);
@@ -87,11 +93,11 @@ export const ModoCaixaPage: React.FC = () => {
 
   // Toasts de feedback
   const [toast, setToast] = useState<{
-    tipo: 'sucesso' | 'erro';
+    tipo: 'sucesso' | 'erro' | 'info';
     mensagem: string;
   } | null>(null);
 
-  const showToast = (tipo: 'sucesso' | 'erro', mensagem: string) => {
+  const showToast = (tipo: 'sucesso' | 'erro' | 'info', mensagem: string) => {
     setToast({ tipo, mensagem });
     setTimeout(() => setToast(null), 4000);
   };
@@ -210,14 +216,32 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  // Abre a confirmação de fechamento (permite escolher a gorjeta de 10%)
-  const handleFecharConta = (comanda: Comanda) => {
+  // Abre a confirmação de fechamento com checagem prévia no KDS (:3001)
+  const handleFecharConta = async (comanda: Comanda) => {
     if (!comanda.itens || comanda.itens.length === 0) {
       showToast('erro', `A Mesa ${comanda.mesa} não tem itens lançados. Lance itens ou cancele a comanda.`);
       return;
     }
     setTaxaFechamento(taxa10);
-    setComandaParaFechar(comanda);
+
+    setIsChecandoPendenciasKds(true);
+    try {
+      const resKds = await obterPendenciasComanda(comanda.id);
+      if (resKds.offline) {
+        showToast('info', 'KDS indisponível. Confirme visualmente se os pedidos da mesa já foram entregues.');
+        setComandaParaFechar(comanda);
+      } else if (resKds.possui_pendencias && resKds.pendencias.length > 0) {
+        setPendenciasKds(resKds.pendencias);
+        setComandaConflitoKds(comanda);
+        setIsModalPendenciasOpen(true);
+      } else {
+        setComandaParaFechar(comanda);
+      }
+    } catch {
+      setComandaParaFechar(comanda);
+    } finally {
+      setIsChecandoPendenciasKds(false);
+    }
   };
 
   const handleConfirmarFecharConta = async () => {
@@ -243,12 +267,13 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  const handleConfirmarCancelamento = async () => {
+  const handleConfirmarCancelamento = async (motivo?: string) => {
     if (!comandaParaCancelar) return;
     const comanda = comandaParaCancelar;
     try {
-      await cancelarComandaMut.mutateAsync(comanda.id);
-      showToast('sucesso', `Comanda da Mesa ${comanda.mesa} cancelada. Mesa liberada.`);
+      await cancelarComandaMut.mutateAsync({ comandaId: comanda.id, motivo });
+      const motivoAviso = motivo ? ` (Motivo: ${motivo})` : '';
+      showToast('sucesso', `Comanda da Mesa ${comanda.mesa} cancelada${motivoAviso}. Mesa liberada.`);
       if (comandaAtivaId === comanda.id) {
         setComandaAtivaId(null);
       }
@@ -365,6 +390,8 @@ export const ModoCaixaPage: React.FC = () => {
             className={`flex items-center gap-2 px-4 py-3 rounded-card shadow-modal border text-xs font-bold ${
               toast.tipo === 'sucesso'
                 ? 'bg-success text-white border-success'
+                : toast.tipo === 'info'
+                ? 'bg-amber-600 text-white border-amber-700'
                 : 'bg-danger text-white border-danger'
             }`}
           >
@@ -745,6 +772,27 @@ export const ModoCaixaPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+      {/* Diálogo C04: Conflito de Encerramento (KDS :3001) */}
+      <ModalPendenciasKds
+        isOpen={isModalPendenciasOpen}
+        mesa={comandaConflitoKds?.mesa}
+        pendencias={pendenciasKds}
+        isLoading={fecharComandaMut.isPending || isChecandoPendenciasKds}
+        onAguardarEntrega={() => {
+          setIsModalPendenciasOpen(false);
+          setComandaConflitoKds(null);
+          setPendenciasKds([]);
+          showToast('info', 'Fechamento pausado. Aguardando entrega dos pedidos da mesa.');
+        }}
+        onFecharMesmoAssim={() => {
+          if (!comandaConflitoKds) return;
+          const cmd = comandaConflitoKds;
+          setIsModalPendenciasOpen(false);
+          setComandaConflitoKds(null);
+          setPendenciasKds([]);
+          setComandaParaFechar(cmd);
+        }}
+      />
     </div>
   );
 };

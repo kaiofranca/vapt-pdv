@@ -219,3 +219,44 @@ export const BaixaEstoqueBodySchema = Type.Object(
 );
 
 export type BaixaEstoqueBodyTipo = Static<typeof BaixaEstoqueBodySchema>;
+
+export const ReporEstoqueBodySchema = Type.Object(
+  {
+    quantidade: Type.Integer({
+      minimum: 1,
+      maximum: 2147483647,
+      description: 'Quantidade inteira a ser reposta no estoque (mínimo 1)',
+    }),
+    motivo: Type.Optional(
+      Type.String({
+        maxLength: 100,
+        description: 'Motivo ou observação da reposição de estoque',
+      }),
+    ),
+  },
+  { additionalProperties: false, description: 'Dados para reposição manual de estoque' },
+);
+
+export type ReporEstoqueBodyTipo = Static<typeof ReporEstoqueBodySchema>;
+
+export const MovimentoEstoqueRespostaSchema = Type.Object(
+  {
+    id: Type.Integer({ description: 'ID do movimento de estoque' }),
+    produto_id: Type.Integer({ description: 'ID do produto' }),
+    quantidade: Type.Integer({ description: 'Quantidade movimentada' }),
+    tipo: Type.String({ description: 'Tipo do movimento' }),
+    motivo: Type.String({ description: 'Motivo do movimento' }),
+    criado_em: Type.String({ format: 'date-time', description: 'Data do movimento' }),
+  },
+  { description: 'Movimento de estoque registrado' },
+);
+
+export const ReporEstoqueRespostaSchema = Type.Object(
+  {
+    produto: ProdutoRespostaSchema,
+    movimento: MovimentoEstoqueRespostaSchema,
+  },
+  { description: 'Resposta da reposição de estoque com produto atualizado e movimento contábil' },
+);
+
+export type ReporEstoqueRespostaTipo = Static<typeof ReporEstoqueRespostaSchema>;

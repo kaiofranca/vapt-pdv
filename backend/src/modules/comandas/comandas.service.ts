@@ -1,9 +1,11 @@
+import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { ErroDominio } from '../../shared/erros';
 import type { ServicoUsuarios } from '../usuarios/servico';
 import type { ServicoProdutos } from '../produtos/servico';
 import {
   AjustarItemDados,
+  CancelarComandaDados,
   ComandaEntidade,
   CriarComandaDados,
   ehErroUnicidadePrisma,
@@ -16,6 +18,8 @@ import {
   LancarItemDados,
   normalizarMesa,
   normalizarNomeCliente,
+  normalizarObservacao,
+  normalizarMotivoCancelamento,
   PagarComandaDados,
   parsearDataIso8601,
   RegistroComandaBanco,
@@ -23,6 +27,9 @@ import {
   StatusComandaTipo,
 } from './comanda.entity';
 import { IComandasRepository } from './comandas.repository';
+import { CaixaGateway, ICaixaGateway } from '../../shared/gateways/caixa.gateway';
+import { GestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
+import { HttpKdsGateway, IKdsGateway } from '../../shared/gateways/kds.gateway';
 
 export interface ServicoComandas {
   abrir(dados: CriarComandaDados): Promise<ComandaEntidade>;
@@ -37,16 +44,29 @@ export interface ServicoComandas {
   ): Promise<ItemComandaEntidade>;
   removerItem(comandaId: number, itemId: number): Promise<void>;
   fechar(id: number, dados: FecharComandaDados): Promise<ComandaEntidade>;
-  cancelar(id: number): Promise<ComandaEntidade>;
+  cancelar(id: number, dados?: CancelarComandaDados): Promise<ComandaEntidade>;
   pagar(id: number, dados: PagarComandaDados): Promise<ComandaEntidade>;
+  transferirMesa(comandaId: number, novaMesa: string | number): Promise<ComandaEntidade>;
+  mesclarComandas(comandaDestinoId: number, comandaOrigemId: number): Promise<ComandaEntidade>;
 }
 
 export class ComandasService implements ServicoComandas {
+  private readonly caixaGateway?: ICaixaGateway;
+  private readonly gestaoGateway?: IGestaoGateway;
+  private readonly kdsGateway?: IKdsGateway;
+
   constructor(
     private readonly repository: IComandasRepository,
     private readonly servicoUsuarios: ServicoUsuarios,
     private readonly servicoProdutos?: ServicoProdutos,
-  ) {}
+    caixaGateway?: ICaixaGateway,
+    gestaoGateway?: IGestaoGateway,
+    kdsGateway?: IKdsGateway,
+  ) {
+    this.caixaGateway = caixaGateway ?? new CaixaGateway();
+    this.gestaoGateway = gestaoGateway ?? new GestaoGateway();
+    this.kdsGateway = kdsGateway ?? new HttpKdsGateway();
+  }
 
   private formatarItemComanda(registro: RegistroItemComandaBanco): ItemComandaEntidade {
     return {
@@ -55,6 +75,7 @@ export class ComandasService implements ServicoComandas {
       nome_copiado: registro.nome_copiado,
       preco_copiado: formatarValorMonetario(registro.preco_copiado),
       quantidade: registro.quantidade,
+      observacao: registro.observacao ?? null,
     };
   }
 
@@ -65,11 +86,12 @@ export class ComandasService implements ServicoComandas {
       nome_copiado: item.nome_copiado,
       preco_copiado: formatarValorMonetario(item.preco_copiado),
       quantidade: item.quantidade,
+      observacao: item.observacao ?? null,
     }));
 
     return {
       id: registro.id,
-      mesa: registro.mesa,
+      mesa: Number(registro.mesa),
       nome_cliente: registro.nome_cliente ?? null,
       garcom_id: registro.garcom_id,
       status: registro.status,
@@ -80,6 +102,8 @@ export class ComandasService implements ServicoComandas {
       aberta_em: registro.aberta_em,
       fechada_em: registro.fechada_em ?? null,
       paga_em: registro.paga_em ?? null,
+      cancelada_em: registro.cancelada_em ?? null,
+      motivo_cancelamento: registro.motivo_cancelamento ?? null,
       itens,
     };
   }
@@ -198,7 +222,7 @@ export class ComandasService implements ServicoComandas {
 
     const where: {
       status?: StatusComandaTipo;
-      mesa?: string;
+      mesa?: number;
       aberta_em?: {
         gte?: Date;
         lte?: Date;
@@ -210,21 +234,8 @@ export class ComandasService implements ServicoComandas {
     }
 
     if (filtros.mesa !== undefined) {
-      const mesaLimpa = filtros.mesa.trim();
-      if (!mesaLimpa) {
-        throw ErroDominio.validacao('O filtro de mesa não pode ser vazio.', {
-          mesa: 'O filtro de mesa não pode ser vazio.',
-        });
-      }
-      if (mesaLimpa.length > 50) {
-        throw ErroDominio.validacao(
-          'O filtro de mesa não pode exceder 50 caracteres.',
-          {
-            mesa: 'O filtro de mesa deve ter no máximo 50 caracteres.',
-          },
-        );
-      }
-      where.mesa = mesaLimpa;
+      const mesaNum = normalizarMesa(filtros.mesa);
+      where.mesa = mesaNum;
     }
 
     if (dataDe || dataAte) {
@@ -303,7 +314,7 @@ export class ComandasService implements ServicoComandas {
       );
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const itemFormatado = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(comandaId, tx);
 
       if (!comanda) {
@@ -346,6 +357,8 @@ export class ComandasService implements ServicoComandas {
         );
       }
 
+      const obsNormalizada = normalizarObservacao(dados.observacao);
+
       const itemCriado = await this.repository.lancarItem(
         {
           comanda_id: comandaId,
@@ -353,12 +366,40 @@ export class ComandasService implements ServicoComandas {
           nome_copiado: disponibilidade.nome,
           preco_copiado: new Prisma.Decimal(disponibilidade.preco),
           quantidade: dados.quantidade,
+          observacao: obsNormalizada,
         },
         tx,
       );
 
       return this.formatarItemComanda(itemCriado);
     });
+
+    // Story 2.1.5: Despacho ao KdsGateway
+    if (this.kdsGateway) {
+      try {
+        const comanda = await this.repository.buscarPorId(comandaId);
+        const garcom = comanda ? await this.servicoUsuarios.buscarPorId(comanda.garcom_id).catch(() => null) : null;
+        const resDespacho = await this.kdsGateway.despacharFicha({
+          comanda_id: comandaId,
+          item_comanda_id: itemFormatado.id,
+          produto_id: dados.produto_id,
+          mesa: comanda ? Number(comanda.mesa) : 0,
+          garcom_id: comanda?.garcom_id ?? 0,
+          nome_garcom: garcom?.nome ?? null,
+          nome_produto: itemFormatado.nome_copiado,
+          setor: 'cozinha',
+          quantidade: dados.quantidade,
+          observacao: itemFormatado.observacao ?? null,
+        });
+        if (!resDespacho.sucesso) {
+          console.warn(`[KdsGateway] Falha ao despachar ficha para item #${itemFormatado.id}: ${resDespacho.erro}. Degradação graciosa ativada.`);
+        }
+      } catch (err: any) {
+        console.warn(`[KdsGateway] Erro inesperado ao despachar ficha para KDS: ${err?.message}. Degradação graciosa ativada.`);
+      }
+    }
+
+    return itemFormatado;
   }
 
   async ajustarItem(
@@ -520,7 +561,7 @@ export class ComandasService implements ServicoComandas {
       });
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const comandaFormatada = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
 
       if (!comanda) {
@@ -577,14 +618,57 @@ export class ComandasService implements ServicoComandas {
 
       return this.formatarComanda(comandaFechada);
     });
+
+    // Notificação síncrona pós-commit ao caixa-service via CaixaGateway (ADR-07, RN17)
+    if (this.caixaGateway) {
+      try {
+        const payloadCaixa = {
+          mesa: Number(comandaFormatada.mesa),
+          garcom_id: comandaFormatada.garcom_id,
+          nome_cliente: comandaFormatada.nome_cliente,
+          aplicar_taxa_servico: dados.aplicar_taxa_servico,
+          subtotal: comandaFormatada.subtotal,
+          taxa_servico: comandaFormatada.taxa_servico,
+          total: comandaFormatada.total,
+          itens: comandaFormatada.itens.map((it) => ({
+            item_comanda_id: it.id,
+            produto_id: it.produto_id,
+            nome: it.nome_copiado,
+            preco_unitario: it.preco_copiado,
+            quantidade: it.quantidade,
+          })),
+        };
+
+        const resNotificacao = await this.caixaGateway.notificarFechamento(id, payloadCaixa);
+        if (!resNotificacao.sucesso) {
+          console.warn(
+            `[CaixaGateway] Falha ao notificar fechamento da comanda #${id} ao caixa-service: ${resNotificacao.erro}. Degradação graciosa ativada.`,
+          );
+          comandaFormatada.integracao_caixa_pendente = true;
+          comandaFormatada.avisos = ['integracao_caixa_pendente: true'];
+        } else {
+          comandaFormatada.integracao_caixa_pendente = false;
+        }
+      } catch (err: any) {
+        console.warn(
+          `[CaixaGateway] Erro inesperado ao notificar fechamento da comanda #${id}: ${err?.message}. Degradação graciosa ativada.`,
+        );
+        comandaFormatada.integracao_caixa_pendente = true;
+        comandaFormatada.avisos = ['integracao_caixa_pendente: true'];
+      }
+    }
+
+    return comandaFormatada;
   }
 
-  async cancelar(id: number): Promise<ComandaEntidade> {
+  async cancelar(id: number, dados?: CancelarComandaDados): Promise<ComandaEntidade> {
     if (!Number.isFinite(id) || !Number.isInteger(id) || id < 1) {
       throw ErroDominio.validacao('Identificador de comanda inválido.', {
         id: 'O ID da comanda deve ser um número inteiro maior ou igual a 1.',
       });
     }
+
+    const motivoNormalizado = normalizarMotivoCancelamento(dados?.motivo);
 
     return this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
@@ -593,6 +677,10 @@ export class ComandasService implements ServicoComandas {
         throw ErroDominio.naoEncontrado(`Comanda com ID ${id} não encontrada.`, {
           comanda_id: 'Comanda não encontrada.',
         });
+      }
+
+      if (comanda.status === 'cancelada') {
+        return this.formatarComanda(comanda);
       }
 
       if (comanda.status !== 'aberta') {
@@ -607,11 +695,84 @@ export class ComandasService implements ServicoComandas {
         id,
         {
           status: 'cancelada',
+          cancelada_em: new Date(),
+          motivo_cancelamento: motivoNormalizado,
         },
         tx,
       );
 
       return this.formatarComanda(comandaCancelada);
+    });
+  }
+
+  async transferirMesa(comandaId: number, novaMesa: string | number): Promise<ComandaEntidade> {
+    if (!Number.isFinite(comandaId) || !Number.isInteger(comandaId) || comandaId < 1) {
+      throw ErroDominio.validacao('Identificador de comanda inválido.', {
+        id: 'O ID da comanda deve ser um número inteiro maior ou igual a 1.',
+      });
+    }
+
+    const mesaDestino = normalizarMesa(novaMesa);
+
+    return this.repository.executarEmTransacao(async (tx) => {
+      const comanda = await this.repository.buscarPorId(comandaId, tx);
+      if (!comanda) {
+        throw ErroDominio.naoEncontrado(`Comanda com ID ${comandaId} não encontrada.`);
+      }
+      if (comanda.status !== 'aberta') {
+        throw ErroDominio.conflito('COMANDA_NAO_ABERTA', 'Apenas comandas abertas podem ser transferidas de mesa.');
+      }
+      if (Number(comanda.mesa) === mesaDestino) {
+        return this.formatarComanda(comanda);
+      }
+
+      const ocupada = await this.repository.buscarAbertaPorMesa(mesaDestino, tx);
+      if (ocupada && ocupada.id !== comandaId) {
+        throw ErroDominio.conflito('MESA_OCUPADA', `A mesa ${mesaDestino} já possui uma comanda aberta.`, {
+          mesa: mesaDestino,
+          comanda_id: ocupada.id,
+        });
+      }
+
+      const atualizada = await this.repository.atualizar(comandaId, { mesa: mesaDestino }, tx);
+      return this.formatarComanda(atualizada);
+    });
+  }
+
+  async mesclarComandas(comandaDestinoId: number, comandaOrigemId: number): Promise<ComandaEntidade> {
+    if (!Number.isFinite(comandaDestinoId) || comandaDestinoId < 1 || !Number.isFinite(comandaOrigemId) || comandaOrigemId < 1) {
+      throw ErroDominio.validacao('Identificadores de comanda inválidos.');
+    }
+    if (comandaDestinoId === comandaOrigemId) {
+      throw ErroDominio.validacao('Não é possível mesclar uma comanda em si mesma.');
+    }
+
+    return this.repository.executarEmTransacao(async (tx) => {
+      const destino = await this.repository.buscarPorId(comandaDestinoId, tx);
+      if (!destino) throw ErroDominio.naoEncontrado(`Comanda de destino #${comandaDestinoId} não encontrada.`);
+      if (destino.status !== 'aberta') throw ErroDominio.conflito('COMANDA_NAO_ABERTA', 'Comanda de destino deve estar aberta.');
+
+      const origem = await this.repository.buscarPorId(comandaOrigemId, tx);
+      if (!origem) throw ErroDominio.naoEncontrado(`Comanda de origem #${comandaOrigemId} não encontrada.`);
+      if (origem.status !== 'aberta') throw ErroDominio.conflito('COMANDA_NAO_ABERTA', 'Comanda de origem deve estar aberta.');
+
+      if (this.repository.transferirItens) {
+        await this.repository.transferirItens(comandaOrigemId, comandaDestinoId, tx);
+      }
+
+      await this.repository.atualizar(
+        comandaOrigemId,
+        {
+          status: 'cancelada',
+          cancelada_em: new Date(),
+          motivo_cancelamento: `Mesclada com a comanda #${comandaDestinoId}`,
+        },
+        tx,
+      );
+
+      const destinoAtualizado = await this.repository.buscarPorId(comandaDestinoId, tx);
+      if (!destinoAtualizado) throw ErroDominio.interno("Falha ao obter comanda de destino atualizada.");
+      return this.formatarComanda(destinoAtualizado);
     });
   }
 
@@ -635,7 +796,7 @@ export class ComandasService implements ServicoComandas {
       );
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const comandaFormatada = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
 
       if (!comanda) {
@@ -662,6 +823,7 @@ export class ComandasService implements ServicoComandas {
           {
             comanda_id: id,
             itens: itensBaixa,
+            motivo: `VENDA_COMANDA #${id}`,
           },
           tx,
         );
@@ -680,5 +842,64 @@ export class ComandasService implements ServicoComandas {
 
       return this.formatarComanda(comandaPaga);
     });
+
+    // Notificação síncrona/assíncrona pós-commit ao gestao-service via GestaoGateway (ADR-01, ADR-07)
+    if (this.gestaoGateway) {
+      try {
+        const payloadGestao = {
+          evento_id: crypto.randomUUID(),
+          evento: 'comanda.paga',
+          versao: 1,
+          ocorrido_em:
+            comandaFormatada.paga_em instanceof Date
+              ? comandaFormatada.paga_em.toISOString()
+              : String(comandaFormatada.paga_em || new Date().toISOString()),
+          data_hora:
+            comandaFormatada.paga_em instanceof Date
+              ? comandaFormatada.paga_em.toISOString()
+              : String(comandaFormatada.paga_em || new Date().toISOString()),
+          timestamp: new Date().toISOString(),
+          comanda_id: comandaFormatada.id,
+          mesa: Number(comandaFormatada.mesa),
+          garcom_id: comandaFormatada.garcom_id,
+          forma_pagamento: comandaFormatada.forma_pagamento,
+          subtotal: comandaFormatada.subtotal || '0.00',
+          valor_subtotal: comandaFormatada.subtotal || '0.00',
+          taxa_servico: comandaFormatada.taxa_servico || '0.00',
+          total: comandaFormatada.total || '0.00',
+          valor_total: comandaFormatada.total || '0.00',
+          itens: comandaFormatada.itens.map((item) => ({
+            produto_id: item.produto_id,
+            nome: item.nome_copiado,
+            nome_copiado: item.nome_copiado,
+            preco_unitario: item.preco_copiado,
+            preco_copiado: item.preco_copiado,
+            quantidade: item.quantidade,
+            subtotal: new Prisma.Decimal(item.preco_copiado)
+              .mul(item.quantidade)
+              .toFixed(2),
+          })),
+        };
+
+        const resGestao = await this.gestaoGateway.notificarComandaPaga(payloadGestao);
+        if (!resGestao.sucesso) {
+          console.warn(
+            `[GestaoGateway] Falha ao notificar pagamento da comanda #${id} ao gestao-service: ${resGestao.erro}. Degradação graciosa ativada.`,
+          );
+          comandaFormatada.integracao_gestao_pendente = true;
+          comandaFormatada.avisos = comandaFormatada.avisos ?? [];
+          comandaFormatada.avisos.push('integracao_gestao_pendente: true');
+        }
+      } catch (err: any) {
+        console.warn(
+          `[GestaoGateway] Erro inesperado ao notificar pagamento da comanda #${id}: ${err?.message}. Degradação graciosa ativada.`,
+        );
+        comandaFormatada.integracao_gestao_pendente = true;
+        comandaFormatada.avisos = comandaFormatada.avisos ?? [];
+        comandaFormatada.avisos.push('integracao_gestao_pendente: true');
+      }
+    }
+
+    return comandaFormatada;
   }
 }

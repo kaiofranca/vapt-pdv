@@ -29,8 +29,10 @@ pgdata/
 _bmad/render/
 _bmad/config.user.toml
 _bmad/custom/*.user.toml
-*.agents/
+.bmad-loop/
+*.agent/
 .agents/
+.agent/
 _bmad/
 _bmad-output/
 skills-lock.json

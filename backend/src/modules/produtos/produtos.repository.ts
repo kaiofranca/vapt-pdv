@@ -5,6 +5,7 @@ import {
   BaixaEstoqueDados,
   FiltrosListagemProdutos,
   ProdutoEntidade,
+  ReposicaoEstoqueResultado,
 } from './produtos.entity';
 
 /**
@@ -60,6 +61,17 @@ export interface IProdutosRepository {
    * Decrementa produtos e grava movimentos contábeis na mesma transação.
    */
   baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void>;
+
+  /**
+   * Reposição manual de estoque transacional (M05 / M06 / RF33 / RN10).
+   * Incrementa o saldo do produto e gera o registro em movimentos_estoque com tipo ENTRADA_REPOSICAO.
+   */
+  reporEstoque(
+    id: number,
+    quantidade: number,
+    motivo?: string,
+    tx?: ClienteBanco,
+  ): Promise<ReposicaoEstoqueResultado>;
 }
 
 /**
@@ -202,20 +214,36 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
       const repoMovimentos = this.obterRepositorioMovimentos(contexto);
       const repoProdutos = this.obterRepositorio(contexto);
 
-      // Idempotência por comanda_id (RN10 / RN18)
-      const movimentoExistente = await repoMovimentos.findFirst({
-        where: { comanda_id: dados.comanda_id },
-      });
-
-      if (movimentoExistente) {
-        return;
-      }
-
       for (const item of dados.itens) {
         if (!Number.isFinite(item.quantidade) || item.quantidade <= 0) {
           continue;
         }
 
+        // Idempotência estrita por (comanda_id, produto_id) - RN10 / RN18
+        const movimentoExistente = await repoMovimentos.findFirst({
+          where: {
+            comanda_id: dados.comanda_id,
+            produto_id: item.produto_id,
+          },
+        });
+
+        if (movimentoExistente) {
+          continue;
+        }
+
+        // Verifica existência do produto antes de efetuar a baixa
+        const produto = await repoProdutos.findUnique({
+          where: { id: item.produto_id },
+        });
+
+        if (!produto) {
+          throw ErroDominio.naoEncontrado(
+            `Produto com ID ${item.produto_id} não encontrado.`,
+            { produto_id: item.produto_id },
+          );
+        }
+
+        // Deduz estoque atomicamente
         await repoProdutos.update({
           where: { id: item.produto_id },
           data: {
@@ -225,11 +253,15 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           },
         });
 
+        const motivo = dados.motivo ?? `VENDA_COMANDA #${dados.comanda_id}`;
+
+        // Grava movimento de estoque com tipo 'saida' e motivo padronizado
         await repoMovimentos.create({
           data: {
             produto_id: item.produto_id,
             quantidade: -item.quantidade,
-            motivo: `VENDA_COMANDA #${dados.comanda_id}`,
+            tipo: 'saida',
+            motivo,
             comanda_id: dados.comanda_id,
           },
         });
@@ -241,5 +273,65 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
     } else {
       await this.executarEmTransacao(executar);
     }
+  }
+
+  async reporEstoque(
+    id: number,
+    quantidade: number,
+    motivo?: string,
+    tx?: ClienteBanco,
+  ): Promise<ReposicaoEstoqueResultado> {
+    const executar = async (contexto: ClienteBanco) => {
+      const repoProdutos = this.obterRepositorio(contexto);
+      const repoMovimentos = this.obterRepositorioMovimentos(contexto);
+
+      const produtoExistente = await repoProdutos.findUnique({
+        where: { id },
+      });
+
+      if (!produtoExistente) {
+        throw ErroDominio.naoEncontrado(`Produto com ID ${id} não encontrado.`, {
+          produto_id: id,
+        });
+      }
+
+      const produtoAtualizado = await repoProdutos.update({
+        where: { id },
+        data: {
+          estoque: {
+            increment: quantidade,
+          },
+        },
+      });
+
+      const motivoFinal = motivo ?? 'ENTRADA_REPOSICAO_MANUAL';
+
+      const movimentoCriado = await repoMovimentos.create({
+        data: {
+          produto_id: id,
+          quantidade,
+          tipo: 'ENTRADA_REPOSICAO',
+          motivo: motivoFinal,
+        },
+      });
+
+      return {
+        produto: this.formatarProduto(produtoAtualizado),
+        movimento: {
+          id: movimentoCriado.id,
+          produto_id: movimentoCriado.produto_id,
+          quantidade: movimentoCriado.quantidade,
+          tipo: movimentoCriado.tipo,
+          motivo: movimentoCriado.motivo,
+          comanda_id: movimentoCriado.comanda_id ?? null,
+          criado_em: movimentoCriado.criado_em,
+        },
+      };
+    };
+
+    if (tx) {
+      return executar(tx);
+    }
+    return this.executarEmTransacao(executar);
   }
 }

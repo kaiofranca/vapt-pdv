@@ -1,4 +1,3 @@
-
 export interface ProdutoEntidade {
   id: number;
   nome: string;
@@ -47,9 +46,11 @@ export interface ItemBaixaEstoque {
   produto_id: number;
   quantidade: number;
 }
+
 export interface BaixaEstoqueDados {
   comanda_id: number;
   itens: ItemBaixaEstoque[];
+  motivo?: string;
 }
 
 export interface MovimentoEstoqueEntidade {
@@ -57,6 +58,12 @@ export interface MovimentoEstoqueEntidade {
   produto_id: number;
   quantidade: number;
   motivo: string;
+  tipo?: string | null;
   comanda_id?: number | null;
   criado_em: Date;
+}
+
+export interface ReposicaoEstoqueResultado {
+  produto: ProdutoEntidade;
+  movimento: MovimentoEstoqueEntidade;
 }

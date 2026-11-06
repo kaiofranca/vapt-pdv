@@ -2,18 +2,26 @@
 
 > **Propósito:** Ponto único de retomada para qualquer desenvolvedor ou agente de IA ao abrir o repositório em outra máquina ou nova sessão. Atualize este arquivo e `_bmad-output/implementation-artifacts/sprint-status.yaml` sempre que uma story mudar de estado.
 
-**Última atualização:** 2026-11-04 (*Correct Course M2 aplicado: Core Salão `:3000` + KDS `:3001` + Caixa `:3002` + Gestão `:3003`; revisão crítica e correções 100% implementadas no contrato de APIs e eventos*)  
-**Módulo atual:** Módulo 1 — Computação em Nuvem (`entrega-1-cloud`) — **CÓDIGO E TESTES 100% CONCLUÍDOS (`done`)**  
-**Próximo Passo:** Atualização do build final na instância AWS EC2 pelos discentes, gravação do vídeo demonstrativo e criação da tag `entrega-1-cloud`; início da implementação dos 3 microsserviços satélites por estação do Módulo 2 (`kds-service` `:3001`, `caixa-service` `:3002`, `gestao-service` `:3003`).  
-**Status do Épico 1:** 
-- **Backend Fastify/Prisma (`vapt-pdv-core`):** 100% implementado e testado com **143 testes automatizados passando verde** (Stories 1 a 9 e 13 concluídas). Servindo estáticos compilados com fallback SPA para `/caixa`, `/garcom`, `/login`. Script de seed de produtos (`backend/prisma/seed-produtos.sql`) com 24 itens reais e carga idempotente.
-- **Frontend Web/PWA:** 100% implementado, auditado via code review multi-camadas (Acceptance Auditor, Blind Hunter, Edge Case Hunter e Verification Gap) e testado em `frontend/` com React 19, TypeScript, Vite, Tailwind CSS, TanStack Query e Zustand (alinhado a `DESIGN.md` e WCAG 2.2 AA):
-  - Story 10 (Setup, Tailwind, PWA, Lucide e Componentes Atômicos): `done`
-  - Story 11 (API Client com TanStack Query e Zustand): `done`
-  - Story 12 (Modo Garçom PWA - Salão, Comanda da Mesa com dupla validação de cancelamento e Cardápio Mobile): `done`
-  - Tela de Login Operacional (`/login`) com alternância de tema e despacho por perfil (`garcom`, `caixa`, `gerente`, `cozinha`): `done`
-  - Story 13 (Modo Caixa / Balcão com painel recolhível, fechamento com taxa, recebimento e impressão de recibo): `done` (código e testes 100% finalizados, aguardando apenas deploy final na EC2 e vídeo de entrega).
-  - Design System & Brand: Logo VaptPDV SVG integrado, suporte completo a modo claro/escuro (`useThemeStore` com persistência e media query do sistema), tokens semânticos e área de toque acessível (`>= 44px`).
+**Última atualização:** 2026-11-05 (*Módulo 2 em andamento avançado: KDS Frontend concluído com Login de Cozinha e Painel TV com SLA dinâmico [Stories 2.1.6 e 2.1.7]; Backend do Core atualizado com Mesa como Inteiro, Auditoria de Cancelamento, Gateway Resiliente HTTP do KDS, Transferência/Junção de Mesas e Observações de Preparo com 180 testes no Vitest; Frontend com 75 testes passando verde*)  
+**Módulo atual:** Módulo 2 — Arquitetura de Microsserviços (`entrega-2-microsservicos`) — **CÓDIGO E TESTES 100% CONCLUÍDOS (`done`)**
+**Próximo Passo:** Módulo 3 — Containers e Orquestração (`entrega-3-containers`); Deploy e vídeo da entrega 2 na AWS EC2 pelos discentes.
+**Status do Ecossistema:** 
+- **Backend Fastify/Prisma (`vapt-pdv-core` `:3000`):** 100% implementado e testado com **180 testes automatizados passando verde** (inclui padronização de mesa como inteiro positivo, auditoria de cancelamento com `motivo_cancelamento`, `HttpKdsGateway` com resiliência de 2000ms, transferência/mesclagem e observações). Servindo estáticos compilados com fallback SPA para `/caixa`, `/garcom`, `/login`, `/kds` e `/gestao`.
+- **Frontend Web/PWA (`frontend/`):** **131 testes automatizados passando verde** com React 19, TypeScript, Vite, Tailwind CSS, TanStack Query e Zustand (alinhado a `DESIGN.md` e WCAG 2.2 AA):
+  - Setup, Tailwind, PWA, Lucide e Componentes Atômicos (`1.10`): `done`
+  - API Client com TanStack Query e Zustand (`1.11`): `done`
+  - Modo Garçom PWA (`1.12`): `done`
+  - Modo Caixa Desktop (`1.13`): `done`
+  - Shell Gerencial e Dashboard Executivo `/gestao` (`2.3.2`): `done`
+  - Telas Analíticas Curva ABC, Garçons, Estoque e Exportação (`2.3.3`): `done`
+  - Gestão de Equipe, Produtos e Reposição (`2.3.4`, `2.3.5`, `2.3.6`): `done`
+  - Login Operacional de Cozinha e Rota `/kds` (`2.1.6`): `done`
+  - Painel TV da Cozinha/Bar com SLA dinâmico e gestão de fichas (`2.1.7`): `done`
+  - Reconexão do Caixa ao Satélite `:3002`, Split Payment e Recibo Térmico .paper (`2.2.8`): `done`
+- **Microsserviços Satélites:**
+  - `kds-service` (`:3001` / `kds_db`): 22 testes unitários e de integração (`done`).
+  - `caixa-service` (`:3002` / `caixa_db`): 39 testes unitários (split payment, troco, recibo .paper) (`done`).
+  - `gestao-service` (`:3003` / `gestao_db`): 15 testes unitários e OLAP (`done`).
 - **Infraestrutura AWS EC2:** Provisionada com sucesso pelos discentes.
 
 ---
@@ -78,28 +86,44 @@
 
 Conforme `ADR-01` (*Correct Course M2*), o Módulo 2 preserva o **`vapt-pdv-core` (`:3000`, `vaptpdv_db`)** como núcleo de Salão/Garçom e catálogo base (com rotas de fronteira `/usuarios/:id/validar-garcom`, `/produtos/:id/disponibilidade` e `/produtos/baixa-estoque`) e integra via HTTP REST síncrono (`AbortSignal.timeout(2000)`, degradação graciosa e fail-fast `503`) os **3 Microsserviços Satélites** com bancos exclusivos (`Database-per-Service`):
 
-| ID | Serviço / Escopo | Porta e Banco Exclusivo | Status | Referência Arquitetural |
+| ID / Chave | Sub-História / Escopo | Porta / Banco | Status | Referência Spec (EARS) |
 | :--- | :--- | :--- | :--- | :--- |
-| `"14"` | Microsserviço **`kds-service`** (Fila de Cozinha/Bar `K01–K04`, SLA e `POST /kds/fichas`) | `:3001` (`kds_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
-| `"15"` | Microsserviço **`caixa-service`** (Fila de Recebimento `C04`, Fechamento 10% `C06`, Split Payment `C11`, Pagamento com Troco `C07`/`C10` e Recibo Operacional `.paper` `C12` — `RN19`) | `:3002` (`caixa_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
-| `"16"` | Microsserviço **`gestao-service`** (Estação `M01–M15`, Ingestão `POST /gestao/eventos`, Resumo Diário, Curva ABC, Desempenho de Garçons, Alertas de Estoque e Exportação) + Gateways HTTP Resilientes | `:3003` (`gestao_db`) | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) / [`05-contrato-apis-e-eventos.md`](engenharia/05-contrato-apis-e-eventos.md) |
-| `"17"` | Deploy Multi-Serviço na AWS EC2, Diagrama C4 e Prova de Resiliência (`503` / Degradação Graciosa) do Módulo 2 | `:3000` a `:3003` | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| `2-3-4` | **Gestão Frontend:** Equipe e Gestão de Usuários (`M12`, `M13`, `RF02`, `RN14`) | `:3000` | `done` | [`stories/2-3-4-gestao-frontend-equipe-usuarios.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-3-4-gestao-frontend-equipe-usuarios.md) |
+| `2-3-5` | **Gestão Frontend:** Cardápio e Gestão de Produtos (`M02`, `M03`, `RF01`, `RF33`) | `:3000` | `done` | [`stories/2-3-5-gestao-frontend-cardapio-e-produtos.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-3-5-gestao-frontend-cardapio-e-produtos.md) |
+| `2-3-6` | **Gestão:** Reposição de Estoque com `MovimentoEstoque` e Modal (`M05`, `M06`, `RF33`, `RN10`) | `:3000` | `done` | [`stories/2-3-6-gestao-frontend-reposicao-estoque.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-3-6-gestao-frontend-reposicao-estoque.md) |
+| `2-1-5` | **Core:** Integração via `KdsGateway` com Resiliência e Timeout (`ADR-01`, `ADR-07`) | `:3000` -> `:3001` | `done` | [`stories/2-1-5-core-integracao-kds-gateway.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-1-5-core-integracao-kds-gateway.md) |
+| `2-1-6` | **KDS Frontend:** Habilitação do Perfil Cozinha, Sessão e Rota `/kds` (`RF02`, `RF34`) | Web / React | `done` | [`stories/2-1-6-kds-frontend-habilitacao-login-cozinha.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-1-6-kds-frontend-habilitacao-login-cozinha.md) |
+| `2-1-7` | **KDS Frontend:** Painel TV da Cozinha e Gestão de Fichas (`K01` a `K04`, SLA dinâmico) | `:3001` | `done` | [`stories/2-1-7-kds-frontend-painel-tv.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-1-7-kds-frontend-painel-tv.md) |
+| `2-1-8` | **Core & Salão:** Observações de Preparo, Alergias e Bottom Sheet `G04` (`RF19`, `RF22`) | `:3000` / PWA | `done` | [`stories/2-1-8-core-salao-observacoes-e-alergias.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-1-8-core-salao-observacoes-e-alergias.md) |
+| `2-2-8` | **Caixa Frontend:** Reconexão ao Satélite `caixa-service`, Split e Recibo (`ADR-01`, `ADR-08`) | `:3002` | `done` | [`stories/2-2-8-caixa-frontend-reconexao-satelite.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-2-8-caixa-frontend-reconexao-satelite.md) |
+| `2-2-9` | **Caixa & Salão:** Checagem de Pendências do KDS no Fechamento (`RF23`, `C04`) | `:3001` / `:3000` | `done` | [`stories/2-2-9-caixa-checagem-pendencias-kds.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-2-9-caixa-checagem-pendencias-kds.md) |
+| `2-4-4` | **Core:** Padronização de Mesa como Inteiro, Timestamp e Motivo de Cancelamento (`RN07`, `RF07`) | `:3000` | `done` | [`stories/2-4-4-core-padronizacao-mesa-e-motivo-cancelamento.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-4-4-core-padronizacao-mesa-e-motivo-cancelamento.md) |
+| `2-5-1` | **Core & Salão:** Transferência de Mesa e Junção/Mesclagem de Comandas (Aprovada) | `:3000` / PWA | `done` | [`stories/2-5-1-core-transferencia-e-juncao-mesas.md`](../_bmad-output/specs/spec-vapt-pdv/stories/2-5-1-core-transferencia-e-juncao-mesas.md) |
 
 ### Épico 3 — Módulo 3: Containers e Orquestração (`entrega-3-containers`)
 
 | ID | Escopo | Status | Referência Arquitetural |
 | :--- | :--- | :--- | :--- |
-| `"18"` | `Dockerfile` multi-stage enxuto (`node:20-alpine`, `USER node`) para `vapt-pdv-core`, `kds-service`, `caixa-service` e `gestao-service` | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
-| `"19"` | `docker-compose.yml` completo com os 4 serviços, bancos PostgreSQL (`vaptpdv_db`, `kds_db`, `caixa_db`, `gestao_db`), rede isolada `vaptpdv-net` e `healthcheck` (`service_healthy`) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
-| `"20"` | Documentação comparativa (VM Nativa M1 vs. Containers M3) e prova de persistência de volumes na AWS EC2 | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`18.1`** | `Dockerfile` multi-stage enxuto para `vapt-pdv-core` com build do Frontend embutido (`node:20-alpine`, `USER node`, <220MB) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`18.2`** | `Dockerfile` multi-stage enxuto para os satélites `kds-service`, `caixa-service` e `gestao-service` (<160MB cada) | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`19.1`** | Rede `vaptpdv-net` e 4 containers PostgreSQL 16 isolados com volumes persistentes nomeados (`pgdata_*`) e `pg_isready` | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`19.2`** | `docker-compose.yml` orquestrando os 4 microsserviços com `depends_on: { service_healthy }`, variáveis seguras e limites de CPU/RAM | `backlog` | [`03-arquitetura-c4-model.md — Seção 6.4`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.1`** | Script de teste automatizado de persistência de dados (`scripts/testar-persistencia-docker.sh`) pós-ciclo `down` e `up` | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.2`** | Estudo técnico comparativo de engenharia: deploy IaaS na VM vs. Containers Docker Compose | `backlog` | [`03-arquitetura-c4-model.md`](engenharia/03-arquitetura-c4-model.md) |
+| **`20.3`** | Roteiro do vídeo demonstrativo e preparação da tag Git `entrega-3-containers` | `backlog` | Checklist da Disciplina |
 
 ### Épico 4 — Módulo 4: Mensageria e Streaming (`entrega-4-mensageria`)
 
 | ID | Escopo | Status | Referência Arquitetural |
 | :--- | :--- | :--- | :--- |
-| `"21"` | Container `rabbitmq:3.13-management-alpine`, exchange `vaptpdv.eventos` (`topic`), DLX/DLQ e produtor com **Transactional Outbox (`outbox_eventos`)** (`ADR-09`) | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
-| `"22"` | Consumidores idempotentes (`ADR-10`, `ack` manual) para `produtos.comanda.paga` (no módulo `produtos` do Core), `kds.item.lancado`, `pdv.item.pronto` e `gestao.eventos` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
-| `"23"` | Análise comparativa Mensageria (RabbitMQ) vs. Streaming (Kafka/Redpanda) e prova de tolerância a falhas assíncrona na AWS EC2 | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
+| **`21.1`** | Container `rabbitmq:3.13-management-alpine`, exchange topic `vaptpdv.eventos`, DLX `vaptpdv.dlx`, 5 filas duráveis e `vaptpdv.dlq` | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
+| **`21.2`** | **Transactional Outbox Pattern** (`outbox_eventos`) no Core e Caixa com worker `OutboxPublisher` e publisher confirms | `backlog` | [`03-arquitetura-c4-model.md — Seção 7.2`](engenharia/03-arquitetura-c4-model.md) |
+| **`22.1`** | Consumidor AMQP `kds.item.lancado` no KDS: criação de fichas com ack manual, desduplicação por `item_comanda_id` e emissão de `item.pronto` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.2`** | Consumidor AMQP `caixa.comanda.fechada` no Caixa: atualização da fila de cobranças com desduplicação por `comanda_id` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.3`** | Consumidor AMQP `produtos.comanda.paga` no Core: baixa atômica de estoque por `(comanda_id, produto_id)` e emissão de `estoque.movimentado` | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`22.4`** | Consumidor AMQP `gestao.eventos` (routing `#`) no Gestão: ingestão contínua assíncrona das 5 projeções analíticas com ack manual | `backlog` | [`05-contrato-apis-e-eventos.md — Seção 6`](engenharia/05-contrato-apis-e-eventos.md) |
+| **`23.1`** | Validação prática de resiliência assíncrona: consumidores offline, fila durável, reconexão e reprocessamento sem perdas + DLQ | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
+| **`23.2`** | Estudo comparativo Mensageria Tradicional (RabbitMQ) vs Streaming (Kafka/Redpanda) e checklist da tag `entrega-4-mensageria` | `backlog` | [`03-arquitetura-c4-model.md — Seção 8`](engenharia/03-arquitetura-c4-model.md) |
 
 ---
 

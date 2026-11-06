@@ -2,6 +2,7 @@ import { apiClient } from './apiClient';
 import type {
   Usuario,
   CriarUsuarioDto,
+  AtualizarUsuarioDto,
   ListarUsuariosFiltros,
 } from '../types/api';
 
@@ -14,6 +15,9 @@ export const usuariosApi = {
 
   criar: (dto: CriarUsuarioDto) =>
     apiClient.post<Usuario>('/usuarios', dto),
+
+  atualizar: (id: number, dto: AtualizarUsuarioDto) =>
+    apiClient.patch<Usuario>(`/usuarios/${id}`, dto),
 
   inativar: (id: number) =>
     apiClient.post<Usuario>(`/usuarios/${id}/inativar`),

@@ -1,0 +1,66 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model EventoProcessado {
+  eventoId     String   @id @map("evento_id") @db.Uuid
+  evento       String   @db.VarChar(60)
+  processadoEm DateTime @default(now()) @map("processado_em") @db.Timestamptz
+
+  @@map("eventos_processados")
+}
+
+model FaturamentoDiario {
+  dataReferencia      DateTime @id @map("data_referencia") @db.Date
+  comandasPagas       Int      @default(0) @map("comandas_pagas")
+  comandasCanceladas  Int      @default(0) @map("comandas_canceladas")
+  faturamentoSubtotal Decimal  @default(0.00) @map("faturamento_subtotal") @db.Decimal(12, 2)
+  totalTaxaServico    Decimal  @default(0.00) @map("total_taxa_servico") @db.Decimal(12, 2)
+  faturamentoTotal    Decimal  @default(0.00) @map("faturamento_total") @db.Decimal(12, 2)
+  ticketMedio         Decimal  @default(0.00) @map("ticket_medio") @db.Decimal(10, 2)
+  porFormaPagamento   Json     @default("{\"pix\":\"0.00\",\"cartao\":\"0.00\",\"dinheiro\":\"0.00\"}") @map("por_forma_pagamento")
+  atualizadoEm        DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  @@map("faturamento_diario")
+}
+
+model VendasProdutoAbc {
+  produtoId         Int      @id @map("produto_id")
+  nomeProduto       String   @map("nome_produto") @db.VarChar(140)
+  categoria         String   @db.VarChar(60)
+  quantidadeVendida Int      @default(0) @map("quantidade_vendida")
+  receitaGerada     Decimal  @default(0.00) @map("receita_gerada") @db.Decimal(12, 2)
+  classeAbc         String   @default("C") @map("classe_abc") @db.Char(1)
+  atualizadoEm      DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  @@map("vendas_produto_abc")
+}
+
+model DesempenhoGarcom {
+  garcomId           Int      @id @map("garcom_id")
+  nomeGarcom         String   @map("nome_garcom") @db.VarChar(120)
+  comandasAtendidas  Int      @default(0) @map("comandas_atendidas")
+  vendasSubtotal     Decimal  @default(0.00) @map("vendas_subtotal") @db.Decimal(12, 2)
+  taxaServicoGerada  Decimal  @default(0.00) @map("taxa_servico_gerada") @db.Decimal(12, 2)
+  ticketMedioMesa    Decimal  @default(0.00) @map("ticket_medio_mesa") @db.Decimal(10, 2)
+  atualizadoEm       DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz
+
+  @@map("desempenho_garcom")
+}
+
+model AlertaEstoque {
+  produtoId         Int      @id @map("produto_id")
+  nome              String   @db.VarChar(140)
+  categoria         String   @db.VarChar(60)
+  estoqueAtual      Int      @map("estoque_atual")
+  estoqueMinimo     Int      @map("estoque_minimo")
+  nivelCriticidade  String   @map("nivel_criticidade") @db.VarChar(20)
+  ultimoMovimentoEm DateTime @default(now()) @map("ultimo_movimento_em") @db.Timestamptz
+
+  @@map("alertas_estoque")
+}

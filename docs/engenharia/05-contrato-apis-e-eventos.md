@@ -484,9 +484,44 @@ Registra ou confirma a quitação da comanda fechada, executa a baixa atômica e
 - **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_FECHADA`, `409 COMANDA_IMUTAVEL`, `409 ESTOQUE_INSUFICIENTE`.
 
 #### `POST /comandas/:id/cancelar`
-Cancela uma comanda `'aberta'` ou `'fechada'` sem baixar estoque e liberando a mesa (`RF15`, `RN03`).
-- **Resposta `200 OK`:** Objeto da comanda com `status: "cancelada"` e `cancelada_em` preenchido.
-- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_IMUTAVEL`.
+Cancela uma comanda `'aberta'` ou `'fechada'` sem baixar estoque e liberando a mesa (`RF07`, `RF15`, `RN03`). Registra carimbo de data/hora em `cancelada_em` e armazena a justificativa operacional em `motivo_cancelamento`.
+- **Body (`application/json` — opcional):**
+```json
+{
+  "motivo": "Cliente desistiu da espera"
+}
+```
+- **Resposta `200 OK`:** Objeto da comanda com `status: "cancelada"`, `cancelada_em` e `motivo_cancelamento` preenchidos.
+- **Idempotência:** Chamar repetidamente para uma comanda já `'cancelada'` retorna `200 OK` preservando os dados originais.
+- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA` (se comanda já quitada).
+
+#### `PATCH /comandas/:id/transferir-mesa`
+Transfere o atendimento de uma comanda aberta para outra mesa desocupada no salão (`RF04`, `RN07`).
+- **Body (`application/json`):**
+```json
+{
+  "nova_mesa": 15
+}
+```
+- **Regras:**
+  - `nova_mesa` deve ser um inteiro positivo (`INTEGER > 0`).
+  - A nova mesa não pode possuir comanda aberta simultânea (`409 MESA_OCUPADA`).
+- **Resposta `200 OK`:** Objeto da comanda com o campo `mesa` atualizado para a nova mesa.
+- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA`, `409 MESA_OCUPADA`.
+
+#### `POST /comandas/:id/mesclar`
+Unifica/mescla duas comandas abertas em uma única transação atômica (`RF04`, `RN01`): migra todos os itens da comanda de origem (`id`) para a comanda de destino (`comanda_destino_id`), recalcula os subtotais e cancela automaticamente a comanda de origem com motivo `"Mesclada com comanda X"`, liberando a mesa de origem.
+- **Body (`application/json`):**
+```json
+{
+  "comanda_destino_id": 88
+}
+```
+- **Regras:**
+  - Ambas as comandas devem ter `status = 'aberta'`.
+  - A comanda de origem e de destino não podem ser a mesma (`400 VALIDACAO`).
+- **Resposta `200 OK`:** Objeto da comanda de destino atualizada com os itens consolidados.
+- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA`.
 
 ---
 

@@ -9,10 +9,10 @@ import {
 
 export interface IComandasRepository {
   buscarPorId(id: number, tx?: ClienteBanco): Promise<RegistroComandaBanco | null>;
-  buscarAbertaPorMesa(mesa: string, tx?: ClienteBanco): Promise<RegistroComandaBanco | null>;
+  buscarAbertaPorMesa(mesa: number, tx?: ClienteBanco): Promise<RegistroComandaBanco | null>;
   criar(
     dados: {
-      mesa: string;
+      mesa: number;
       nome_cliente: string | null;
       garcom_id: number;
       status: StatusComandaTipo;
@@ -39,6 +39,7 @@ export interface IComandasRepository {
       nome_copiado: string;
       preco_copiado: Prisma.Decimal;
       quantidade: number;
+      observacao?: string | null;
     },
     tx?: ClienteBanco,
   ): Promise<RegistroItemComandaBanco>;
@@ -53,6 +54,11 @@ export interface IComandasRepository {
     tx?: ClienteBanco,
   ): Promise<RegistroItemComandaBanco>;
   removerItem(itemId: number, tx?: ClienteBanco): Promise<void>;
+  transferirItens?(
+    comandaOrigemId: number,
+    comandaDestinoId: number,
+    tx?: ClienteBanco,
+  ): Promise<void>;
   executarEmTransacao<T>(operacao: (tx: ClienteBanco) => Promise<T>): Promise<T>;
 }
 
@@ -90,7 +96,7 @@ export class ComandasRepositoryPrisma implements IComandasRepository {
     return registro as unknown as RegistroComandaBanco | null;
   }
 
-  async buscarAbertaPorMesa(mesa: string, tx?: ClienteBanco): Promise<RegistroComandaBanco | null> {
+  async buscarAbertaPorMesa(mesa: number, tx?: ClienteBanco): Promise<RegistroComandaBanco | null> {
     const repo = this.obterRepoComanda(tx);
     const registro = await repo.findFirst({
       where: {
@@ -103,7 +109,7 @@ export class ComandasRepositoryPrisma implements IComandasRepository {
 
   async criar(
     dados: {
-      mesa: string;
+      mesa: number;
       nome_cliente: string | null;
       garcom_id: number;
       status: StatusComandaTipo;
@@ -175,6 +181,7 @@ export class ComandasRepositoryPrisma implements IComandasRepository {
       nome_copiado: string;
       preco_copiado: Prisma.Decimal;
       quantidade: number;
+      observacao?: string | null;
     },
     tx?: ClienteBanco,
   ): Promise<RegistroItemComandaBanco> {
@@ -186,6 +193,7 @@ export class ComandasRepositoryPrisma implements IComandasRepository {
         nome_copiado: dados.nome_copiado,
         preco_copiado: dados.preco_copiado,
         quantidade: dados.quantidade,
+        observacao: dados.observacao ?? null,
       },
     });
     return itemCriado as unknown as RegistroItemComandaBanco;
@@ -223,6 +231,18 @@ export class ComandasRepositoryPrisma implements IComandasRepository {
     const repo = this.obterRepoItens(tx);
     await repo.delete({
       where: { id: itemId },
+    });
+  }
+
+  async transferirItens(
+    comandaOrigemId: number,
+    comandaDestinoId: number,
+    tx?: ClienteBanco,
+  ): Promise<void> {
+    const repo = this.obterRepoItens(tx);
+    await repo.updateMany({
+      where: { comanda_id: comandaOrigemId },
+      data: { comanda_id: comandaDestinoId },
     });
   }
 

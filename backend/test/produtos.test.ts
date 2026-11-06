@@ -87,9 +87,21 @@ function criarPrismaComProdutosMock(produtosIniciais: ProdutoSimulado[] = []) {
         if (index === -1) {
           throw new Error('Record to update not found.');
         }
+        let novoEstoque = produtos[index].estoque;
+        if (typeof (data as any).estoque === 'number') {
+          novoEstoque = (data as any).estoque;
+        } else if (
+          (data as any).estoque &&
+          typeof (data as any).estoque === 'object' &&
+          'increment' in (data as any).estoque
+        ) {
+          novoEstoque += Number((data as any).estoque.increment);
+        }
+
         produtos[index] = {
           ...produtos[index],
           ...data,
+          estoque: novoEstoque,
           atualizado_em: new Date(),
         };
         return { ...produtos[index] };
@@ -97,10 +109,32 @@ function criarPrismaComProdutosMock(produtosIniciais: ProdutoSimulado[] = []) {
     ),
   };
 
+  const movimentosEstoque: any[] = [];
+  let proximoIdMovimento = 1;
+
+  const movimentoEstoqueMock = {
+    create: vi.fn(async ({ data }: { data: any }) => {
+      const novo = {
+        id: proximoIdMovimento++,
+        produto_id: data.produto_id,
+        quantidade: data.quantidade,
+        tipo: data.tipo ?? 'saida',
+        motivo: data.motivo,
+        comanda_id: data.comanda_id ?? null,
+        criado_em: new Date(),
+      };
+      movimentosEstoque.push(novo);
+      return { ...novo };
+    }),
+    findFirst: vi.fn(async () => null),
+  };
+
   const prisma: ClienteBanco = {
     $queryRaw: vi.fn(async () => [{ '?column?': 1 }]),
     $disconnect: vi.fn(async () => undefined),
+    $transaction: vi.fn(async (operacao: any) => operacao(prisma)),
     produto: produtoMock as unknown as ClienteBanco['produto'],
+    movimentoEstoque: movimentoEstoqueMock as any,
   };
 
   return { prisma, produtoMock, produtos };
@@ -382,6 +416,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos?categoria=Bebidas&ativo=true&limit=10&offset=0',
       });
 
+      
       expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(Array.isArray(corpo)).toBe(true);
@@ -426,7 +461,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos?ativo=false',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.length).toBe(1);
       expect(corpo[0].id).toBe(2);
@@ -467,7 +502,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos?categoria=Petiscos',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.length).toBe(1);
       expect(corpo[0].nome).toBe('Batata Frita');
@@ -518,7 +553,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.id).toBe(1);
       expect(corpo.nome).toBe('Cerveja');
@@ -581,7 +616,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         },
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.id).toBe(1);
       expect(corpo.preco).toBe('14.00');
@@ -614,7 +649,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         },
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.nome).toBe('Cerveja Lager');
       expect(corpo.categoria).toBe('Bebidas');
@@ -646,7 +681,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         },
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.categoria).toBe('Bebidas Especiais');
       expect(corpo.nome).toBe('Cerveja');
@@ -678,7 +713,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         },
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.estoque_minimo).toBe(10);
     });
@@ -771,7 +806,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/inativar',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.ativo).toBe(false);
       expect(produtoMock.update).toHaveBeenCalledTimes(1);
@@ -800,7 +835,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/inativar',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.ativo).toBe(false);
       expect(produtoMock.update).not.toHaveBeenCalled();
@@ -844,7 +879,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/disponibilidade?quantidade=2',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo).toEqual({
         id: 1,
@@ -879,7 +914,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/disponibilidade',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo).toEqual({
         id: 1,
@@ -914,7 +949,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/disponibilidade?quantidade=30',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.disponivel).toBe(false);
       expect(corpo.estoque).toBe(20);
@@ -943,7 +978,7 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
         url: '/produtos/1/disponibilidade?quantidade=1',
       });
 
-      expect(resposta.statusCode).toBe(200);
+            expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
       expect(corpo.ativo).toBe(false);
       expect(corpo.disponivel).toBe(false);
@@ -1058,6 +1093,119 @@ describe('CRUD de Produtos com Estoque (Story 3 - CAP-1, CAP-6)', () => {
           estoque: 10,
         }),
       ).rejects.toThrow('A categoria do produto não pode exceder 50 caracteres.');
+    });
+  });
+
+  describe('Reposição de Estoque (Story 2.3.6 - M05, M06, RF33, RN10)', () => {
+    it('POST /produtos/:id/repor com quantidade válida incrementa estoque e gera movimento contábil', async () => {
+      const produtosIniciais = [
+        {
+          id: 1,
+          nome: 'Chopp Pilsen',
+          categoria: 'Bebidas',
+          preco: new Prisma.Decimal('12.00'),
+          estoque: 5,
+          estoque_minimo: 10,
+          ativo: true,
+          criado_em: new Date(),
+          atualizado_em: new Date(),
+        },
+      ];
+      const { prisma } = criarPrismaComProdutosMock(produtosIniciais);
+      const app = await buildApp({ prisma, logger: false });
+
+      const resposta = await app.inject({
+        method: 'POST',
+        url: '/produtos/1/repor',
+        payload: {
+          quantidade: 15,
+          motivo: 'ENTRADA_FORNECEDOR',
+        },
+      });
+
+            expect(resposta.statusCode).toBe(200);
+      const corpo = resposta.json();
+      expect(corpo.produto.id).toBe(1);
+      expect(corpo.produto.estoque).toBe(20);
+      expect(corpo.movimento.produto_id).toBe(1);
+      expect(corpo.movimento.quantidade).toBe(15);
+      expect(corpo.movimento.tipo).toBe('ENTRADA_REPOSICAO');
+      expect(corpo.movimento.motivo).toBe('ENTRADA_FORNECEDOR');
+    });
+
+    it('POST /produtos/:id/repor com quantidade <= 0 retorna 400 VALIDACAO', async () => {
+      const { prisma } = criarPrismaComProdutosMock([
+        {
+          id: 1,
+          nome: 'Chopp Pilsen',
+          categoria: 'Bebidas',
+          preco: new Prisma.Decimal('12.00'),
+          estoque: 5,
+          estoque_minimo: 10,
+          ativo: true,
+          criado_em: new Date(),
+          atualizado_em: new Date(),
+        },
+      ]);
+      const app = await buildApp({ prisma, logger: false });
+
+      const resposta = await app.inject({
+        method: 'POST',
+        url: '/produtos/1/repor',
+        payload: {
+          quantidade: 0,
+        },
+      });
+
+      expect(resposta.statusCode).toBe(400);
+      const corpo = resposta.json();
+      expect(corpo.erro.codigo).toBe('VALIDACAO');
+    });
+
+    it('POST /produtos/:id/repor com quantidade decimal não inteira retorna 400 VALIDACAO', async () => {
+      const { prisma } = criarPrismaComProdutosMock([
+        {
+          id: 1,
+          nome: 'Chopp Pilsen',
+          categoria: 'Bebidas',
+          preco: new Prisma.Decimal('12.00'),
+          estoque: 5,
+          estoque_minimo: 10,
+          ativo: true,
+          criado_em: new Date(),
+          atualizado_em: new Date(),
+        },
+      ]);
+      const app = await buildApp({ prisma, logger: false });
+
+      const resposta = await app.inject({
+        method: 'POST',
+        url: '/produtos/1/repor',
+        payload: {
+          quantidade: 5.5,
+        },
+      });
+
+      expect(resposta.statusCode).toBe(400);
+      const corpo = resposta.json();
+      expect(corpo.erro.codigo).toBe('VALIDACAO');
+    });
+
+    it('POST /produtos/:id/repor com produto inexistente retorna 404 NAO_ENCONTRADO', async () => {
+      const { prisma } = criarPrismaComProdutosMock([]);
+      const app = await buildApp({ prisma, logger: false });
+
+      const resposta = await app.inject({
+        method: 'POST',
+        url: '/produtos/999/repor',
+        payload: {
+          quantidade: 10,
+        },
+      });
+
+      expect(resposta.statusCode).toBe(404);
+      const corpo = resposta.json();
+      expect(corpo.erro.codigo).toBe('NAO_ENCONTRADO');
     });
   });
 });
