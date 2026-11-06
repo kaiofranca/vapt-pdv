@@ -1,81 +1,166 @@
-# Guia Passo a Passo: Deploy do `kds-service` e Banco `kds_db` na AWS EC2
+# Guia de Deploy na AWS EC2: Ecossistema Completo VaptPDV
 
-Este documento descreve como configurar o banco de dados `kds_db` e colocar o microsserviço **`kds-service` (Porta `:3001`)** em produção na máquina virtual **AWS EC2 (Ubuntu Server LTS)** onde o **VaptPDV Core (`:3000`)** já está rodando.
+> **Trabalho prático - Sistemas Distribuídos (DCC / UERN)**  
+> **Arquitetura Módulo 2:** PDV Core Salão (`:3000`) + 3 Microsserviços Satélites (`:3001`, `:3002`, `:3003`) + Frontend Web/PWA + 4 Bancos Isolados (`Database-per-Service`).
 
----
-
-## Entendendo a Diferença entre seu Ambiente Local e a VM EC2
-
-- **No seu computador local:** Como o PostgreSQL não estava instalado nativamente no Linux, você subiu um contêiner Docker (`vaptpdv-postgres`) e criou o banco `kds_db` dentro dele.
-- **Na VM AWS EC2:** Existem **dois caminhos** possíveis dependendo de como o banco do Módulo 1 foi configurado lá:
-  - **Caminho A (Mais comum no Módulo 2 — Sem Docker):** O PostgreSQL já está instalado diretamente no Ubuntu da EC2 (via `apt`). Basta criar o database `kds_db` nessa mesma instância nativa do PostgreSQL e subir o `kds-service` com o **PM2**.
-  - **Caminho B (Com Docker na EC2 — Já preparando para o Módulo 3):** Instalar o Docker na EC2 e usar o contêiner PostgreSQL compartilhado para todos os microsserviços.
-
-Abaixo estão os dois roteiros completos.
+Este documento é o roteiro operacional oficial para implantar, configurar e gerenciar em produção na máquina virtual **AWS EC2 (Ubuntu Server LTS)** o ecossistema distribuído completo do **VaptPDV**:
+- **PDV Core Salão (`vapt-pdv-core`):** Porta `:3000` / Banco `vapt_pdv` (e servidor SPA do Frontend Web/PWA)
+- **KDS Service (`kds-service`):** Porta `:3001` / Banco `kds_db` (Cozinha e Bar)
+- **Caixa Service (`caixa-service`):** Porta `:3002` / Banco `caixa_db` (Split Payment e Cobranças)
+- **Gestão Service (`gestao-service`):** Porta `:3003` / Banco `gestao_db` (Analytics OLAP e BI)
 
 ---
 
-## Verifique Antes na EC2: O PostgreSQL lá é Nativo ou Docker?
+## 1. Topologia da Instância AWS EC2 & Firewall (Security Group)
 
-Conecte-se via SSH na sua instância EC2 e rode:
+```mermaid
+flowchart TD
+    Internet(("🌐 Internet / Navegadores"))
 
-```bash
-# Verifica se o PostgreSQL está rodando nativamente no Ubuntu
-sudo systemctl status postgresql
+    subgraph AWS["☁️ Instância AWS EC2 (Ubuntu Server LTS)"]
+        subgraph SG["🔒 Security Group (Inbound Rules)"]
+            P22["Porta 22 (SSH)"]
+            P3000["Porta 3000 (PDV Core & Frontend Web/PWA)"]
+            P3001["Porta 3001 (KDS Service)"]
+            P3002["Porta 3002 (Caixa Service)"]
+            P3003["Porta 3003 (Gestão Service)"]
+        end
 
-# Verifica se há Docker instalado e contêineres rodando
-docker ps
+        subgraph PM2["⚙️ Gerenciador de Processos PM2"]
+            Core["vapt-pdv-core (:3000)<br>• Salão, Mesas, Comandas<br>• Servindo SPA Frontend"]
+            KDS["kds-service (:3001)<br>• Cozinha e Bar"]
+            Caixa["caixa-service (:3002)<br>• Split Payment & Troco"]
+            Gestao["gestao-service (:3003)<br>• BI, Curva ABC, Estoque"]
+        end
+
+        subgraph Postgres["🐘 PostgreSQL (:5432 - Acesso Local)"]
+            DB1[("vapt_pdv")]
+            DB2[("kds_db")]
+            DB3[("caixa_db")]
+            DB4[("gestao_db")]
+        end
+    end
+
+    Internet --> P22
+    Internet --> P3000
+    Internet --> P3001
+    Internet --> P3002
+    Internet --> P3003
+
+    P3000 --> Core
+    P3001 --> KDS
+    P3002 --> Caixa
+    P3003 --> Gestao
+
+    Core --- DB1
+    KDS --- DB2
+    Caixa --- DB3
+    Gestao --- DB4
+
+    Core -.->|"HTTP (Timeout 2s)"| KDS
+    Caixa -.->|"HTTP (Baixa Estoque)"| Core
+    Caixa -.->|"HTTP (Eventos Venda)"| Gestao
 ```
 
-- Se `systemctl status postgresql` mostrar **`active (running)`**, siga o **Caminho A**.
-- Se você preferir usar **Docker** na EC2, siga o **Caminho B**.
+### Configuração Obrigatória do Security Group (AWS Console)
+Antes ou logo após o deploy, certifique-se de liberar as seguintes **Regras de Entrada (Inbound Rules)** no console da AWS:
+
+| Tipo | Protocolo | Intervalo de Portas | Origem | Finalidade |
+| :--- | :---: | :---: | :---: | :--- |
+| **SSH** | TCP | `22` | `Seu IP` ou `0.0.0.0/0` | Acesso administrativo remoto via terminal |
+| **Custom TCP** | TCP | `3000` | `0.0.0.0/0` | **PDV Core** e **Frontend Web/PWA** (Garçom, Caixa, KDS, Gestão) |
+| **Custom TCP** | TCP | `3001` | `0.0.0.0/0` | **KDS Service** (API e Swagger da Cozinha/Bar) |
+| **Custom TCP** | TCP | `3002` | `0.0.0.0/0` | **Caixa Service** (API e Swagger do Fechamento e Split) |
+| **Custom TCP** | TCP | `3003` | `0.0.0.0/0` | **Gestão Service** (API e Swagger de Analytics e BI) |
+
+> ⚠️ **Nota de Segurança:** A porta do PostgreSQL (`5432`) **NÃO** deve ser aberta para o mundo (`0.0.0.0/0`). Os microsserviços e o banco rodam na mesma VM (ou na mesma rede interna Docker), conectando-se em `localhost:5432`.
 
 ---
 
-## Caminho A: PostgreSQL Nativo na VM EC2 + PM2 (Recomendado para o Módulo 2)
+## 2. Pré-requisito Vital na EC2: Memória Swap (Para Instâncias t2.micro / t3.micro)
 
-Neste cenário, você **não precisa instalar Docker agora**. O mesmo servidor PostgreSQL nativo da VM que já guarda os dados do `backend/` vai guardar também o `kds_db` (`Database-per-Service` lógico).
+Instâncias do Free Tier da AWS (`t2.micro` ou `t3.micro`) possuem apenas 1 GB de memória RAM. A compilação do TypeScript e o build do React 19 / Vite podem disparar o erro `JavaScript heap out of memory` caso não haja memória swap configurada.
 
-### Passo 1: Descobrir o usuário e a URL de conexão atuais do `backend` na EC2
-Veja como o seu `backend/.env` está configurado na VM:
+Conecte-se via SSH na sua instância e execute:
+
 ```bash
-cat ~/vapt-pdv/backend/.env
+# 1. Cria um arquivo de swap de 2GB
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# 2. Torna o swap permanente após reboots da máquina
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 3. Confirma se o swap está ativo (deve mostrar ~2GB)
+free -h
 ```
-*(Anote o `USUARIO`, `SENHA` e `PORTA` que estão na `DATABASE_URL` do backend).*
 
-### Passo 2: Criar o banco `kds_db` no PostgreSQL da EC2
-No Ubuntu com PostgreSQL nativo, o usuário administrador padrão `postgres` existe no sistema. Execute:
+---
+
+## 3. Caminho A: PostgreSQL Nativo na VM EC2 + PM2 (Padrão Recomendado M2)
+
+Neste caminho, o PostgreSQL roda nativamente no Ubuntu da EC2 (via `systemctl`), e os 4 bancos isolados coexistem na mesma instância do SGBD com segurança.
+
+### Passo 1: Atualizar o Repositório na VM EC2
+```bash
+cd ~/vapt-pdv
+git fetch origin
+git pull origin main
+```
+
+---
+
+### Passo 2: Criar os 4 Bancos de Dados Isolados no PostgreSQL
+No PostgreSQL nativo da EC2, execute com o usuário administrador `postgres`:
 
 ```bash
-# Cria o banco de dados exclusivo do KDS
+# Criação dos 4 bancos de dados isolados (Database-per-Service)
+sudo -u postgres psql -c "CREATE DATABASE vapt_pdv;"
 sudo -u postgres psql -c "CREATE DATABASE kds_db;"
+sudo -u postgres psql -c "CREATE DATABASE caixa_db;"
+sudo -u postgres psql -c "CREATE DATABASE gestao_db;"
 
-# (Opcional) Caso seu usuário do .env não seja 'postgres', garanta permissão a ele:
-# Substitua SEU_USUARIO pelo usuário que você viu no backend/.env
+# (Opcional) Caso use um usuário dedicado da aplicação (ex: userkaio ou vaptuser), conceda permissão total:
+# Substitua 'SEU_USUARIO' pelo usuário configurado no seu banco
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE vapt_pdv TO SEU_USUARIO;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE kds_db TO SEU_USUARIO;"
-sudo -u postgres psql -d kds_db -c "GRANT ALL ON SCHEMA public TO SEU_USUARIO;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE caixa_db TO SEU_USUARIO;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE gestao_db TO SEU_USUARIO;"
 ```
 
-Para confirmar que os dois bancos coexistem na VM:
+Para verificar se os 4 bancos foram criados:
 ```bash
 sudo -u postgres psql -c "\l"
 ```
 
-### Passo 3: Atualizar o código do repositório na EC2
+---
+
+### Passo 3: Configurar os Arquivos `.env` dos 4 Serviços
+
+#### 1. PDV Core (`backend/.env`):
 ```bash
-cd ~/vapt-pdv
-git fetch origin
-git checkout feature/kds-service   # ou a branch principal após o merge
-git pull
+cd ~/vapt-pdv/backend
+cp .env.example .env
+nano .env
+```
+Conteúdo do `backend/.env`:
+```env
+PORT=3000
+NODE_ENV=production
+LOG_LEVEL=info
+DATABASE_URL="postgresql://SEU_USUARIO:SUA_SENHA@localhost:5432/vapt_pdv?schema=public"
+KDS_SERVICE_URL="http://localhost:3001"
 ```
 
-### Passo 4: Configurar o `.env` do `kds-service`
+#### 2. KDS Service (`services/kds-service/.env`):
 ```bash
 cd ~/vapt-pdv/services/kds-service
 cp .env.example .env
 nano .env
 ```
-Preencha usando as **mesmas credenciais** do `backend/.env`, alterando apenas a porta do serviço para `3001` e o nome do banco no final para `/kds_db`:
+Conteúdo do `services/kds-service/.env`:
 ```env
 PORT=3001
 NODE_ENV=production
@@ -83,41 +168,143 @@ LOG_LEVEL=info
 DATABASE_URL="postgresql://SEU_USUARIO:SUA_SENHA@localhost:5432/kds_db?schema=public"
 ```
 
-### Passo 5: Instalar dependências, aplicar Migrations e gerar Build
-> **Nota importante:** Em produção usamos `prisma migrate deploy` (que aplica as migrações já committadas na pasta `prisma/migrations/` sem pedir confirmação interativa).
-
+#### 3. Caixa Service (`services/caixa-service/.env`):
 ```bash
-cd ~/vapt-pdv/services/kds-service
-npm install
-npx prisma migrate deploy
-npm run build
+cd ~/vapt-pdv/services/caixa-service
+cp .env.example .env
+nano .env
+```
+Conteúdo do `services/caixa-service/.env`:
+```env
+PORT=3002
+NODE_ENV=production
+LOG_LEVEL=info
+DATABASE_URL="postgresql://SEU_USUARIO:SUA_SENHA@localhost:5432/caixa_db?schema=public"
+CORE_API_URL="http://localhost:3000"
+GESTAO_API_URL="http://localhost:3003"
 ```
 
-Confirme se as tabelas `fichas_preparo` e `eventos_processados` foram criadas no `kds_db`:
+#### 4. Gestão Service (`services/gestao-service/.env`):
 ```bash
-sudo -u postgres psql -d kds_db -c "\dt"
+cd ~/vapt-pdv/services/gestao-service
+cp .env.example .env
+nano .env
 ```
-
-### Passo 6: Iniciar o `kds-service` em background com PM2
-```bash
-cd ~/vapt-pdv/services/kds-service
-pm2 start dist/server.js --name kds-service
-pm2 save
-```
-
-Verifique se os dois serviços (`vapt-pdv` na `:3000` e `kds-service` na `:3001`) estão online:
-```bash
-pm2 status
-curl -X GET http://localhost:3001/health
+Conteúdo do `services/gestao-service/.env`:
+```env
+PORT=3003
+NODE_ENV=production
+LOG_LEVEL=info
+DATABASE_URL="postgresql://SEU_USUARIO:SUA_SENHA@localhost:5432/gestao_db?schema=public"
 ```
 
 ---
 
-## Caminho B: Instalando Docker na VM EC2 e Usando Contêiner Compartilhado
+### Passo 4: Instalar Dependências e Aplicar Migrações Prisma nos 4 Bancos
 
-Se a VM não tem Docker instalado e você deseja rodar o banco (ou a pilha toda) via Docker:
+Em ambiente de produção, utilizamos estritamente `npx prisma migrate deploy` para aplicar as migrações versionadas sem confirmações interativas:
 
-### Passo 1: Instalar o Docker no Ubuntu Server (AWS EC2)
+```bash
+# 1. Migrações do PDV Core
+cd ~/vapt-pdv/backend
+npm install
+npx prisma generate
+npx prisma migrate deploy
+
+# 2. Migrações do KDS Service
+cd ~/vapt-pdv/services/kds-service
+npm install
+npx prisma generate
+npx prisma migrate deploy
+
+# 3. Migrações do Caixa Service
+cd ~/vapt-pdv/services/caixa-service
+npm install
+npx prisma generate
+npx prisma migrate deploy
+
+# 4. Migrações do Gestão Service
+cd ~/vapt-pdv/services/gestao-service
+npm install
+npx prisma generate
+npx prisma migrate deploy
+```
+
+#### Carga Inicial do Catálogo de Produtos Reais (24 Produtos):
+Insira o cardápio oficial no banco do PDV Core:
+```bash
+sudo -u postgres psql -d vapt_pdv < ~/vapt-pdv/backend/prisma/seed-produtos.sql
+```
+
+---
+
+### Passo 5: Compilar o Frontend Web/PWA e Gerar os Estáticos
+
+O PDV Core (`:3000`) serve os arquivos estáticos compilados do frontend com fallback SPA para `/garcom`, `/caixa`, `/kds`, `/gestao` e `/login`:
+
+```bash
+cd ~/vapt-pdv/frontend
+npm install
+npm run build
+```
+*(O build do Vite compila a interface e publica os artefatos diretamente na pasta `backend/public/`).*
+
+---
+
+### Passo 6: Compilar os Códigos TypeScript de Produção
+
+Compile o TypeScript dos 4 backends:
+
+```bash
+# Build do Core
+cd ~/vapt-pdv/backend && npm run build
+
+# Build do KDS
+cd ~/vapt-pdv/services/kds-service && npm run build
+
+# Build do Caixa
+cd ~/vapt-pdv/services/caixa-service && npm run build
+
+# Build da Gestão
+cd ~/vapt-pdv/services/gestao-service && npm run build
+```
+
+---
+
+### Passo 7: Gerenciar e Subir os 4 Microsserviços com PM2
+
+Inicie os 4 processos em background gerenciados pelo PM2:
+
+```bash
+# 1. Iniciar PDV Core (:3000)
+cd ~/vapt-pdv/backend
+pm2 start dist/server.js --name vapt-pdv-core
+
+# 2. Iniciar KDS Service (:3001)
+cd ~/vapt-pdv/services/kds-service
+pm2 start dist/server.js --name kds-service
+
+# 3. Iniciar Caixa Service (:3002)
+cd ~/vapt-pdv/services/caixa-service
+pm2 start dist/server.js --name caixa-service
+
+# 4. Iniciar Gestão Service (:3003)
+cd ~/vapt-pdv/services/gestao-service
+pm2 start dist/server.js --name gestao-service
+
+# Salva a lista de processos para auto-start no boot do sistema
+pm2 save
+pm2 startup
+```
+*(Se o `pm2 startup` exibir um comando `sudo env PATH=...`, copie e execute-o conforme instruído na tela).*
+
+---
+
+## 4. Caminho B: Docker Compose na AWS EC2 (Preparatório Módulo 3)
+
+Se você optar por rodar a infraestrutura de banco de dados via Docker na própria EC2:
+
+### Passo 1: Instalar Docker e Docker Compose na EC2
 ```bash
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl
@@ -132,57 +319,96 @@ echo \
 
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# Adicionar o usuário ubuntu ao grupo docker (para não precisar de sudo)
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-### Passo 2: Subir o Contêiner PostgreSQL (caso ainda não exista)
-> **Atenção:** Se o PostgreSQL nativo estiver rodando na porta `5432` da EC2, pare-o antes (`sudo systemctl stop postgresql && sudo systemctl disable postgresql`) para liberar a porta `5432` para o Docker.
+> ⚠️ Se o PostgreSQL nativo estiver rodando, pare-o para liberar a porta `5432`:
+> ```bash
+> sudo systemctl stop postgresql && sudo systemctl disable postgresql
+> ```
 
+### Passo 2: Subir os 4 Bancos com Docker Compose
+Na raiz do repositório (`~/vapt-pdv`):
 ```bash
-docker run -d \
-  --name vaptpdv-postgres \
-  --restart always \
-  -e POSTGRES_USER=userkaio \
-  -e POSTGRES_PASSWORD=SUA_SENHA \
-  -e POSTGRES_DB=vaptpdv_db \
-  -p 5432:5432 \
-  -v vaptpdv_pgdata:/var/lib/postgresql/data \
-  postgres:16-alpine
+cd ~/vapt-pdv
+docker compose up -d
 ```
+*(O script `docker/init-multi-db.sql` criará automaticamente os 4 bancos `vapt_pdv`, `kds_db`, `caixa_db` e `gestao_db` no boot do container).*
 
-### Passo 3: Criar os Bancos dos Microsserviços no Mesmo Contêiner
-Exatamente como você fez na sua máquina local, conecte-se ao banco inicial (`postgres` ou `vaptpdv_db`) usando `-d` e crie o `kds_db` (e opcionalmente já deixe criados o `caixa_db` e `gestao_db`):
-
-```bash
-# Criar banco do KDS (:3001)
-docker exec -it vaptpdv-postgres psql -U userkaio -d vaptpdv_db -c "CREATE DATABASE kds_db;"
-
-# (Opcional) Já criar os bancos do Caixa (:3002) e Gestão (:3003) no mesmo contêiner
-docker exec -it vaptpdv-postgres psql -U userkaio -d vaptpdv_db -c "CREATE DATABASE caixa_db;"
-docker exec -it vaptpdv-postgres psql -U userkaio -d vaptpdv_db -c "CREATE DATABASE gestao_db;"
-
-# Verificar todos os bancos criados no contêiner
-docker exec -it vaptpdv-postgres psql -U userkaio -d vaptpdv_db -c "\l"
-```
-
-Depois disso, basta executar os **Passos 4, 5 e 6 do Caminho A** para rodar `npx prisma migrate deploy`, `npm run build` e subir no PM2!
+Em seguida, execute os **Passos 3, 4, 5, 6 e 7 do Caminho A** normalmente para aplicar migrações, compilar e subir os serviços via PM2!
 
 ---
 
-## Passo Extra na AWS: Security Group (Firewall da EC2)
+## 5. Verificação de Saúde e Testes em Produção
 
-Caso você ou o Frontend precisem acessar o `kds-service` diretamente pelo IP público da EC2 (`http://54.234.157.236:3001`):
-1. Acesse o console da **AWS EC2** ➔ **Security Groups**.
-2. Edite as **Inbound Rules (Regras de Entrada)** do Security Group da sua instância.
-3. Adicione uma regra:
-   - **Type:** Custom TCP
-   - **Port Range:** `3001` (e futuramente `3002` e `3003`)
-   - **Source:** `0.0.0.0/0`
-4. Teste do seu computador:
-   ```bash
-   curl http://54.234.157.236:3001/health
-   ```
+### 1. Status dos Processos no PM2
+Execute na VM:
+```bash
+pm2 status
+```
+Todos os 4 serviços devem exibir status **`online`**:
+- `vapt-pdv-core` (`:3000`)
+- `kds-service` (`:3001`)
+- `caixa-service` (`:3002`)
+- `gestao-service` (`:3003`)
 
+### 2. Health Checks Internos (via `curl` na VM)
+```bash
+curl -X GET http://localhost:3000/health
+curl -X GET http://localhost:3001/health
+curl -X GET http://localhost:3002/health
+curl -X GET http://localhost:3003/health
+```
+*(Todos devem responder com `{ "status": "ok" }`).*
+
+### 3. Validação Externa pelo Navegador (Substitua pelo IP Público da sua EC2)
+- **Aplicação Web / PWA Completa:** `http://54.234.157.236:3000`
+  - `/login`: Seleção de perfis (Garçom, Caixa, Cozinha, Gerente)
+  - `/garcom`: Comandas e Mesas mobile-first
+  - `/caixa`: Fechamento, Split Payment e Recibo Térmico
+  - `/kds`: Painel TV da Cozinha com SLA semafórico
+  - `/gestao`: Dashboard Executivo e Curva ABC
+- **Swagger / OpenAPI dos 4 Microsserviços:**
+  - Core Salão: `http://54.234.157.236:3000/docs`
+  - KDS Cozinha: `http://54.234.157.236:3001/docs`
+  - Caixa Service: `http://54.234.157.236:3002/docs`
+  - Gestão Service: `http://54.234.157.236:3003/docs`
+
+---
+
+## 6. Rotina Operacional: Como Fazer Deploy de Novas Versões
+
+Sempre que commitar melhorias ou correções no repositório, basta rodar na VM:
+
+```bash
+cd ~/vapt-pdv
+git pull origin develop
+
+# Rebuild do frontend (se houver alterações de UI)
+cd ~/vapt-pdv/frontend && npm install && npm run build
+
+# Atualizar migrações e rebuild dos serviços alterados
+cd ~/vapt-pdv/backend && npm install && npx prisma migrate deploy && npm run build
+cd ~/vapt-pdv/services/kds-service && npm install && npx prisma migrate deploy && npm run build
+cd ~/vapt-pdv/services/caixa-service && npm install && npx prisma migrate deploy && npm run build
+cd ~/vapt-pdv/services/gestao-service && npm install && npx prisma migrate deploy && npm run build
+
+# Reiniciar todos os processos no PM2
+pm2 restart all
+```
+
+### Comandos Úteis de Monitoramento
+```bash
+# Monitorar logs em tempo real de todos os microsserviços
+pm2 logs
+
+# Monitorar logs de um serviço específico
+pm2 logs kds-service
+pm2 logs caixa-service
+pm2 logs gestao-service
+pm2 logs vapt-pdv-core
+
+# Monitoramento de consumo de CPU e RAM
+pm2 monit
+```
