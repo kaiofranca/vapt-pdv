@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { ClienteBanco } from '../../shared/prisma';
 import { ErroDominio } from '../../shared/erros';
@@ -11,6 +12,7 @@ import {
   ReposicaoEstoqueResultado,
 } from './produtos.entity';
 import { IProdutosRepository } from './produtos.repository';
+import { HttpGestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 
 /**
  * Normaliza e valida strings de preço para garantir conformidade contábil.
@@ -59,8 +61,15 @@ export interface ServicoProdutos {
  * Implementação das Regras de Negócio do Módulo de Produtos.
  */
 export class ProdutosService implements ServicoProdutos {
+  private readonly gestaoGateway?: IGestaoGateway;
+
   // Injeção de dependência: o Service recebe o Repository pronto!
-  constructor(private readonly repository: IProdutosRepository) {}
+  constructor(
+    private readonly repository: IProdutosRepository,
+    gestaoGateway?: IGestaoGateway,
+  ) {
+    this.gestaoGateway = gestaoGateway ?? new HttpGestaoGateway();
+  }
 
   async criar(dados: CriarProdutoDados): Promise<ProdutoEntidade> {
     const nomeLimpo = dados.nome?.trim() ?? '';
@@ -287,7 +296,33 @@ export class ProdutosService implements ServicoProdutos {
       }
     }
 
-    return this.repository.baixarEstoque(dados, tx);
+    await this.repository.baixarEstoque(dados, tx);
+
+    if (this.gestaoGateway) {
+      for (const item of dados.itens) {
+        try {
+          const prod = await this.repository.buscarPorId(item.produto_id);
+          if (prod) {
+            await this.gestaoGateway.notificarEvento({
+              evento_id: crypto.randomUUID(),
+              evento: 'estoque.movimentado',
+              versao: 1,
+              ocorrido_em: new Date().toISOString(),
+              produto_id: prod.id,
+              nome_produto: prod.nome,
+              categoria: prod.categoria,
+              tipo: 'saida',
+              quantidade: -item.quantidade,
+              estoque_atual: prod.estoque,
+              estoque_minimo: prod.estoque_minimo,
+              abaixo_do_minimo: prod.estoque <= prod.estoque_minimo,
+            });
+          }
+        } catch {
+          // Degradação graciosa pós-commit (ADR-07)
+        }
+      }
+    }
   }
 
   async repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado> {
@@ -300,6 +335,31 @@ export class ProdutosService implements ServicoProdutos {
       );
     }
 
-    return this.repository.reporEstoque(id, quantidade, motivo);
+    const resultado = await this.repository.reporEstoque(id, quantidade, motivo);
+
+    if (this.gestaoGateway) {
+      try {
+        const prod = resultado.produto;
+        await this.gestaoGateway.notificarEvento({
+          evento_id: crypto.randomUUID(),
+          evento: 'estoque.movimentado',
+          versao: 1,
+          ocorrido_em: new Date().toISOString(),
+          movimento_id: resultado.movimento.id,
+          produto_id: prod.id,
+          nome_produto: prod.nome,
+          categoria: prod.categoria,
+          tipo: 'ENTRADA_REPOSICAO',
+          quantidade,
+          estoque_atual: prod.estoque,
+          estoque_minimo: prod.estoque_minimo,
+          abaixo_do_minimo: prod.estoque <= prod.estoque_minimo,
+        });
+      } catch {
+        // Degradação graciosa pós-commit (ADR-07)
+      }
+    }
+
+    return resultado;
   }
 }

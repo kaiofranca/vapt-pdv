@@ -66,6 +66,15 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    if (request.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
+
   // Swagger Documentation
   await app.register(swagger, {
     openapi: {

@@ -266,6 +266,23 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           },
         });
       }
+
+      // Sincroniza status da comanda no Core para 'paga' quando liquidada pelo caixa-service
+      const repoComandas = (contexto as any).comanda;
+      if (repoComandas && typeof repoComandas.findUnique === 'function') {
+        const comandaExistente = await repoComandas.findUnique({
+          where: { id: dados.comanda_id },
+        });
+        if (comandaExistente && comandaExistente.status === 'fechada') {
+          await repoComandas.update({
+            where: { id: dados.comanda_id },
+            data: {
+              status: 'paga',
+              paga_em: new Date(),
+            },
+          });
+        }
+      }
     };
 
     if (tx) {

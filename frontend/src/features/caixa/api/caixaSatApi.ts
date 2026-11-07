@@ -9,9 +9,23 @@
  * 4. Tratamento robusto de erros e degradação graciosa em caso de indisponibilidade (ADR-07, EARS-CXSAT-10).
  */
 
-export const CAIXA_API_URL =
-  (import.meta.env.VITE_CAIXA_API_URL as string | undefined)?.replace(/\/$/, '') ||
-  'http://localhost:3002';
+function resolverCaixaBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_CAIXA_API_URL as string | undefined)?.trim();
+  if (envUrl && !envUrl.includes('seu_ip_publico_ec2')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return `http://${window.location.hostname}:3002`;
+  }
+  return 'http://localhost:3002';
+}
+
+export const CAIXA_API_URL = resolverCaixaBaseUrl();
 
 export class CaixaSatError extends Error {
   public readonly statusHttp: number;

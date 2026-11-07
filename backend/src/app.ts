@@ -70,6 +70,15 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
+  app.addHook('onRequest', async (request, reply) => {
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    if (request.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
+
   await app.register(swagger, {
     openapi: {
       info: {
@@ -199,9 +208,86 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   const prisma = opcoes.prisma ?? obterPrisma();
 
+  // Reverse Proxy Interno / API Gateway para os microsserviços satélites (:3001, :3002, :3003)
+  const encaminharParaSatelite = async (
+    request: any,
+    reply: any,
+    baseUrl: string,
+  ) => {
+    const aceitaHtml = (request.headers.accept || '').includes('text/html');
+    if (request.method === 'GET' && aceitaHtml && temIndexHtml) {
+      return reply.sendFile('index.html');
+    }
+
+    const urlDestino = `${baseUrl.replace(/\/+$/, '')}${request.url}`;
+    try {
+      const headers: Record<string, string> = {
+        Accept: (request.headers.accept as string) || 'application/json',
+      };
+      if (request.headers['content-type']) {
+        headers['Content-Type'] = request.headers['content-type'] as string;
+      }
+      if (request.headers.authorization) {
+        headers.Authorization = request.headers.authorization as string;
+      }
+
+      const possuiCorpo =
+        request.method !== 'GET' &&
+        request.method !== 'HEAD' &&
+        request.body !== undefined &&
+        request.body !== null;
+
+      const resposta = await fetch(urlDestino, {
+        method: request.method,
+        headers,
+        body: possuiCorpo
+          ? typeof request.body === 'string'
+            ? request.body
+            : JSON.stringify(request.body)
+          : undefined,
+        signal: AbortSignal.timeout(5000),
+      });
+
+      const contentType = resposta.headers.get('content-type');
+      if (contentType) {
+        reply.header('content-type', contentType);
+      }
+      const contentDisposition = resposta.headers.get('content-disposition');
+      if (contentDisposition) {
+        reply.header('content-disposition', contentDisposition);
+      }
+
+      const buffer = Buffer.from(await resposta.arrayBuffer());
+      return reply.status(resposta.status).send(buffer);
+    } catch (erro: any) {
+      request.log.warn(
+        { err: erro, urlDestino },
+        'Falha ao encaminhar requisição para serviço satélite.',
+      );
+      return reply
+        .status(503)
+        .send(
+          formatarRespostaErro(
+            'SERVICO_INDISPONIVEL',
+            'O microsserviço satélite solicitado está temporariamente indisponível.',
+            { destino: urlDestino },
+          ),
+        );
+    }
+  };
+
+  const kdsUrl = process.env.KDS_SERVICE_URL || process.env.KDS_API_URL || 'http://localhost:3001';
+  const caixaUrl = process.env.CAIXA_SERVICE_URL || process.env.CAIXA_API_URL || 'http://localhost:3002';
+  const gestaoUrl = process.env.GESTAO_SERVICE_URL || process.env.GESTAO_API_URL || 'http://localhost:3003';
+
+  app.all('/kds/*', async (request, reply) => encaminharParaSatelite(request, reply, kdsUrl));
+  app.all('/caixa/*', async (request, reply) => encaminharParaSatelite(request, reply, caixaUrl));
+  app.all('/gestao/*', async (request, reply) => encaminharParaSatelite(request, reply, gestaoUrl));
+  app.all('/analytics/*', async (request, reply) => encaminharParaSatelite(request, reply, gestaoUrl));
+
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
-  await app.register(moduloProdutos, { prisma });
+  await app.register(moduloProdutos, { prisma, gestaoGateway: opcoes.gestaoGateway });
   await app.register(moduloComandas, {
     prisma,
     caixaGateway: opcoes.caixaGateway,

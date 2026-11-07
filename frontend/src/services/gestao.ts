@@ -10,13 +10,31 @@ import type {
   ExportarRelatorioFiltros,
 } from '../types/api';
 
+function resolverGestaoBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_GESTAO_API_URL as string | undefined)?.trim();
+  if (envUrl && !envUrl.includes('seu_ip_publico_ec2')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return `http://${window.location.hostname}:3003`;
+  }
+  return '';
+}
+
+export const GESTAO_BASE_URL = resolverGestaoBaseUrl();
+
 /**
  * Consulta o resumo diário e faturamento (M01 / M09)
  */
 export async function obterResumoDiario(
   filtros?: ResumoDiarioFiltros,
 ): Promise<ResumoDiarioGestao> {
-  return request<ResumoDiarioGestao>('/gestao/resumo-diario', {
+  return request<ResumoDiarioGestao>(`${GESTAO_BASE_URL}/gestao/resumo-diario`, {
     params: {
       data: filtros?.data,
     },
@@ -29,7 +47,7 @@ export async function obterResumoDiario(
 export async function obterRankingProdutos(
   filtros?: RankingProdutosFiltros,
 ): Promise<RankingProdutosResposta> {
-  return request<RankingProdutosResposta>('/gestao/ranking-produtos', {
+  return request<RankingProdutosResposta>(`${GESTAO_BASE_URL}/gestao/ranking-produtos`, {
     params: {
       limite: filtros?.limite,
       categoria: filtros?.categoria,
@@ -41,7 +59,7 @@ export async function obterRankingProdutos(
  * Consulta o desempenho e comissões da equipe de garçons (M11)
  */
 export async function obterDesempenhoGarcons(): Promise<DesempenhoGarconsResposta> {
-  return request<DesempenhoGarconsResposta>('/gestao/desempenho-garcons');
+  return request<DesempenhoGarconsResposta>(`${GESTAO_BASE_URL}/gestao/desempenho-garcons`);
 }
 
 /**
@@ -50,7 +68,7 @@ export async function obterDesempenhoGarcons(): Promise<DesempenhoGarconsRespost
 export async function obterAlertasEstoque(
   filtros?: AlertasEstoqueFiltros,
 ): Promise<AlertasEstoqueResposta> {
-  return request<AlertasEstoqueResposta>('/gestao/alertas-estoque', {
+  return request<AlertasEstoqueResposta>(`${GESTAO_BASE_URL}/gestao/alertas-estoque`, {
     params: {
       apenas_ativos: filtros?.apenas_ativos,
     },
@@ -70,7 +88,7 @@ export async function exportarRelatorio(
   if (filtros.ate) params.append('ate', filtros.ate);
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  const url = `/gestao/exportar${queryString}`;
+  const url = `${GESTAO_BASE_URL}/gestao/exportar${queryString}`;
 
   const response = await fetch(url, {
     headers: {

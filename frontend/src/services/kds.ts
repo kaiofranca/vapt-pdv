@@ -6,10 +6,26 @@ import type {
   RespostaChecagemPendenciasKds,
 } from '../types/api';
 
-const KDS_BASE_URL =
-  (import.meta.env.VITE_KDS_URL as string | undefined) ??
-  (import.meta.env.VITE_KDS_API_URL as string | undefined) ??
-  'http://localhost:3001';
+function resolverKdsBaseUrl(): string {
+  const envUrl = (
+    (import.meta.env.VITE_KDS_URL as string | undefined) ??
+    (import.meta.env.VITE_KDS_API_URL as string | undefined)
+  )?.trim();
+  if (envUrl && !envUrl.includes('seu_ip_publico_ec2')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return `http://${window.location.hostname}:3001`;
+  }
+  return 'http://localhost:3001';
+}
+
+const KDS_BASE_URL = resolverKdsBaseUrl();
 
 /**
  * Consulta a situação dos itens no KDS (:3001) para a comanda informada.
