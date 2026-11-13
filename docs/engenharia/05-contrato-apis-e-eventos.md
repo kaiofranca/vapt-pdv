@@ -109,7 +109,7 @@ Endpoints de listagem suportam parâmetros de query opcionais:
 
 ## 2. API do Core Salão / PDV (`vapt-pdv-core` — Porta `:3000`)
 
-> **Preservação do Módulo 1 (`entrega-1-cloud`):** Todos os endpoints abaixo já estão implementados e testados (143 testes automatizados) em `vapt-pdv-core` (`:3000`). A partir do Módulo 2, o Core Salão / PDV mantém esses contratos 100% compatíveis e sincroniza o fechamento de conta (`POST /comandas/:id/fechar`) com o `caixa-service` (`:3002`).
+> **Preservação do Módulo 1 (`entrega-1-cloud`):** Todos os endpoints abaixo já estão implementados e testados (180 testes automatizados no Core; 387 no ecossistema completo) em `vapt-pdv-core` (`:3000`). A partir do Módulo 2, o Core Salão / PDV mantém esses contratos 100% compatíveis, sincroniza o fechamento de conta (`POST /comandas/:id/fechar`) com o `caixa-service` (`:3002`) e foi expandido com `POST /produtos/:id/repor`, `PATCH /comandas/:id/transferir-mesa`, `POST /comandas/:id/mesclar`, `observacao` em itens e auditoria de cancelamento (`cancelada_em`, `motivo_cancelamento`).
 
 ### 2.1 Observabilidade e Saúde (`/health` e `/docs`)
 
@@ -277,6 +277,19 @@ Atualiza parcialmente dados do produto (nome, categoria, preço, estoque, estoqu
 #### `POST /produtos/:id/inativar`
 Inativa logicamente o produto no cardápio de forma idempotente (`RF06`, `RN14`). Nunca utiliza exclusão física (`DELETE`).
 - **Resposta `200 OK`:** Objeto do produto com `ativo: false`.
+- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`.
+
+#### `POST /produtos/:id/repor`
+Registra entrada de reposição de estoque de forma atômica, incrementando `produtos.estoque` e gravando um registro `ENTRADA_REPOSICAO` em `movimentos_estoque` (`RF01`, `M06`).
+- **Body (`application/json`):**
+```json
+{
+  "quantidade": 20,
+  "motivo": "Reposição de fornecedor"
+}
+```
+- **Regras:** `quantidade` deve ser inteiro `>= 1`; `motivo` é opcional.
+- **Resposta `200 OK`:** Objeto `{ "produto": { ... }, "movimento": { "id": 45, "produto_id": 12, "tipo": "ENTRADA_REPOSICAO", "quantidade": 20, ... } }`.
 - **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`.
 
 #### `GET /produtos/:id/disponibilidade` [Interna]
@@ -484,7 +497,7 @@ Registra ou confirma a quitação da comanda fechada, executa a baixa atômica e
 - **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_FECHADA`, `409 COMANDA_IMUTAVEL`, `409 ESTOQUE_INSUFICIENTE`.
 
 #### `POST /comandas/:id/cancelar`
-Cancela uma comanda `'aberta'` ou `'fechada'` sem baixar estoque e liberando a mesa (`RF07`, `RF15`, `RN03`). Registra carimbo de data/hora em `cancelada_em` e armazena a justificativa operacional em `motivo_cancelamento`.
+Cancela exclusivamente uma comanda `'aberta'` sem baixar estoque e liberando a mesa (`RF08`, `RN03`). Registra carimbo de data/hora em `cancelada_em` e armazena a justificativa operacional em `motivo_cancelamento`. Comandas já `'fechada'` ou `'paga'` não podem ser canceladas por esta rota (`409 COMANDA_NAO_ABERTA` / `409 COMANDA_IMUTAVEL`).
 - **Body (`application/json` — opcional):**
 ```json
 {
@@ -493,7 +506,7 @@ Cancela uma comanda `'aberta'` ou `'fechada'` sem baixar estoque e liberando a m
 ```
 - **Resposta `200 OK`:** Objeto da comanda com `status: "cancelada"`, `cancelada_em` e `motivo_cancelamento` preenchidos.
 - **Idempotência:** Chamar repetidamente para uma comanda já `'cancelada'` retorna `200 OK` preservando os dados originais.
-- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA` (se comanda já quitada).
+- **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA`, `409 COMANDA_IMUTAVEL`.
 
 #### `PATCH /comandas/:id/transferir-mesa`
 Transfere o atendimento de uma comanda aberta para outra mesa desocupada no salão (`RF04`, `RN07`).
@@ -510,15 +523,15 @@ Transfere o atendimento de uma comanda aberta para outra mesa desocupada no sal�
 - **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA`, `409 MESA_OCUPADA`.
 
 #### `POST /comandas/:id/mesclar`
-Unifica/mescla duas comandas abertas em uma única transação atômica (`RF04`, `RN01`): migra todos os itens da comanda de origem (`id`) para a comanda de destino (`comanda_destino_id`), recalcula os subtotais e cancela automaticamente a comanda de origem com motivo `"Mesclada com comanda X"`, liberando a mesa de origem.
+Unifica/mescla duas comandas abertas em uma única transação atômica (`RF03`, `RN01`): `:id` na URL representa a **comanda de destino** que receberá os itens, enquanto `comanda_origem_id` no corpo identifica a **comanda de origem**. Todos os itens da origem migram para o destino, a origem é cancelada automaticamente com motivo `"Mesclada com a comanda #X"` (liberando a mesa de origem) e o resumo da comanda de destino atualizado é retornado.
 - **Body (`application/json`):**
 ```json
 {
-  "comanda_destino_id": 88
+  "comanda_origem_id": 88
 }
 ```
 - **Regras:**
-  - Ambas as comandas devem ter `status = 'aberta'`.
+  - Ambas as comandas (destino `:id` e origem `comanda_origem_id`) devem ter `status = 'aberta'`.
   - A comanda de origem e de destino não podem ser a mesma (`400 VALIDACAO`).
 - **Resposta `200 OK`:** Objeto da comanda de destino atualizada com os itens consolidados.
 - **Erros:** `400 VALIDACAO`, `404 NAO_ENCONTRADO`, `409 COMANDA_NAO_ABERTA`.

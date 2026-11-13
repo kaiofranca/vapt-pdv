@@ -152,6 +152,8 @@ NODE_ENV=production
 LOG_LEVEL=info
 DATABASE_URL="postgresql://SEU_USUARIO:SUA_SENHA@localhost:5432/vapt_pdv?schema=public"
 KDS_SERVICE_URL="http://localhost:3001"
+CAIXA_SERVICE_URL="http://localhost:3002"
+GESTAO_SERVICE_URL="http://localhost:3003"
 ```
 
 #### 2. KDS Service (`services/kds-service/.env`):

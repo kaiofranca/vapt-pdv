@@ -1,32 +1,40 @@
-# React + TypeScript + Vite
+# VaptPDV — Frontend Web/PWA
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interface operacional Web/PWA do ecossistema **VaptPDV** (Ponto de Venda, Atendimento de Salão, Cozinha/Bar, Frente de Caixa e Gestão Executiva) para bares e lanchonetes.
 
-Currently, two official plugins are available:
+## Stack Tecnológica
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **TypeScript**
+- **Vite** + `vite-plugin-pwa` (suporte PWA e proxy de desenvolvimento para os serviços `:3000`–`:3003`)
+- **Tailwind CSS** (identidade visual *Mostarda `#F2A81D`, Café `#2B2019` e Creme `#FBF7F1`*, sem neon e sem emoji, alvos de toque `>= 44x44px`, WCAG 2.2 AA)
+- **TanStack Query v5** (sincronização e cache de estado servidor)
+- **Zustand** (estado local de sessão e UI)
+- **lucide-react** (iconografia operacional)
 
-## React Compiler
+## Modos Operacionais
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Rota | Modo | Perfil(is) | Integração Principal |
+| :--- | :--- | :--- | :--- |
+| `/login` | Autenticação Operacional | Todos | `vapt-pdv-core` (`:3000`) |
+| `/garcom` | Atendimento de Salão PWA (Mobile) | `garcom`, `gerente` | `vapt-pdv-core` (`:3000`) |
+| `/kds` | Painel TV da Cozinha / Bar (KDS) | `cozinha`, `gerente` | `kds-service` (`:3001`) |
+| `/caixa` | Frente de Caixa, Split Payment e Recibo `.paper` (Desktop) | `caixa`, `gerente` | `vapt-pdv-core` (`:3000`) + `caixa-service` (`:3002`) |
+| `/gestao` | Portal Gerencial, Analytics/OLAP, Cardápio, Estoque e Equipe | `gerente` | `vapt-pdv-core` (`:3000`) + `gestao-service` (`:3003`) |
 
-## Expanding the Oxlint configuration
+## Comandos
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Execute dentro de `frontend/`:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install        # Instala dependências
+npm run dev        # Servidor Vite (porta 5173 com proxy para :3000–:3003)
+npm run typecheck  # Verificação estática TypeScript
+npm run lint       # Verificação Oxlint
+npm run build      # Compila bundle de produção (integrado ao backend/public/ no deploy)
+npm test           # Executa a suíte Vitest (131 testes automatizados)
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Referências de Design e UX
+
+- [`../docs/DESIGN.md`](../docs/DESIGN.md) — Sistema visual, tokens de cor, tipografia e padrões de acessibilidade.
+- [`../docs/engenharia/08-ux-e-experiencia-frontend.md`](../docs/engenharia/08-ux-e-experiencia-frontend.md) — Especificação de UX, jornadas e catálogo das telas.

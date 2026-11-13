@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-04 against workspace state (Módulo 1 concluído em backend/ e frontend/; Correct Course M2 aplicado: Core Salão :3000 + kds-service :3001 + caixa-service :3002 + gestao-service :3003; Fidelidade/Cashback fora do escopo v1). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-13 against workspace state (Módulo 1 concluído em backend/ e frontend/; Correct Course M2 aplicado: Core Salão :3000 + kds-service :3001 + caixa-service :3002 + gestao-service :3003; Fidelidade/Cashback fora do escopo v1). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## vapt-pdv
 
@@ -19,7 +19,7 @@ VaptPDV: Ecossistema distribuído de Ponto de Venda e Atendimento de Salão (PDV
 - **Memória e retomada entre sessões/agentes:**
   - Visão geral humana/agente: `docs/STATUS.md`
   - Quadro de execução de stories e Loop: `_bmad-output/implementation-artifacts/sprint-status.yaml`, `_bmad-output/specs/spec-vapt-pdv/stories.yaml` e `.bmad-loop/policy.toml`
-  - Memória append-only canônica (`.memlog.md`): `_bmad-output/specs/spec-vapt-pdv/.memlog.md` (manipulada via `python3 _bmad/scripts/memlog.py`), além dos logs de iniciativa em `_bmad-output/initiative-vapt-pdv/`
+  - Memória append-only canônica (`.memlog.md`): `_bmad-output/specs/spec-vapt-pdv/.memlog.md` (manipulada via `python3 _bmad/scripts/memlog.py`)
   - Sempre atualize `docs/STATUS.md`, `sprint-status.yaml` e registre decisões relevantes no `.memlog.md` ao concluir ou alterar uma story.
 - **Contratos e Documentação de Engenharia (`docs/engenharia/`):**
   - PRD & Escopo: `docs/engenharia/01-visao-e-escopo.md`
@@ -40,7 +40,7 @@ VaptPDV: Ecossistema distribuído de Ponto de Venda e Atendimento de Salão (PDV
   - Dev (watch): `cd backend && npm run dev`
   - Build e Start: `cd backend && npm run build && npm start`
   - Typecheck: `cd backend && npm run typecheck`
-  - Testes automatizados (Vitest — 143 testes): `cd backend && npm test`
+  - Testes automatizados (Vitest — 180 testes no Core; 387 testes no ecossistema): `cd backend && npm test`
   - Prisma: `cd backend && npm run prisma:generate`, `npm run prisma:migrate` (dev) e `npm run prisma:deploy` (produção)
 - **Frontend (`frontend/`):**
   - Instalar: `cd frontend && npm install`

@@ -58,9 +58,9 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph Governanca["🔍 Governança, Iniciativa e Entrada"]
+    subgraph Governanca["🔍 Governança, Planejamento e Contrato"]
         README["📘 README.md\nÍndice Mestre & Mapa de Leitura"]
-        INIT["🗂️ _bmad-output/initiative-vapt-pdv/\nÁrvore de Épicos, Stories & Rastreabilidade"]
+        SPEC["📐 _bmad-output/specs/spec-vapt-pdv/\nContrato Canônico, Stories & Planejamento"]
     end
 
     subgraph Produto["🎯 PRD: Visão de Produto & Requisitos (SRS)"]
@@ -106,8 +106,8 @@ flowchart TB
 
 ## 5. Artefatos de Iniciativa, Especificação Canônica e Execução BMad
 
-Além desta pasta `docs/engenharia/`, a árvore de planejamento e rastreabilidade viva do projeto é mantida em:
-- **Árvore da Iniciativa e Épicos:** [`_bmad-output/initiative-vapt-pdv/`](../../_bmad-output/initiative-vapt-pdv/)
+Além desta pasta `docs/engenharia/`, os artefatos de planejamento e rastreabilidade viva do projeto são mantidos em:
+- **Planejamento e PRD/Arquitetura/UX:** [`_bmad-output/planning-artifacts/`](../../_bmad-output/planning-artifacts/)
 - **Contrato Canônico (`SPEC.md` e Companions):** [`_bmad-output/specs/spec-vapt-pdv/SPEC.md`](../../_bmad-output/specs/spec-vapt-pdv/SPEC.md)
 - **Status Geral e Sprint Board:** [`docs/STATUS.md`](../STATUS.md) e [`_bmad-output/implementation-artifacts/sprint-status.yaml`](../../_bmad-output/implementation-artifacts/sprint-status.yaml)
 

@@ -2,6 +2,32 @@
 
 Todas as mudanças relevantes deste projeto são documentadas neste arquivo, organizadas pelas entregas incrementais da disciplina de Sistemas Distribuídos (DCC/UERN).
 
+## [0.5.0] — 2026-11-13 — Épico 3: Containers, Docker Compose e Persistência (`entrega-3-containers`)
+
+### Adicionado
+- **Dockerfile Multi-Stage do `vapt-pdv-core` com Frontend PWA Integrado (Story 3.1.1):**
+  - Criado `backend/Dockerfile` de 3 estágios (`frontend-builder`, `backend-builder`, `runner`) sobre `node:20-alpine` com `USER node`, wrapper `/usr/local/bin/npx` para `prisma migrate deploy` no startup, remoção de `npm`/`yarn`/engines não utilizados e build integrado de `frontend/dist` copiado para `/app/public` (CONTENT SIZE `117MB`, abaixo do limite de `220MB`).
+  - Criados `.dockerignore` (raiz) e `backend/.dockerignore` excluindo `node_modules`, `dist`, `.env*`, testes, logs, `docs/` e artefatos `_bmad*`.
+  - Adicionado encaminhamento HTTP transparente (`ALL /gestao/*` e `ALL /analytics/*`) em `backend/src/app.ts` com `AbortSignal.timeout(2000)` para o `gestao-service`, mantendo `GET /gestao` e `/caixa/mesa-5` como rotas SPA.
+  - Adicionada migration `backend/prisma/migrations/20261105190000_add_movimentos_estoque_tipo/migration.sql` garantindo a criação da coluna `movimentos_estoque.tipo` em bancos novos provisionados via `prisma migrate deploy`.
+  - Criada suíte `backend/test/docker-epic3.test.ts` validando o proxy `/gestao/*` e `/analytics/*` e as invariantes dos arquivos Docker.
+- **Dockerfiles Multi-Stage dos 3 Microsserviços Satélites (Story 3.1.2):**
+  - Criados `.dockerignore` e `Dockerfile` multi-stage enxutos (`node:20-alpine`, `USER node`, `HEALTHCHECK` e `prisma migrate deploy && node dist/server.js`) em `services/kds-service/` (`76MB`), `services/caixa-service/` (`77.6MB`) e `services/gestao-service/` (`77.6MB`), todos bem abaixo do limite de `160MB`.
+  - Adicionado hook `onRequest` de CORS (`OPTIONS` retornando `204`) em `services/caixa-service/src/app.ts` e `services/gestao-service/src/app.ts`, alinhando os 3 satélites.
+- **Orquestração Docker Compose com 4 Bancos Isolados e Volumes Persistentes (Stories 3.2.1 e 3.2.2):**
+  - Criado `.env.docker.example` na raiz com variáveis padrão seguras para bancos, portas e logging.
+  - Refatorado `docker-compose.yml` seguindo a Seção 6.4 de `docs/engenharia/03-arquitetura-c4-model.md`: rede bridge `vaptpdv-net`, 4 volumes nomeados (`pgdata_core`, `pgdata_kds`, `pgdata_caixa`, `pgdata_gestao`), 4 instâncias `postgres:16-alpine` com `pg_isready` e os 4 microsserviços com `depends_on: condition: service_healthy`, healthchecks e limites de CPU/RAM (`8/8` containers `healthy`).
+- **Prova Automatizada de Persistência de Dados (Story 3.3.1):**
+  - Criado script portável `scripts/testar-persistencia-docker.sh` (finais de linha `LF`, sem dependência de `jq`), validando ponta a ponta criação de garçom/produto, abertura de comanda, lançamento com ficha KDS, avanço até `entregue`, fechamento, pagamento `pix` no Caixa, ciclo `docker compose down` -> `docker compose up -d` e preservação de 100% dos registros nos 4 bancos isolados (`exit 0`).
+
+### Modificado
+- Total de testes automatizados Vitest no ecossistema expandido para **433 testes passando 100% verdes** (41 arquivos em 5 pacotes):
+  - `backend/` (`vapt-pdv-core`): 191 testes (12 arquivos)
+  - `frontend/`: 131 testes (14 arquivos)
+  - `services/kds-service/`: 23 testes (5 arquivos)
+  - `services/caixa-service/`: 64 testes (6 arquivos)
+  - `services/gestao-service/`: 24 testes (4 arquivos)
+
 ## [0.4.0] — 2026-11-05 — Épico 2: KDS Frontend, Resiliência e Estações Satélites
 
 ### Adicionado
@@ -32,9 +58,9 @@ Todas as mudanças relevantes deste projeto são documentadas neste arquivo, org
   - Telas de Equipe (`M12/M13`), Cardápio/Produtos (`M02/M03`) e Reposição com registro de movimentações (`M05/M06`).
 
 ### Modificado
-- Total de testes automatizados do ecossistema expandido para **331 testes passando 100% verdes**:
+- Total de testes automatizados do ecossistema expandido para **387 testes passando 100% verdes**:
   - `backend/` (`vapt-pdv-core`): 180 testes
-  - `frontend/`: 75 testes
+  - `frontend/`: 131 testes
   - `kds-service`: 22 testes
   - `caixa-service`: 39 testes
   - `gestao-service`: 15 testes

@@ -1,23 +1,227 @@
+networks:
+  vaptpdv-net:
+    name: vaptpdv-net
+    driver: bridge
+
+volumes:
+  pgdata_core:
+    name: pgdata_core
+  pgdata_kds:
+    name: pgdata_kds
+  pgdata_caixa:
+    name: pgdata_caixa
+  pgdata_gestao:
+    name: pgdata_gestao
+
 services:
-  postgres:
+  postgres-core:
     image: postgres:16-alpine
-    container_name: vapt-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: vapt_pdv
+      POSTGRES_USER: ${POSTGRES_USER:-vaptpdv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vaptpdv_secret}
+      POSTGRES_DB: ${POSTGRES_DB_CORE:-vaptpdv_db}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./docker/init-multi-db.sql:/docker-entrypoint-initdb.d/init-multi-db.sql:ro
+      - pgdata_core:/var/lib/postgresql/data
+    networks:
+      - vaptpdv-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vaptpdv} -d ${POSTGRES_DB_CORE:-vaptpdv_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
 
-volumes:
-  postgres-data:
-    name: vapt_postgres_data
+  postgres-kds:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vaptpdv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vaptpdv_secret}
+      POSTGRES_DB: ${POSTGRES_DB_KDS:-kds_db}
+    volumes:
+      - pgdata_kds:/var/lib/postgresql/data
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vaptpdv} -d ${POSTGRES_DB_KDS:-kds_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+  postgres-caixa:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vaptpdv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vaptpdv_secret}
+      POSTGRES_DB: ${POSTGRES_DB_CAIXA:-caixa_db}
+    volumes:
+      - pgdata_caixa:/var/lib/postgresql/data
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vaptpdv} -d ${POSTGRES_DB_CAIXA:-caixa_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 160M
+          cpus: "0.25"
+
+  postgres-gestao:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vaptpdv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vaptpdv_secret}
+      POSTGRES_DB: ${POSTGRES_DB_GESTAO:-gestao_db}
+    volumes:
+      - pgdata_gestao:/var/lib/postgresql/data
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vaptpdv} -d ${POSTGRES_DB_GESTAO:-gestao_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: "0.30"
+
+  vapt-pdv-core:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${CORE_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-core:5432/${POSTGRES_DB_CORE:-vaptpdv_db}?schema=public
+      KDS_SERVICE_URL: http://kds-service:3001
+      CAIXA_SERVICE_URL: http://caixa-service:3002
+      GESTAO_SERVICE_URL: http://gestao-service:3003
+      GESTAO_API_URL: http://gestao-service:3003
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+
+  kds-service:
+    build:
+      context: ./services/kds-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${KDS_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "3001"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-kds:5432/${POSTGRES_DB_KDS:-kds_db}?schema=public
+    depends_on:
+      postgres-kds:
+        condition: service_healthy
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 160M
+          cpus: "0.25"
+
+  caixa-service:
+    build:
+      context: ./services/caixa-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${CAIXA_PORT:-3002}:3002"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "3002"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-caixa:5432/${POSTGRES_DB_CAIXA:-caixa_db}?schema=public
+      CORE_API_URL: http://vapt-pdv-core:3000
+      GESTAO_API_URL: http://gestao-service:3003
+    depends_on:
+      postgres-caixa:
+        condition: service_healthy
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3002/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 160M
+          cpus: "0.25"
+
+  gestao-service:
+    build:
+      context: ./services/gestao-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${GESTAO_PORT:-3003}:3003"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "3003"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-gestao:5432/${POSTGRES_DB_GESTAO:-gestao_db}?schema=public
+    depends_on:
+      postgres-gestao:
+        condition: service_healthy
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3003/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: "0.30"
