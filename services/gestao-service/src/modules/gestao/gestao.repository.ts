@@ -125,7 +125,6 @@ export class PrismaGestaoRepository implements GestaoRepository {
     const formaPagto = (dados.formaPagamento || 'dinheiro').toLowerCase();
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Atualizar ou Criar Faturamento Diário
       const faturamentoAtual = await tx.faturamentoDiario.findUnique({
         where: { dataReferencia: dataRef },
       });
@@ -177,7 +176,6 @@ export class PrismaGestaoRepository implements GestaoRepository {
         });
       }
 
-      // 2. Atualizar Vendas dos Produtos
       for (const item of dados.itens) {
         const itemSubtotalDec = new Prisma.Decimal(item.subtotal || '0.00');
         await tx.vendasProdutoAbc.upsert({
@@ -197,7 +195,6 @@ export class PrismaGestaoRepository implements GestaoRepository {
         });
       }
 
-      // 3. Atualizar Desempenho do Garçom
       if (dados.garcomId) {
         const garcomAtual = await tx.desempenhoGarcom.findUnique({
           where: { garcomId: dados.garcomId },
@@ -233,7 +230,6 @@ export class PrismaGestaoRepository implements GestaoRepository {
         }
       }
 
-      // 4. Recalcular Curva ABC de todos os produtos
       const todosProdutos = await tx.vendasProdutoAbc.findMany({
         orderBy: [{ receitaGerada: 'desc' }, { produtoId: 'asc' }],
       });
@@ -321,13 +317,11 @@ export class PrismaGestaoRepository implements GestaoRepository {
         },
       });
     } else {
-      // Se subiu acima do mínimo, remove do painel de alertas
       try {
         await this.prisma.alertaEstoque.delete({
           where: { produtoId: dados.produtoId },
         });
       } catch {
-        // Ignora se não existia
       }
     }
   }
@@ -434,7 +428,7 @@ export class PrismaGestaoRepository implements GestaoRepository {
   async obterAlertasEstoque(): Promise<AlertaEstoqueDto[]> {
     const alertas = await this.prisma.alertaEstoque.findMany({
       orderBy: [
-        { nivelCriticidade: 'desc' }, // 'zerado' antes de 'baixo'
+        { nivelCriticidade: 'desc' },
         { estoqueAtual: 'asc' },
       ],
     });

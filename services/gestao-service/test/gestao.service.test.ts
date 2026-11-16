@@ -50,7 +50,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(res.processado).toBe(true);
     expect(res.duplicado).toBe(false);
 
-    // Consulta resumo diário
     const resumo = await service.obterResumoDiario('2026-11-04');
     expect(resumo.total_vendas).toBe('110.00');
     expect(resumo.total_subtotal).toBe('100.00');
@@ -81,17 +80,12 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(segundaVez.duplicado).toBe(true);
     expect(segundaVez.processado).toBe(true);
 
-    // Faturamento não deve ter duplicado
     const resumo = await service.obterResumoDiario('2026-11-04');
     expect(resumo.total_vendas).toBe('55.00');
     expect(resumo.quantidade_pedidos).toBe(1);
   });
 
   it('deve calcular corretamente a Curva ABC 80/15/5 dos produtos', async () => {
-    // 3 produtos com receitas distintas:
-    // P1: R$ 800.00 (80% da receita total de R$ 1000) -> Classe A
-    // P2: R$ 150.00 (15% acumulado 95%) -> Classe B
-    // P3: R$ 50.00 (5% acumulado 100%) -> Classe C
     await service.processarEvento({
       evento_id: 'abc-evento-1',
       evento: 'comanda.paga',
@@ -110,16 +104,13 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(ranking.receita_total_acumulada).toBe('1000.00');
     expect(ranking.produtos).toHaveLength(3);
 
-    // Produto 1: Picanha
     expect(ranking.produtos[0].nome_produto).toBe('Picanha na Chapa');
     expect(ranking.produtos[0].classe_abc).toBe('A');
     expect(ranking.produtos[0].percentual_receita).toBe('80.00');
 
-    // Produto 2: Chopp
     expect(ranking.produtos[1].nome_produto).toBe('Chopp Pilsen');
     expect(ranking.produtos[1].classe_abc).toBe('B');
 
-    // Produto 3: Água
     expect(ranking.produtos[2].nome_produto).toBe('Água Mineral');
     expect(ranking.produtos[2].classe_abc).toBe('C');
   });
@@ -147,7 +138,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
   });
 
   it('deve registrar e remover alertas de estoque conforme movimentação', async () => {
-    // Estoque cai abaixo do mínimo (3 <= 5) -> Alerta "baixo"
     await service.processarEvento({
       evento_id: 'est-1',
       evento: 'estoque.movimentado',
@@ -164,7 +154,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(alertas[0].produto_id).toBe(12);
     expect(alertas[0].nivel).toBe('baixo');
 
-    // Estoque zera (0 <= 5) -> Alerta "zerado"
     await service.processarEvento({
       evento_id: 'est-2',
       evento: 'estoque.movimentado',
@@ -179,7 +168,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     alertas = (await service.obterAlertasEstoque()).alertas;
     expect(alertas[0].nivel).toBe('zerado');
 
-    // Estoque reposto (15 > 5) -> Alerta removido
     await service.processarEvento({
       evento_id: 'est-3',
       evento: 'estoque.movimentado',
@@ -208,7 +196,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
       itens: [{ produto_id: 1, nome: 'Vinho Tinto', categoria: 'Bebidas', quantidade: 1, subtotal: '100.00' }],
     });
 
-    // CSV
     const expCsv = await service.exportarRelatorio('faturamento', 'csv');
     expect(expCsv.contentType).toContain('text/csv');
     expect(expCsv.filename).toBe('relatorio-faturamento.csv');
@@ -216,7 +203,6 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(expCsv.dados).toContain('data,comandas_pagas,comandas_canceladas');
     expect(expCsv.dados).toContain('110.00');
 
-    // JSON
     const expJson = await service.exportarRelatorio('faturamento', 'json');
     expect(expJson.contentType).toContain('application/json');
     expect(Array.isArray(expJson.dados)).toBe(true);

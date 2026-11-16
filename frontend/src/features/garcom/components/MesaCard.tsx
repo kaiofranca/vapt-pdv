@@ -33,7 +33,6 @@ export const MesaCard: React.FC<MesaCardProps> = ({
     }
   };
 
-  // 1. MESA LIVRE (G01: Borda tracejada, tag verde, "4 lugares")
   if (isLivre) {
     return (
       <div
@@ -55,7 +54,6 @@ export const MesaCard: React.FC<MesaCardProps> = ({
     );
   }
 
-  // 2. MESA COM CONTA PEDIDA (G01: Borda vermelha contínua, tag vermelha "Conta")
   if (isContaPedida) {
     return (
       <div
@@ -91,7 +89,6 @@ export const MesaCard: React.FC<MesaCardProps> = ({
     );
   }
 
-  // 3. MESA ABERTA (G01: Faixa lateral mostarda de 6px, tag mostarda-soft "Aberta")
   return (
     <div
       onClick={handleClick}

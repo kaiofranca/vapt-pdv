@@ -69,7 +69,6 @@ export const EstoqueAlertasView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
-      {/* Toast flutuante */}
       {toastMensagem && (
         <div
           role="status"
@@ -88,9 +87,6 @@ export const EstoqueAlertasView: React.FC = () => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          CABEÇALHO & ATUALIZAÇÃO
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <h2 className="text-2xl font-extrabold text-text tracking-tight flex items-center gap-2">
@@ -116,9 +112,6 @@ export const EstoqueAlertasView: React.FC = () => {
         </Button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          BANNER DE ALERTA SE HOUVER ITENS CRÍTICOS
-          ───────────────────────────────────────────────────────────── */}
       {contagemZerados > 0 && (
         <div className="p-4 rounded-[18px] bg-danger-soft border-2 border-danger/40 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -145,11 +138,7 @@ export const EstoqueAlertasView: React.FC = () => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          CARDS DE RESUMO (KPIs)
-          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Total em Alerta */}
         <div
           onClick={() => setFiltroNivel('todos')}
           className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
@@ -170,7 +159,6 @@ export const EstoqueAlertasView: React.FC = () => {
           <div className="text-xs text-text-2 mt-1">Produtos exigindo atenção</div>
         </div>
 
-        {/* Card 2: Estoque Zerado */}
         <div
           onClick={() => setFiltroNivel('zerado')}
           className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
@@ -193,7 +181,6 @@ export const EstoqueAlertasView: React.FC = () => {
           <div className="text-xs text-text-2 mt-1">Vendas travadas no salão</div>
         </div>
 
-        {/* Card 3: Estoque Baixo */}
         <div
           onClick={() => setFiltroNivel('baixo')}
           className={`p-4 rounded-[18px] border cursor-pointer transition-all ${
@@ -217,9 +204,6 @@ export const EstoqueAlertasView: React.FC = () => {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          FILTRO DE NÍVEL
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-bold text-text-2">Exibir:</span>
         <button
@@ -257,9 +241,6 @@ export const EstoqueAlertasView: React.FC = () => {
         </button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          TABELA DE PRODUTOS COM ESTOQUE CRÍTICO
-          ───────────────────────────────────────────────────────────── */}
       <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-text tracking-tight">
@@ -391,7 +372,6 @@ export const EstoqueAlertasView: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Reposição de Estoque (M06) */}
       <ReporEstoqueModal
         isOpen={Boolean(produtoParaRepor)}
         onClose={() => setProdutoParaRepor(null)}

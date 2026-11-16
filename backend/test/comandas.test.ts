@@ -319,7 +319,6 @@ function criarPrismaComComandasMock(opcoes: {
           itens?: boolean | OpcoesIncludeItens;
         };
       }) => {
-        // Simula também o índice único parcial no banco (status = 'aberta' por mesa)
         const conflitoIndiceParcial = comandas.find(
           (c) =>
             Number(c.mesa) === Number(data.mesa) &&
@@ -779,7 +778,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         usuariosIniciais: [garcomAtivoPadrao],
       });
 
-      // Simula condição de corrida onde findFirst não viu registro, mas create disparou P2002 do índice único parcial
       comandaMock.findFirst.mockResolvedValueOnce(null);
       comandaMock.create.mockRejectedValueOnce(
         Object.assign(new Error('Unique constraint failed on the fields: (`mesa`)'), {
@@ -1372,7 +1370,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
   describe('Fronteira de Contexto e Isolamento (ServicoComandasPrisma & ServicoUsuarios)', () => {
     it('ServicoComandasPrisma valida garçom exclusivamente via ServicoUsuarios injetado, sem acessar prisma.usuario', async () => {
       const { prisma, usuarioMock } = criarPrismaComComandasMock();
-      // Remove prisma.usuario para provar que o módulo de comandas não depende da tabela de usuários
       delete prisma.usuario;
 
       const servicoUsuariosDublê = criarServicoUsuariosStub();
@@ -1538,7 +1535,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         expect(item.preco_copiado).toBe('14.90');
         expect(item.quantidade).toBe(2);
 
-        // Verifica que o item aparece no detalhe da comanda
         const resDetalhe = await app.inject({
           method: 'GET',
           url: '/comandas/1',
@@ -1559,14 +1555,12 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         });
         const app = await buildApp({ prisma, logger: false });
 
-        // Lança com preco original 14.90
         await app.inject({
           method: 'POST',
           url: '/comandas/1/itens',
           payload: { produto_id: 10, quantidade: 3 },
         });
 
-        // Altera o preço do produto no catálogo para 25.00
         const resPreco = await app.inject({
           method: 'PATCH',
           url: '/produtos/10',
@@ -1574,7 +1568,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         });
         expect(resPreco.statusCode).toBe(200);
 
-        // Consulta a comanda e comprova que o preço continua congelado em 14.90
         const resComanda = await app.inject({
           method: 'GET',
           url: '/comandas/1',
@@ -1696,7 +1689,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       it('Retorna 409 ESTOQUE_INSUFICIENTE ao lançar quantidade maior que o estoque disponível', async () => {
         const { prisma } = criarPrismaComComandasMock({
           usuariosIniciais: [garcomAtivoPadrao],
-          produtosIniciais: [produtoAtivoPadrao], // estoque = 20
+          produtosIniciais: [produtoAtivoPadrao],
           comandasIniciais: [comandaAbertaPadrao],
         });
         const app = await buildApp({ prisma, logger: false });
@@ -1726,7 +1719,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       it('Ajusta quantidade para mais com estoque suficiente retornando 200', async () => {
         const { prisma } = criarPrismaComComandasMock({
           usuariosIniciais: [garcomAtivoPadrao],
-          produtosIniciais: [produtoAtivoPadrao], // estoque = 20
+          produtosIniciais: [produtoAtivoPadrao],
           comandasIniciais: [{ ...comandaAbertaPadrao, itens: [itemExistente] }],
         });
         const app = await buildApp({ prisma, logger: false });
@@ -1734,7 +1727,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         const res = await app.inject({
           method: 'PATCH',
           url: '/comandas/1/itens/101',
-          payload: { quantidade: 5 }, // delta = 3, estoque = 20
+          payload: { quantidade: 5 },
         });
 
         expect(res.statusCode).toBe(200);
@@ -1747,7 +1740,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       it('Retorna 409 ESTOQUE_INSUFICIENTE ao ajustar quantidade para mais excedendo estoque', async () => {
         const { prisma } = criarPrismaComComandasMock({
           usuariosIniciais: [garcomAtivoPadrao],
-          produtosIniciais: [produtoAtivoPadrao], // estoque = 20
+          produtosIniciais: [produtoAtivoPadrao],
           comandasIniciais: [{ ...comandaAbertaPadrao, itens: [itemExistente] }],
         });
         const app = await buildApp({ prisma, logger: false });
@@ -1755,7 +1748,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         const res = await app.inject({
           method: 'PATCH',
           url: '/comandas/1/itens/101',
-          payload: { quantidade: 25 }, // delta = 23 > estoque 20
+          payload: { quantidade: 25 },
         });
 
         expect(res.statusCode).toBe(409);
@@ -1943,7 +1936,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         const { prisma } = criarPrismaComComandasMock({
           comandasIniciais: [comandaAbertaPadrao],
         });
-        // Sem injetar servicoProdutos
         const servico = new ServicoComandasPrisma(
           prisma,
           criarServicoUsuariosStub(),
@@ -1965,7 +1957,7 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       produto_id: 10,
       nome_copiado: 'Chopp Pilsen 500ml',
       preco_copiado: new Prisma.Decimal('14.90'),
-      quantidade: 2, // 2 x 14.90 = 29.80
+      quantidade: 2,
     };
 
     const comandaComItens: ComandaSimulada = {
@@ -2165,7 +2157,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         expect(res.statusCode).toBe(200);
         expect(res.json().status).toBe('cancelada');
 
-        // Como foi cancelada, agora é possível abrir uma nova comanda na mesma mesa
         const resNova = await app.inject({
           method: 'POST',
           url: '/comandas',
@@ -2276,8 +2267,8 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
     it('Paga comanda fechada com Pix com sucesso, preenchendo paga_em e baixando estoque transacionalmente', async () => {
       const { prisma, produtos, movimentosEstoque } = criarPrismaComComandasMock({
         usuariosIniciais: [garcomAtivoPadrao],
-        produtosIniciais: [produtoEstoque], // estoque = 10
-        comandasIniciais: [comandaFechadaParaPagar], // 2 garrafas
+        produtosIniciais: [produtoEstoque],
+        comandasIniciais: [comandaFechadaParaPagar],
       });
       const app = await buildApp({ prisma, logger: false });
 
@@ -2296,11 +2287,9 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(corpo.forma_pagamento).toBe('pix');
       expect(corpo.paga_em).toBeDefined();
 
-      // Comprova que o estoque do produto foi deduzido (10 - 2 = 8)
       const produtoNoBanco = produtos.find((p) => p.id === 30);
       expect(produtoNoBanco?.estoque).toBe(8);
 
-      // Comprova que foi gerado o registro em movimentos_estoque
       expect(movimentosEstoque).toHaveLength(1);
       expect(movimentosEstoque[0].produto_id).toBe(30);
       expect(movimentosEstoque[0].quantidade).toBe(-2);
@@ -2318,14 +2307,12 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       });
       const app = await buildApp({ prisma, logger: false });
 
-      // Paga a comanda
       await app.inject({
         method: 'POST',
         url: '/comandas/10/pagar',
         payload: { forma_pagamento: 'cartao' },
       });
 
-      // 1. Tentar pagar novamente deve falhar com 409
       const repagamento = await app.inject({
         method: 'POST',
         url: '/comandas/10/pagar',
@@ -2334,7 +2321,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(repagamento.statusCode).toBe(409);
       expect(repagamento.json().erro.codigo).toBe('COMANDA_NAO_FECHADA');
 
-      // 2. Tentar lançar item em comanda paga deve falhar com 409
       const lancarItem = await app.inject({
         method: 'POST',
         url: '/comandas/10/itens',
@@ -2343,7 +2329,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(lancarItem.statusCode).toBe(409);
       expect(lancarItem.json().erro.codigo).toBe('COMANDA_NAO_ABERTA');
 
-      // 3. Tentar ajustar item em comanda paga deve falhar com 409
       const ajustarItem = await app.inject({
         method: 'PATCH',
         url: '/comandas/10/itens/801',
@@ -2352,7 +2337,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(ajustarItem.statusCode).toBe(409);
       expect(ajustarItem.json().erro.codigo).toBe('COMANDA_NAO_ABERTA');
 
-      // 4. Tentar remover item em comanda paga deve falhar com 409
       const removerItem = await app.inject({
         method: 'DELETE',
         url: '/comandas/10/itens/801',
@@ -2360,7 +2344,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(removerItem.statusCode).toBe(409);
       expect(removerItem.json().erro.codigo).toBe('COMANDA_NAO_ABERTA');
 
-      // 5. Tentar fechar comanda já paga deve falhar com 409
       const fechar = await app.inject({
         method: 'POST',
         url: '/comandas/10/fechar',
@@ -2369,7 +2352,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(fechar.statusCode).toBe(409);
       expect(fechar.json().erro.codigo).toBe('COMANDA_NAO_ABERTA');
 
-      // 6. Tentar cancelar comanda já paga deve falhar com 409
       const cancelar = await app.inject({
         method: 'POST',
         url: '/comandas/10/cancelar',
@@ -2441,11 +2423,10 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
 
     it('Garante a idempotência da rota interna POST /produtos/baixa-estoque por comanda_id (RN10 / RN18)', async () => {
       const { prisma, produtos, movimentosEstoque } = criarPrismaComComandasMock({
-        produtosIniciais: [produtoEstoque], // estoque = 10
+        produtosIniciais: [produtoEstoque],
       });
       const app = await buildApp({ prisma, logger: false });
 
-      // 1ª chamada de baixa
       const res1 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -2458,7 +2439,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
       expect(produtos.find((p) => p.id === 30)?.estoque).toBe(7);
       expect(movimentosEstoque).toHaveLength(1);
 
-      // 2ª chamada com o MESMO comanda_id
       const res2 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -2468,7 +2448,6 @@ describe('Abertura e Consulta de Comandas (Story 4 - CAP-3, CAP-8)', () => {
         },
       });
       expect(res2.statusCode).toBe(200);
-      // Estoque NÃO é deduzido novamente e NÃO gera novo movimento
       expect(produtos.find((p) => p.id === 30)?.estoque).toBe(7);
       expect(movimentosEstoque).toHaveLength(1);
 

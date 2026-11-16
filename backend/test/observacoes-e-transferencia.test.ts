@@ -173,7 +173,6 @@ describe('Stories 2.1.8 & 2.5.1 — Observações no Item, Transferência de Mes
 
     const app = await buildApp({ prisma: prisma as ClienteBanco, logger: false });
 
-    // 1. Transferência para mesa 18 livre
     const resTransferencia = await app.inject({
       method: 'PATCH',
       url: '/comandas/10/transferir-mesa',
@@ -182,7 +181,6 @@ describe('Stories 2.1.8 & 2.5.1 — Observações no Item, Transferência de Mes
     expect(resTransferencia.statusCode).toBe(200);
     expect(resTransferencia.json().mesa).toBe(18);
 
-    // 2. Transferência para mesa 5 (já ocupada pela comanda 20) -> 409 Conflito
     const resConflito = await app.inject({
       method: 'PATCH',
       url: '/comandas/10/transferir-mesa',
@@ -191,7 +189,6 @@ describe('Stories 2.1.8 & 2.5.1 — Observações no Item, Transferência de Mes
     expect(resConflito.statusCode).toBe(409);
     expect(resConflito.json().erro.codigo).toBe('MESA_OCUPADA');
 
-    // 3. Mesclar comanda 20 (origem) na comanda 10 (destino)
     const resMescla = await app.inject({
       method: 'POST',
       url: '/comandas/10/mesclar',
@@ -199,7 +196,6 @@ describe('Stories 2.1.8 & 2.5.1 — Observações no Item, Transferência de Mes
     });
     expect(resMescla.statusCode).toBe(200);
 
-    // Comanda 20 deve ter sido cancelada com motivo de mesclagem
     expect(comanda2.status).toBe('cancelada');
     expect(comanda2.motivo_cancelamento).toContain('Mesclada com a comanda #10');
 

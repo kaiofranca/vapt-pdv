@@ -22,10 +22,6 @@ export interface ReciboPaperViewProps {
   reciboOficial?: ReciboCompletoResposta | null;
 }
 
-/**
- * Gera um código de autenticação único do comprovante em fallback
- * Padrão: VAPT-YYYYMMDD-M{mesa}-{hash}
- */
 export function gerarCodigoAutenticacao(comanda: Comanda): string {
   const data = comanda.paga_em ? new Date(comanda.paga_em) : new Date();
   const ano = data.getFullYear();
@@ -33,18 +29,12 @@ export function gerarCodigoAutenticacao(comanda: Comanda): string {
   const dia = String(data.getDate()).padStart(2, '0');
   const mesaStr = String(comanda.mesa || '0').padStart(2, '0');
 
-  // Hash determinístico de 4 caracteres hexadecimais
   const seed = (comanda.id * 997 + parseInt(mesaStr, 10) * 31 + (data.getTime() % 10000)) & 0xffff;
   const hash = seed.toString(16).toUpperCase().padStart(4, '0');
 
   return `VAPT-${ano}${mes}${dia}-M${mesaStr}-${hash}`;
 }
 
-/**
- * Componente C12 - Recibo Térmico Operacional (.paper)
- * Visual de bobina térmica com fundo branco fixo, bordas serrilhadas estilizadas,
- * tipografia tabular monospace de 48 colunas canônica retornada pelo satélite :3002.
- */
 export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
   comanda,
   parcelas = [],
@@ -59,14 +49,12 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
 }) => {
   const [reciboCarregado, setReciboCarregado] = useState<ReciboCompletoResposta | null>(null);
 
-  // Busca recibo canônico no satélite :3002 caso não tenha sido injetado via props
   useEffect(() => {
     if (!paperText && !reciboOficial && comanda?.id) {
       caixaSatApi
         .obterRecibo(comanda.id)
         .then((res) => setReciboCarregado(res))
         .catch(() => {
-          // Fallback gracioso silencioso para renderização estruturada local
         });
     }
   }, [paperText, reciboOficial, comanda?.id]);
@@ -110,7 +98,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
     return parcelas.reduce((acc, p) => acc + (p.trocoCentavos || 0), 0);
   }, [parcelas]);
 
-  // Texto térmico .paper de 48 colunas retornado pelo satélite ou gerado em fallback
   const textoPaper = useMemo(() => {
     if (paperText) return paperText;
     if (reciboOficial?.paper_text) return reciboOficial.paper_text;
@@ -120,7 +107,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center p-2 text-[#2B2019]">
-      {/* Estilos dedicados para impressão térmica e borda serrilhada */}
       <style>{`
         @media print {
           body * {
@@ -147,8 +133,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
             margin: 0;
           }
         }
-
-        /* Borda serrilhada superior e inferior da bobina térmica (.paper) */
         .paper-sawtooth-top {
           background: radial-gradient(circle at 10px -5px, transparent 12px, #ffffff 13px) repeat-x;
           background-size: 20px 10px;
@@ -163,9 +147,7 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
         }
       `}</style>
 
-      {/* Recipiente da Bobina .paper com fundo branco fixo */}
       <div className="w-full max-w-[380px] filter drop-shadow-md">
-        {/* Borda serrilhada do topo da folha */}
         <div className="paper-sawtooth-top rounded-t-sm" aria-hidden="true" />
 
         <div
@@ -197,7 +179,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
           ) : (
             <>
 
-          {/* Exibição Canônica de 48 colunas .paper se texto estiver disponível */}
           {textoPaper ? (
             <div className="space-y-3">
               <pre
@@ -222,7 +203,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
             </div>
           ) : (
             <>
-              {/* Cabeçalho do Recibo Local */}
               <div className="text-center border-b border-dashed border-gray-400 pb-3 mb-3">
                 <div className="flex items-center justify-center gap-1.5 font-sans font-black text-sm tracking-tight text-[#2B2019]">
                   <Receipt className="w-4 h-4 text-[#F2A81D]" />
@@ -250,7 +230,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
                 )}
               </div>
 
-              {/* Lista de Itens Consumidos */}
               <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
                 <div className="flex justify-between font-bold text-[10px] uppercase text-gray-500 mb-1">
                   <span>QTD ITEM</span>
@@ -280,7 +259,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
                 </div>
               </div>
 
-              {/* Resumo Financeiro */}
               <div className="border-b border-dashed border-gray-400 pb-3 mb-3 space-y-1 text-[11px]">
                 <div className="flex justify-between text-gray-700">
                   <span>SUBTOTAL:</span>
@@ -302,7 +280,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
                 </div>
               </div>
 
-              {/* Pagamentos Registrados e Troco */}
               <div className="border-b border-dashed border-gray-400 pb-3 mb-3 text-[11px] space-y-1">
                 <span className="font-bold uppercase text-[10px] text-gray-500 block mb-0.5">
                   Detalhamento dos Pagamentos:
@@ -346,7 +323,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
                 )}
               </div>
 
-              {/* Código de Autenticação Único */}
               <div className="p-2 rounded bg-gray-50 border border-gray-200 text-center mb-3">
                 <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500 font-semibold mb-0.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-gray-600" />
@@ -360,7 +336,6 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
                 </span>
               </div>
 
-              {/* Rodapé Legal */}
               <div className="text-center text-[9px] text-gray-500 space-y-0.5">
                 <p className="font-semibold uppercase tracking-wider">
                   Documento Auxiliar de Venda · Sem Valor Fiscal
@@ -373,11 +348,9 @@ export const ReciboPaperView: React.FC<ReciboPaperViewProps> = ({
           )}
         </div>
 
-        {/* Borda serrilhada inferior da folha */}
         <div className="paper-sawtooth-bottom rounded-b-sm" aria-hidden="true" />
       </div>
 
-      {/* Ações (Imprimir Recibo e Concluir/Nova Venda) */}
       {exibirAcoes && (
         <div className="flex flex-col sm:flex-row gap-3 mt-5 w-full max-w-[380px]">
           <Button

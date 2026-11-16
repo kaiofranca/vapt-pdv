@@ -56,7 +56,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
-  // Headers de CORS para permitir integração com frontend e outros serviços
   app.addHook('onRequest', async (request, reply) => {
     reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
@@ -68,7 +67,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   const prisma = opcoes.prisma ?? obterPrisma();
 
-  // Tratamento global de erros padronizado
   app.setErrorHandler((error: FastifyError | ErroDominio, request, reply) => {
     if (error instanceof ErroDominio) {
       return reply.status(error.statusCode).send({
@@ -105,10 +103,8 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     });
   });
 
-  // Registro de rotas
   await app.register(rotasSaude, { prisma });
   await app.register(rotasFichas, { prisma });
 
   return app as unknown as FastifyInstance;
 }
-

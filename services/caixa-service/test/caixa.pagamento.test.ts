@@ -76,7 +76,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
   describe('Quitação Integral e Cálculo de Troco em Dinheiro (RN15, RN19)', () => {
     it('deve quitar integralmente em dinheiro, calculando troco exato em Decimal e gerando recibo', async () => {
       await fecharComandaPadrao(42, 12);
-      // subtotal 59.80 + 5.98 (10%) = total 65.78
 
       const res = await app.inject({
         method: 'POST',
@@ -97,7 +96,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(corpo.status).toBe('paga');
       expect(corpo.valor_pago).toBe('65.78');
       expect(corpo.saldo_restante).toBe('0.00');
-      // 100.00 - 65.78 = 34.22
       expect(corpo.troco_total).toBe('34.22');
 
       expect(corpo.parcela_registrada).toBeDefined();
@@ -109,12 +107,10 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(corpo.recibo).toBeDefined();
       expect(corpo.recibo.codigo_autenticacao).toMatch(/^VAPT-\d{8}-M12-[A-F0-9]{4}$/);
 
-      // Baixa no Core foi acionada
       expect(chamadasBaixaEstoque).toHaveLength(1);
       expect(chamadasBaixaEstoque[0].comandaId).toBe(42);
       expect(chamadasBaixaEstoque[0].itens).toEqual([{ produto_id: 7, quantidade: 2 }]);
 
-      // Notificação ao gestao-service foi disparada
       expect(chamadasGestaoEventos).toHaveLength(1);
       expect(chamadasGestaoEventos[0].evento).toBe('comanda.paga');
       expect(chamadasGestaoEventos[0].comanda_id).toBe(42);
@@ -203,9 +199,7 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
   describe('Quitação Parcelada / Multi-Parcelas (Split Payment — Story 15.4)', () => {
     it('deve abater saldo_restante gradualmente e só quitar quando saldo zerar', async () => {
       await fecharComandaPadrao(50, 7);
-      // Total: 65.78
 
-      // Parcela 1: 35.00 no Cartão
       const res1 = await app.inject({
         method: 'POST',
         url: '/caixa/comandas/50/pagar',
@@ -220,13 +214,10 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       const corpo1 = res1.json();
       expect(corpo1.status).toBe('parcialmente_paga');
       expect(corpo1.valor_pago).toBe('35.00');
-      // 65.78 - 35.00 = 30.78
       expect(corpo1.saldo_restante).toBe('30.78');
       expect(corpo1.recibo).toBeNull();
-      // Não aciona baixa de estoque antes de quitar
       expect(chamadasBaixaEstoque).toHaveLength(0);
 
-      // Consulta no Caixa exibe status parcialmente_paga
       const resConsulta = await app.inject({
         method: 'GET',
         url: '/caixa/comandas/50',
@@ -236,7 +227,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(resConsulta.json().saldo_restante).toBe('30.78');
       expect(resConsulta.json().parcelas).toHaveLength(1);
 
-      // Parcela 2: restante 30.78 em Dinheiro (entregou 40.00 -> troco 9.22)
       const res2 = await app.inject({
         method: 'POST',
         url: '/caixa/comandas/50/pagar',
@@ -256,7 +246,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(corpo2.troco_total).toBe('9.22');
       expect(corpo2.recibo).toBeDefined();
 
-      // Agora a baixa no Core foi acionada
       expect(chamadasBaixaEstoque).toHaveLength(1);
     });
 
@@ -268,7 +257,7 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
         url: '/caixa/comandas/51/pagar',
         payload: {
           forma_pagamento: 'pix',
-          valor_aplicado: '70.00', // Total é 65.78
+          valor_aplicado: '70.00',
         },
       });
 
@@ -296,14 +285,12 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
     it('deve rejeitar com 409 COMANDA_IMUTAVEL tentativa de pagar comanda já liquidada', async () => {
       await fecharComandaPadrao(53, 14);
 
-      // Quita comanda
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/53/pagar',
         payload: { forma_pagamento: 'pix' },
       });
 
-      // Tentativa de novo pagamento
       const res = await app.inject({
         method: 'POST',
         url: '/caixa/comandas/53/pagar',
@@ -330,7 +317,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
     it('deve abortar a transação e retornar 503 SERVICO_INDISPONIVEL com { servico: "vapt-pdv-core" } se o Core falhar com erro interno (500)', async () => {
       await fecharComandaPadrao(60, 15);
 
-      // Simula falha interna no Core ao baixar estoque
       mockEstoqueGateway.baixarEstoque = vi.fn().mockRejectedValue(
         ErroDominio.servicoIndisponivel('vapt-pdv-core', 'Core retornou status HTTP 500 durante baixa de estoque.'),
       );
@@ -350,7 +336,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(corpo.erro.codigo).toBe('SERVICO_INDISPONIVEL');
       expect(corpo.erro.detalhes.servico).toBe('vapt-pdv-core');
 
-      // Verifica que a venda NÃO foi liquidada e o saldo continua intacto
       const comandaNoBanco = await repository.buscarPorComandaId(60);
       expect(comandaNoBanco?.status).toBe('aguardando_pagamento');
       expect(comandaNoBanco?.saldoRestante.toFixed(2)).toBe('65.78');
@@ -361,7 +346,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
     it('deve abortar a transação e retornar 503 se o Core der timeout ou ECONNREFUSED', async () => {
       await fecharComandaPadrao(61, 16);
 
-      // Simula Timeout / ECONNREFUSED no Core
       mockEstoqueGateway.baixarEstoque = vi.fn().mockRejectedValue(
         ErroDominio.servicoIndisponivel('vapt-pdv-core', 'Falha ao conectar com o Core: fetch failed (ECONNREFUSED)'),
       );
@@ -378,7 +362,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       expect(res.json().erro.codigo).toBe('SERVICO_INDISPONIVEL');
       expect(res.json().erro.detalhes.servico).toBe('vapt-pdv-core');
 
-      // Verifica que não houve venda órfã
       const comandaNoBanco = await repository.buscarPorComandaId(61);
       expect(comandaNoBanco?.status).toBe('aguardando_pagamento');
       expect(comandaNoBanco?.saldoRestante.toFixed(2)).toBe('65.78');
@@ -411,7 +394,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
     it('deve concluir a venda com 200 OK mesmo que a notificação ao gestao-service falhe (degradação graciosa)', async () => {
       await fecharComandaPadrao(70, 20);
 
-      // Simula falha ou timeout no gestao-service
       mockGestaoGateway.notificarComandaPaga = vi.fn().mockRejectedValue(new Error('gestao-service fora do ar'));
 
       const res = await app.inject({
@@ -422,7 +404,6 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
         },
       });
 
-      // A quitação NÃO deve ser abortada
       expect(res.statusCode).toBe(200);
       const corpo = res.json();
       expect(corpo.status).toBe('paga');

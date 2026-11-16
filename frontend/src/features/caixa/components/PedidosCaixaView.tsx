@@ -34,14 +34,12 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatusPedido>('todos');
   const [busca, setBusca] = useState<string>('');
 
-  // Mapeamento garçom
   const garcomMap = useMemo(() => {
     const map = new Map<number, string>();
     garcons.forEach((g) => map.set(g.id, g.nome));
     return map;
   }, [garcons]);
 
-  // Contadores
   const contadores = useMemo(() => {
     let abertas = 0;
     let fechadas = 0;
@@ -58,13 +56,10 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
     return { total: comandas.length, abertas, fechadas, pagas, canceladas };
   }, [comandas]);
 
-  // Filtragem
   const comandasFiltradas = useMemo(() => {
     return comandas.filter((c) => {
-      // Filtro status
       const matchStatus = filtroStatus === 'todos' || c.status === filtroStatus;
 
-      // Filtro busca
       const termo = busca.trim().toLowerCase();
       const matchBusca =
         !termo ||
@@ -139,7 +134,6 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-bg p-6 gap-6">
-      {/* Topo: Título + Busca + Filtros */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-2xl font-black text-text tracking-tight">Pedidos & Comandas</h2>
@@ -149,7 +143,6 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Campo de Busca */}
           <div className="relative w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-2 pointer-events-none" />
             <input
@@ -163,7 +156,6 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
         </div>
       </div>
 
-      {/* Pílulas de Filtros */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 shrink-0">
         <button
           onClick={() => setFiltroStatus('todos')}
@@ -217,7 +209,6 @@ export const PedidosCaixaView: React.FC<PedidosCaixaViewProps> = ({
         </button>
       </div>
 
-      {/* Tabela de Pedidos */}
       <div className="flex-1 overflow-hidden rounded-card border border-border bg-surface shadow-soft flex flex-col">
         <div className="overflow-y-auto flex-1">
           <table className="w-full text-left border-collapse text-xs">

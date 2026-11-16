@@ -56,10 +56,8 @@ describe('Story 2.3.6 — Gestão: Reposição de Estoque e Registro de Moviment
 
       expect(screen.getByText('Repor Estoque (M06)')).toBeDefined();
       expect(screen.getByText('Chopp Artesanal IPA')).toBeDefined();
-      expect(screen.getByText('4 un')).toBeDefined(); // Estoque atual
-      // Sugestão: max(10, 10 * 2 - 4) = 16
+      expect(screen.getByText('4 un')).toBeDefined();
       expect(screen.getByText('+16 un')).toBeDefined();
-      // Saldo previsto: 4 + 16 = 20 un
       expect(screen.getByText('20 un')).toBeDefined();
     });
 
@@ -73,17 +71,17 @@ describe('Story 2.3.6 — Gestão: Reposição de Estoque e Registro de Moviment
       );
 
       const btnMais = screen.getByRole('button', { name: /aumentar quantidade/i });
-      fireEvent.click(btnMais); // 16 + 1 = 17
+      fireEvent.click(btnMais);
 
       expect(screen.getByText('+17 un')).toBeDefined();
-      expect(screen.getByText('21 un')).toBeDefined(); // 4 + 17 = 21
+      expect(screen.getByText('21 un')).toBeDefined();
 
       const btnMenos = screen.getByRole('button', { name: /diminuir quantidade/i });
-      fireEvent.click(btnMenos); // 17 - 1 = 16
-      fireEvent.click(btnMenos); // 16 - 1 = 15
+      fireEvent.click(btnMenos);
+      fireEvent.click(btnMenos);
 
       expect(screen.getByText('+15 un')).toBeDefined();
-      expect(screen.getByText('19 un')).toBeDefined(); // 4 + 15 = 19
+      expect(screen.getByText('19 un')).toBeDefined();
     });
 
     it('deve permitir incrementar quantidade através de atalhos rápidos (+10, +20)', () => {
@@ -95,12 +93,11 @@ describe('Story 2.3.6 — Gestão: Reposição de Estoque e Registro de Moviment
         />
       );
 
-      // Clica no atalho +20
       const btnMais20 = screen.getByRole('button', { name: /\+20/i });
-      fireEvent.click(btnMais20); // 16 + 20 = 36
+      fireEvent.click(btnMais20);
 
       expect(screen.getByText('+36 un')).toBeDefined();
-      expect(screen.getByText('40 un')).toBeDefined(); // 4 + 36 = 40
+      expect(screen.getByText('40 un')).toBeDefined();
     });
 
     it('deve desabilitar confirmação se a quantidade for menor que 1 (EARS-REP-09, AC-REP-04)', () => {
@@ -152,7 +149,6 @@ describe('Story 2.3.6 — Gestão: Reposição de Estoque e Registro de Moviment
         />
       );
 
-      // Altera quantidade para 20
       const inputQtd = screen.getByLabelText(/quantidade de reposição/i);
       fireEvent.change(inputQtd, { target: { value: '20' } });
 
@@ -215,7 +211,6 @@ describe('Story 2.3.6 — Gestão: Reposição de Estoque e Registro de Moviment
 
       fireEvent.click(btnRepor);
 
-      // Modal M06 deve abrir com os dados do produto
       expect(await screen.findByText('Repor Estoque (M06)')).toBeDefined();
       expect(screen.getAllByText('Refrigerante Cola Lata').length).toBeGreaterThanOrEqual(2);
     });

@@ -37,4 +37,3 @@ model EventoProcessado {
 
   @@map("eventos_processados")
 }
-

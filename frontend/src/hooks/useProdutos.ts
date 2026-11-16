@@ -8,7 +8,7 @@ export function useProdutos(filtros?: ListarProdutosFiltros) {
   return useQuery({
     queryKey: [...PRODUTOS_QUERY_KEY, filtros],
     queryFn: () => produtosApi.listar(filtros),
-    staleTime: 1000 * 30, // 30 segundos
+    staleTime: 1000 * 30,
   });
 }
 

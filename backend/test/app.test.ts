@@ -71,7 +71,6 @@ describe('Infraestrutura Base e Esqueleto da API (Story 1)', () => {
     });
     expect(logsErro.some((linha) => linha.includes('Connection refused'))).toBe(true);
 
-    // O processo segue vivo e responde normalmente na chamada seguinte quando o banco volta
     falharBanco = false;
     const respostaRecuperada = await app.inject({
       method: 'GET',
@@ -178,7 +177,6 @@ describe('Infraestrutura Base e Esqueleto da API (Story 1)', () => {
     expect(textoResposta).not.toContain('stack');
     expect(textoResposta).not.toContain('supersecreto');
 
-    // Stack registrado somente no log estruturado
     const logCompleto = logsErro.join('\n');
     expect(logCompleto).toContain('stack');
     expect(logCompleto).toContain('Falha catastrófica');

@@ -1,10 +1,3 @@
-/**
- * Gateway de Integração com o microsserviço satélite gestao-service (:3003).
- * Responsável pelo envio síncrono/assíncrono resiliente de eventos operacionais
- * (comanda.paga, comanda.fechada, estoque.movimentado) com timeout estrito de 2000ms
- * e degradação graciosa (ASR-04, ADR-01, ADR-07, SM-C2).
- */
-
 export interface RespostaNotificacaoGestao {
   sucesso: boolean;
   duplicado?: boolean;
@@ -53,7 +46,6 @@ export class HttpGestaoGateway implements IGestaoGateway {
       try {
         corpo = await res.json();
       } catch {
-        // Corpo não-JSON ignorado
       }
 
       if (res.status === 200 || res.status === 202 || res.ok) {
@@ -76,7 +68,6 @@ export class HttpGestaoGateway implements IGestaoGateway {
         dados: corpo,
       };
     } catch (erro: any) {
-      // Degradação graciosa (ADR-07, SM-C2): timeout ou indisponibilidade NUNCA reverte o pagamento
       const mensagem = erro?.message || 'Falha de rede ou timeout ao conectar ao gestao-service';
       this.logger?.warn?.(
         `[GestaoGateway] Falha na comunicação com gestao-service: ${mensagem}. Degradação graciosa ativada.`,

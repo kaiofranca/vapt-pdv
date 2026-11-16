@@ -9,7 +9,6 @@ export const EnvelopeEventoOperacionalSchema = Type.Object(
     ocorrido_em: Type.Optional(Type.String({ format: 'date-time', description: 'Data/hora canônica de ocorrência do evento' })),
     data_hora: Type.Optional(Type.String({ description: 'Data/hora UTC ISO do evento operacional' })),
 
-    // Campos opcionais específicos de comanda.paga / comanda.fechada
     comanda_id: Type.Optional(Type.Integer()),
     mesa: Type.Optional(Type.Integer()),
     garcom_id: Type.Optional(Type.Integer()),
@@ -39,7 +38,6 @@ export const EnvelopeEventoOperacionalSchema = Type.Object(
       ),
     ),
 
-    // Campos opcionais de item.lancado
     item: Type.Optional(
       Type.Object({
         item_comanda_id: Type.Integer(),
@@ -52,7 +50,6 @@ export const EnvelopeEventoOperacionalSchema = Type.Object(
       }),
     ),
 
-    // Campos opcionais de estoque.movimentado
     movimento_id: Type.Optional(Type.Integer()),
     produto_id: Type.Optional(Type.Integer()),
     nome_produto: Type.Optional(Type.String()),

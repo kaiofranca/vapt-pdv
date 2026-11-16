@@ -32,7 +32,6 @@ export function LoginPage() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [ultimoAcesso, setUltimoAcesso] = useState<UltimoAcessoStorage | null>(null);
 
-  // Carrega o último colaborador que acessou nesta máquina
   useEffect(() => {
     try {
       const salvo = localStorage.getItem(STORAGE_KEY_ULTIMO_ACESSO);
@@ -40,11 +39,9 @@ export function LoginPage() {
         setUltimoAcesso(JSON.parse(salvo));
       }
     } catch {
-      // Ignora erro de parsing do localStorage
     }
   }, []);
 
-  // Extrai as 2 primeiras letras do nome (ex: Lucas -> LU, Ana -> AN, Marina -> MA)
   const obterIniciais = (nome: string): string => {
     if (!nome) return '??';
     const partes = nome.trim().split(/\s+/);
@@ -54,7 +51,6 @@ export function LoginPage() {
     return partes[0].slice(0, 2).toUpperCase();
   };
 
-  // Formata o texto amigável do último acesso (ex: "hoje às 18:02")
   const formatarDataAcesso = (isoString?: string): string => {
     if (!isoString) return 'recentemente';
     const data = new Date(isoString);
@@ -70,13 +66,11 @@ export function LoginPage() {
     return mesmoDia ? `hoje às ${hora}` : `${data.toLocaleDateString('pt-BR')} às ${hora}`;
   };
 
-  // Agrupamento dos colaboradores ativos por perfil real vindo do banco
   const garcons = useMemo(() => usuarios.filter((u) => u.perfil === 'garcom'), [usuarios]);
   const caixas = useMemo(() => usuarios.filter((u) => u.perfil === 'caixa'), [usuarios]);
   const gerentes = useMemo(() => usuarios.filter((u) => u.perfil === 'gerente'), [usuarios]);
   const cozinheiros = useMemo(() => usuarios.filter((u) => u.perfil === 'cozinha'), [usuarios]);
 
-  // Colaborador em destaque para "Último acesso"
   const operadorDestaque = useMemo(() => {
     if (ultimoAcesso) {
       const match = usuarios.find((u) => u.id === ultimoAcesso.id);
@@ -118,12 +112,10 @@ export function LoginPage() {
       };
       localStorage.setItem(STORAGE_KEY_ULTIMO_ACESSO, JSON.stringify(registro));
     } catch {
-      // Ignora erro de gravação
     }
     login(usuario);
   };
 
-  // Criação inicial no PostgreSQL caso o banco esteja vazio
   const handleCriarOperadoresIniciais = async () => {
     setIsSeeding(true);
     try {
@@ -141,9 +133,6 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col md:flex-row font-sans selection:bg-brand selection:text-on-brand">
-      {/* ─────────────────────────────────────────────────────────────
-          SIDEBAR ESQUERDA (DESKTOP) — Fiel a X01 Login operacional.png
-          ───────────────────────────────────────────────────────────── */}
       <aside className="hidden md:flex w-[340px] lg:w-[380px] bg-nav text-white flex-col justify-between p-8 lg:p-10 shrink-0 select-none border-r border-[#43342A]">
         <div>
           <Logo size={52} comNome fundo="escuro" />
@@ -155,7 +144,6 @@ export function LoginPage() {
             Salão, caixa, cozinha e gestão executiva no mesmo ritmo.
           </p>
 
-          {/* Lista de Recursos com Ícones Lineares */}
           <div className="space-y-4 text-xs lg:text-sm text-[#F6EEE4] font-medium">
             <div className="flex items-center gap-3">
               <Utensils className="w-4 h-4 text-[#C9B8A6] shrink-0" />
@@ -176,15 +164,11 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Rodapé da Sidebar */}
         <div className="text-[11px] text-[#C9B8A6]/70 border-t border-[#43342A] pt-4">
           <span>VaptPDV · Sistemas Distribuídos</span>
         </div>
       </aside>
 
-      {/* ─────────────────────────────────────────────────────────────
-          HEADER COMPACTO (MOBILE) — Fiel a X01 Login (celular).png
-          ───────────────────────────────────────────────────────────── */}
       <header className="md:hidden flex items-center gap-3 p-5 pb-2">
         <LogoMark size={44} className="shrink-0" />
         <div className="flex-1">
@@ -196,12 +180,8 @@ export function LoginPage() {
         <ThemeToggle variante="icon" />
       </header>
 
-      {/* ─────────────────────────────────────────────────────────────
-          ÁREA PRINCIPAL DIREITA — Seleção de Operador
-          ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 bg-bg p-5 sm:p-8 lg:p-12 overflow-y-auto flex flex-col justify-between">
         <div className="max-w-4xl w-full">
-          {/* Título da Tela */}
           <div className="mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">
               Quem está entrando?
@@ -211,7 +191,6 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Estado de Carregamento Skeleton */}
           {isLoading && (
             <div className="space-y-4 animate-pulse">
               <div className="h-4 w-28 bg-surface-2 rounded" />
@@ -224,7 +203,6 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* Erro de Conexão com a API */}
           {isError && !isLoading && (
             <div className="p-6 rounded-[20px] bg-danger-soft border border-danger/30 text-center mb-6">
               <AlertCircle className="w-8 h-8 text-danger mx-auto mb-2" />
@@ -241,7 +219,6 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* Banco Vazio: Convite para Criar Operadores Iniciais */}
           {!isLoading && !isError && usuarios.length === 0 && (
             <div className="p-8 rounded-[20px] bg-surface border border-border text-center shadow-soft my-6">
               <div className="w-12 h-12 rounded-full bg-brand-soft text-brand-text flex items-center justify-center mx-auto mb-3">
@@ -265,10 +242,8 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* Conteúdo Real com Colaboradores */}
           {!isLoading && !isError && usuarios.length > 0 && (
             <div className="space-y-8">
-              {/* Card Herói: Último Acesso (com borda mostarda #F2A81D) */}
               {operadorDestaque && (
                 <div>
                   <div className="text-xs font-bold text-text-2 mb-2">Último acesso</div>
@@ -277,7 +252,6 @@ export function LoginPage() {
                     className="group bg-surface border-2 border-brand rounded-[20px] p-4 sm:p-5 flex items-center justify-between shadow-soft hover:shadow-card transition-all cursor-pointer active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                      {/* Avatar Circular com Iniciais */}
                       <div className="w-12 h-12 rounded-full bg-brand-soft text-brand-text font-black text-base flex items-center justify-center shrink-0 shadow-soft">
                         {obterIniciais(operadorDestaque.usuario.nome)}
                       </div>
@@ -291,7 +265,6 @@ export function LoginPage() {
                       </div>
                     </div>
 
-                    {/* Botão Entrar > (Desktop) ou Chevron (Mobile) */}
                     <div className="shrink-0 ml-3">
                       <div className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand hover:bg-brand-hover text-on-brand font-extrabold text-xs shadow-soft transition-all group-hover:scale-105">
                         <span>Entrar</span>
@@ -303,9 +276,7 @@ export function LoginPage() {
                 </div>
               )}
 
-              {/* Seções por Perfil Real do Banco */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Coluna 1: Garçons */}
                 {garcons.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-text-2 mb-3">Garçons</div>
@@ -332,7 +303,6 @@ export function LoginPage() {
                   </div>
                 )}
 
-                {/* Coluna 2: Caixa */}
                 {caixas.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-text-2 mb-3">Caixa</div>
@@ -359,7 +329,6 @@ export function LoginPage() {
                   </div>
                 )}
 
-                {/* Coluna 3: Gestão & Gerência */}
                 {gerentes.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-text-2 mb-3">Gestão &amp; BI</div>
@@ -388,7 +357,6 @@ export function LoginPage() {
                     </div>
                   </div>
                 )}
-                {/* Coluna 4: Cozinha / KDS */}
                 {cozinheiros.length > 0 && (
                   <div>
                     <div className="text-xs font-bold text-text-2 mb-3">Cozinha / KDS</div>
@@ -422,7 +390,6 @@ export function LoginPage() {
           )}
         </div>
 
-        {/* Barra Inferior com Botão Tema — alterna entre claro e escuro */}
         <div className="pt-8 hidden md:flex justify-end">
           <ThemeToggle />
         </div>

@@ -63,7 +63,6 @@ export class FichasRepositorio {
 
       return { criada: true, ficha: fichaCriada };
     } catch (erro: any) {
-      // Prisma error code P2002: Unique constraint failed
       if (erro?.code === 'P2002' || String(erro?.message).includes('item_comanda_id')) {
         const fichaExistente = await this.buscarPorItemComandaId(dados.item_comanda_id);
         if (fichaExistente) {
@@ -153,4 +152,3 @@ export class FichasRepositorio {
     });
   }
 }
-

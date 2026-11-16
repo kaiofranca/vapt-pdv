@@ -75,7 +75,6 @@ export const UsuarioModal: React.FC<UsuarioModalProps> = ({
   const [erroNome, setErroNome] = useState<string | null>(null);
   const [erroApi, setErroApi] = useState<string | null>(null);
 
-  // Sincroniza formulário com o usuário recebido ou reseta para criação
   useEffect(() => {
     if (isOpen) {
       if (usuarioParaEditar) {
@@ -154,7 +153,6 @@ export const UsuarioModal: React.FC<UsuarioModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-2">
-        {/* Banner de Erro da API */}
         {erroApi && (
           <div
             role="alert"
@@ -168,7 +166,6 @@ export const UsuarioModal: React.FC<UsuarioModalProps> = ({
           </div>
         )}
 
-        {/* Campo Nome */}
         <div>
           <Input
             id="nome-colaborador-input"
@@ -185,7 +182,6 @@ export const UsuarioModal: React.FC<UsuarioModalProps> = ({
           />
         </div>
 
-        {/* Seletor de Perfil de Acesso */}
         <div className="flex flex-col gap-2.5">
           <label className="text-xs font-semibold text-text-2 tracking-wide uppercase">
             Perfil de Operação *
@@ -233,7 +229,6 @@ export const UsuarioModal: React.FC<UsuarioModalProps> = ({
           </div>
         </div>
 
-        {/* Rodapé com Ações */}
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
           <Button
             type="button"

@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-  /* Tema claro (padrão) — tokens do docs/DESIGN.md, em canais RGB */
   :root {
     --c-bg: 251 247 241;
     --c-surface: 255 255 255;
@@ -38,7 +37,6 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Tema escuro */
   :root.dark {
     --c-bg: 23 18 15;
     --c-surface: 36 29 24;
@@ -77,13 +75,11 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Impede seleção acidental de texto durante toques rápidos no salão */
   button, [role="button"] {
     user-select: none;
     -webkit-user-select: none;
   }
 
-  /* Alvos mínimos de toque em dispositivos touch */
   button, input, select, textarea, a {
     touch-action: manipulation;
   }

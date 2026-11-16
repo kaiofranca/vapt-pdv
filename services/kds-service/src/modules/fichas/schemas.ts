@@ -52,7 +52,6 @@ export const FichaRespostaSchema = Type.Object(
 
 export type FichaResposta = Static<typeof FichaRespostaSchema>;
 
-// Story 14.4: Transições de status
 export const StatusFichaEnum = Type.Union([
   Type.Literal('recebido'),
   Type.Literal('em_preparo'),
@@ -77,7 +76,6 @@ export const ParamsFichaIdSchema = Type.Object({
   id: Type.Integer({ minimum: 1, description: 'ID da ficha de preparo' }),
 });
 
-// Story 14.5: Consulta de pendências por comanda
 export const ParamsComandaIdSchema = Type.Object({
   comandaId: Type.Integer({ minimum: 1, description: 'ID da comanda' }),
 });
@@ -108,5 +106,3 @@ export const RespostaPendenciasComandaSchema = Type.Object({
 });
 
 export type RespostaPendenciasComanda = Static<typeof RespostaPendenciasComandaSchema>;
-
-

@@ -181,7 +181,6 @@ export class CobrancasService {
     const cobrancaExistente = await this.repository.buscarPorComandaId(comandaId);
 
     if (cobrancaExistente) {
-      // Regra: Comanda quitada ou cancelada é imutável
       if (cobrancaExistente.status === 'paga' || cobrancaExistente.status === 'cancelada') {
         throw ErroDominio.comandaImutavel(
           'Comanda já finalizada ou cancelada não pode ser alterada.',
@@ -189,7 +188,6 @@ export class CobrancasService {
         );
       }
 
-      // Toggle ou manutenção da taxa de serviço
       const aplicarTaxa =
         dados.aplicar_taxa_servico !== undefined
           ? dados.aplicar_taxa_servico
@@ -231,7 +229,6 @@ export class CobrancasService {
       return this.formatarCobranca(atualizada);
     }
 
-    // Criação inicial da cobrança sincronizada a partir do fechamento no salão
     if (!dados.mesa || dados.mesa < 1) {
       throw ErroDominio.validacao('O número da mesa é obrigatório e deve ser maior ou igual a 1.', {
         mesa: 'Número da mesa inválido.',
@@ -440,7 +437,6 @@ export class CobrancasService {
       );
     }
 
-    // Determina valor a aplicar (se omitido, assume o saldo_restante da comanda)
     const valorRaw = dados.valor_aplicado ?? dados.valor;
     let valorAplicado: Prisma.Decimal;
     if (valorRaw !== undefined && valorRaw !== null && valorRaw !== '') {
@@ -527,8 +523,6 @@ export class CobrancasService {
       ? cobranca.itensSnapshot
       : [];
 
-    // RESILIÊNCIA E FAIL-FAST (ADR-07):
-    // Ao zerar o saldo_restante, aciona baixa atômica de estoque no Core ANTES de comitar
     if (quitada) {
       const itensParaBaixa = itensSnapshot.map((it) => ({
         produto_id: it.produto_id,
@@ -538,7 +532,6 @@ export class CobrancasService {
       await this.estoqueGateway.baixarEstoque(cobranca.comandaId, itensParaBaixa);
     }
 
-    // Registra a parcela de pagamento
     const parcelaCriada = await this.repository.registrarPagamento({
       cobrancaId: cobranca.id,
       comandaId: cobranca.comandaId,
@@ -551,7 +544,6 @@ export class CobrancasService {
       registradoEm: agora,
     });
 
-    // Atualiza a cobrança no banco
     const cobrancaAtualizada = await this.repository.atualizar(comandaId, {
       valorPago: novoValorPago,
       saldoRestante: novoSaldoRestante,
@@ -563,7 +555,6 @@ export class CobrancasService {
     let reciboResposta: any = null;
 
     if (quitada) {
-      // Gera código de autenticação único VAPT-YYYYMMDD-MESA-XXXX
       const codigoAutenticacao = gerarCodigoAutenticacao(cobranca.mesa, agora);
 
       const todosPagamentos = [...pagamentosAtuais, parcelaCriada];
@@ -616,7 +607,6 @@ export class CobrancasService {
         emitido_em: reciboSalvo.emitidoEm.toISOString(),
       };
 
-      // Dispara evento para gestao-service com resiliência e degradação graciosa (ASR-04, ADR-07, SM-C2)
       const eventoComandaPaga = {
         evento_id: crypto.randomUUID(),
         evento: 'comanda.paga',
@@ -662,7 +652,6 @@ export class CobrancasService {
       }
 
       if (avisoGestao) {
-        // Degradação graciosa: apenas registra aviso, sem reverter a venda
       }
     }
 

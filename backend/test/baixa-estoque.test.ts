@@ -164,11 +164,9 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(resposta.statusCode).toBe(200);
       expect(resposta.json()).toEqual({ status: 'ok' });
 
-      // Saldo do produto deduzido: 20 - 4 = 16
       const produtoAtualizado = produtos.find((p) => p.id === 1);
       expect(produtoAtualizado?.estoque).toBe(16);
 
-      // Movimento contábil registrado com tipo 'saida' e motivo 'VENDA_COMANDA #X'
       expect(movimentosEstoque).toHaveLength(1);
       expect(movimentosEstoque[0]).toMatchObject({
         produto_id: 1,
@@ -203,8 +201,8 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(resposta.statusCode).toBe(200);
       expect(resposta.json()).toEqual({ status: 'ok' });
 
-      expect(produtos.find((p) => p.id === 1)?.estoque).toBe(15); // 20 - 5
-      expect(produtos.find((p) => p.id === 2)?.estoque).toBe(12); // 15 - 3
+      expect(produtos.find((p) => p.id === 1)?.estoque).toBe(15);
+      expect(produtos.find((p) => p.id === 2)?.estoque).toBe(12);
       expect(movimentosEstoque).toHaveLength(2);
 
       expect(movimentosEstoque[0]).toMatchObject({
@@ -236,7 +234,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
         itens: [{ produto_id: 1, quantidade: 2 }],
       };
 
-      // 1ª execução
       const res1 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -246,7 +243,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(produtos.find((p) => p.id === 1)?.estoque).toBe(18);
       expect(movimentosEstoque).toHaveLength(1);
 
-      // 2ª execução com mesma comanda e mesmo produto (redelivery / retry HTTP)
       const res2 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -255,7 +251,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(res2.statusCode).toBe(200);
       expect(res2.json()).toEqual({ status: 'ok' });
 
-      // O estoque permanece em 18 e não há segundo movimento
       expect(produtos.find((p) => p.id === 1)?.estoque).toBe(18);
       expect(movimentosEstoque).toHaveLength(1);
 
@@ -269,7 +264,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       ]);
       const app = await buildApp({ prisma, logger: false });
 
-      // 1ª chamada: baixa apenas produtoA na comanda 300
       await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -281,7 +275,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(produtos.find((p) => p.id === 1)?.estoque).toBe(18);
       expect(movimentosEstoque).toHaveLength(1);
 
-      // 2ª chamada: payload contém produtoA (já baixado) e produtoB (novo)
       const res2 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -295,9 +288,8 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       });
       expect(res2.statusCode).toBe(200);
 
-      // produtoA não foi deduzido de novo; produtoB foi deduzido
       expect(produtos.find((p) => p.id === 1)?.estoque).toBe(18);
-      expect(produtos.find((p) => p.id === 2)?.estoque).toBe(11); // 15 - 4
+      expect(produtos.find((p) => p.id === 2)?.estoque).toBe(11);
       expect(movimentosEstoque).toHaveLength(2);
 
       await app.close();
@@ -323,7 +315,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(corpo.erro.codigo).toBe('NAO_ENCONTRADO');
       expect(corpo.erro.mensagem).toContain('9999');
 
-      // Nenhum estoque deduzido e nenhum movimento registrado
       expect(produtos.find((p) => p.id === 1)?.estoque).toBe(20);
       expect(movimentosEstoque).toHaveLength(0);
 
@@ -334,7 +325,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       const { prisma } = criarPrismaComEstoqueMock([produtoA]);
       const app = await buildApp({ prisma, logger: false });
 
-      // Sem itens
       const res1 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -346,7 +336,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(res1.statusCode).toBe(400);
       expect(res1.json().erro.codigo).toBe('VALIDACAO');
 
-      // Comanda inválida (<= 0)
       const res2 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',
@@ -358,7 +347,6 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       expect(res2.statusCode).toBe(400);
       expect(res2.json().erro.codigo).toBe('VALIDACAO');
 
-      // Quantidade inválida (<= 0)
       const res3 = await app.inject({
         method: 'POST',
         url: '/produtos/baixa-estoque',

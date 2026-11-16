@@ -73,7 +73,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service (ADR-01, 
     expect(resultado.dados?.processado).toBe(true);
     expect(mockWarn).not.toHaveBeenCalled();
 
-    // Valida chamada HTTP
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     const [urlChamada, initChamada] = (globalThis.fetch as any).mock.calls[0];
     expect(urlChamada).toBe('http://localhost:3003/gestao/eventos');
@@ -161,7 +160,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service (ADR-01, 
     };
     const mockGestaoGateway: HttpGestaoGateway = new HttpGestaoGateway(gestaoUrl);
 
-    // Mock fetch com falha
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('gestao-service offline'));
 
     const cobrancasService = new CobrancasService(
@@ -170,7 +168,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service (ADR-01, 
       mockGestaoGateway,
     );
 
-    // Abre comanda no caixa
     await cobrancasService.fecharOuRecalcular(100, {
       mesa: 5,
       garcom_id: 1,
@@ -186,13 +183,11 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service (ADR-01, 
       aplicar_taxa_servico: false,
     });
 
-    // Quita integralmente
     const resultadoPagamento = await cobrancasService.pagarComanda(100, {
       forma_pagamento: 'dinheiro',
       valor_recebido: '20.00',
     });
 
-    // Venda concluída e comanda quitada com sucesso (SM-C2)
     expect(resultadoPagamento.status).toBe('paga');
     expect(resultadoPagamento.saldo_restante).toBe('0.00');
     expect(resultadoPagamento.recibo).toBeDefined();

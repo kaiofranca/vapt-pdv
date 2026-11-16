@@ -30,7 +30,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
     return Math.max(0, Math.floor((Date.now() - recebidoEm) / 1000));
   });
 
-  // Cronômetro em tempo real cliente-side atualizado a cada segundo
   useEffect(() => {
     const recebidoEm = new Date(ficha.recebido_em).getTime();
     const interval = setInterval(() => {
@@ -40,17 +39,12 @@ export const FichaCard: React.FC<FichaCardProps> = ({
     return () => clearInterval(interval);
   }, [ficha.recebido_em]);
 
-  // Formatação MM:SS
   const tempoFormatado = useMemo(() => {
     const minutos = Math.floor(segundosDecorridos / 60);
     const segundos = segundosDecorridos % 60;
     return `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
   }, [segundosDecorridos]);
 
-  // Classificação SLA:
-  // Normal: < 10 min (< 600s) -> Verde
-  // Atenção: 10 a 15 min (600s a 899s) -> Amarelo
-  // Atrasado: >= 15 min (>= 900s) -> Vermelho
   const slaNivel = useMemo<'normal' | 'atencao' | 'atrasado'>(() => {
     if (segundosDecorridos >= 900) return 'atrasado';
     if (segundosDecorridos >= 600) return 'atencao';
@@ -83,7 +77,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
     <div
       className={`bg-[#2B2019] rounded-[24px] border-2 ${borderStyles[slaNivel]} p-5 flex flex-col justify-between shadow-xl transition-all duration-300 select-none min-h-[300px]`}
     >
-      {/* Topo do Ticket: Mesa + SLA Timer + Setor */}
       <div>
         <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-[#43342A]">
           <div className="flex items-center gap-2.5">
@@ -103,7 +96,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
           </div>
         </div>
 
-        {/* Sub-topo: Garçom e Estação */}
         <div className="flex items-center justify-between text-xs text-[#A89887] pt-2.5">
           <div className="flex items-center gap-1.5">
             <User className="w-3.5 h-3.5" />
@@ -123,7 +115,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
           </div>
         </div>
 
-        {/* Alerta de Atraso se excedeu 15 minutos */}
         {slaNivel === 'atrasado' && (
           <div className="mt-3 px-3 py-1.5 rounded-xl bg-rose-600/30 border border-rose-500 text-rose-200 text-xs font-black flex items-center justify-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -131,7 +122,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
           </div>
         )}
 
-        {/* Corpo do Pedido: Quantidade e Produto em Alta Legibilidade */}
         <div className="mt-4 space-y-2">
           <div className="flex items-baseline gap-3">
             <span className="text-3xl font-black text-amber-400 font-mono">
@@ -142,7 +132,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
             </span>
           </div>
 
-          {/* Destaque Crítico de Observação / Alergias */}
           {ficha.observacao && (
             <div className="p-3 rounded-2xl bg-rose-500/20 border-2 border-rose-500/60 text-rose-200 shadow-sm mt-3">
               <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-rose-300 mb-0.5">
@@ -157,7 +146,6 @@ export const FichaCard: React.FC<FichaCardProps> = ({
         </div>
       </div>
 
-      {/* Rodapé: Status Atual e Botão de Ação Touch (mínimo 56x56px) */}
       <div className="pt-5 mt-4 border-t border-[#43342A]">
         {ficha.status === 'recebido' && (
           <button

@@ -13,7 +13,7 @@ export interface Produto {
   id: number;
   nome: string;
   categoria: string;
-  preco: string; // "12.50"
+  preco: string;
   estoque: number;
   estoque_minimo: number;
   ativo: boolean;
@@ -30,7 +30,7 @@ export interface ItemComanda {
   comanda_id: number;
   produto_id: number;
   nome_copiado: string;
-  preco_copiado: string; // "12.50"
+  preco_copiado: string;
   quantidade: number;
   observacao?: string | null;
 }
@@ -65,8 +65,6 @@ export interface ApiErrorDetail {
 export interface ApiErrorResponse {
   erro: ApiErrorDetail;
 }
-
-// DTOs de Entrada de Usuários
 
 export interface AtualizarUsuarioDto {
   nome?: string;
@@ -226,7 +224,6 @@ export interface ExportarRelatorioFiltros {
   ate?: string;
 }
 
-// Tipos do KDS (Cozinha & Bar)
 export type SetorKds = 'cozinha' | 'bar';
 export type StatusFichaKds = 'recebido' | 'em_preparo' | 'pronto' | 'entregue' | 'cancelado';
 
@@ -260,7 +257,6 @@ export interface PendenciasKdsResposta {
     status: string;
   }>;
 }
-
 
 export interface ItemPendenciaKds {
   id: number;

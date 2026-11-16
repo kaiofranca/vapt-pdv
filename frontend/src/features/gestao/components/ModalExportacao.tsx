@@ -88,7 +88,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
       maxWidth="lg"
     >
       <div className="space-y-6 pt-2">
-        {/* Feedback de Sucesso */}
         {mensagemSucesso && (
           <div className="p-3.5 rounded-[14px] bg-success-soft border border-success/30 flex items-center gap-2.5 text-xs text-success-text font-bold">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-success" />
@@ -96,7 +95,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         )}
 
-        {/* Feedback de Erro */}
         {mensagemErro && (
           <div className="p-3.5 rounded-[14px] bg-danger-soft border border-danger/30 flex items-center gap-2.5 text-xs text-danger-text font-bold">
             <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
@@ -104,7 +102,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         )}
 
-        {/* 1. Seleção do Conjunto de Dados */}
         <div>
           <label className="text-xs font-bold text-text-2 mb-2 block uppercase tracking-wider">
             1. Selecione o Relatório
@@ -143,7 +140,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         </div>
 
-        {/* 2. Formato do Arquivo (CSV vs JSON) */}
         <div>
           <label className="text-xs font-bold text-text-2 mb-2 block uppercase tracking-wider">
             2. Formato de Saída
@@ -179,7 +175,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         </div>
 
-        {/* 3. Filtro Opcional de Datas (de / até) para Faturamento */}
         {tipo === 'faturamento' && (
           <div>
             <label className="text-xs font-bold text-text-2 mb-2 block uppercase tracking-wider">
@@ -217,7 +212,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         )}
 
-        {/* Rodapé de Ações */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
           <Button variant="secondary" onClick={onClose} disabled={exportarMut.isPending}>
             Cancelar

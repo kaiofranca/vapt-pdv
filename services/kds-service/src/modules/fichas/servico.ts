@@ -110,19 +110,16 @@ export class FichasServico {
       throw ErroDominio.naoEncontrado(`Ficha de preparo #${id} não encontrada.`);
     }
 
-    // Idempotência: transição para o mesmo status
     if (ficha.status === novoStatus) {
       return serializarFicha(ficha);
     }
 
-    // Estados terminais imutáveis (RN20)
     if (ficha.status === 'entregue' || ficha.status === 'cancelado') {
       throw ErroDominio.transicaoInvalida(
         `Fichas no estado '${ficha.status}' são finais e não permitem novas transições.`,
       );
     }
 
-    // Validação da máquina de estados linear + cancelamento pré-entrega
     const transicoesValidas: Record<string, string[]> = {
       recebido: ['em_preparo', 'cancelado'],
       em_preparo: ['pronto', 'cancelado'],
@@ -201,4 +198,3 @@ export class FichasServico {
     };
   }
 }
-

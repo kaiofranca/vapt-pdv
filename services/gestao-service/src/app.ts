@@ -75,7 +75,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     }
   });
 
-  // Swagger Documentation
   await app.register(swagger, {
     openapi: {
       info: {
@@ -98,7 +97,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   });
 
-  // Handler Global de Erros Padronizado (RFC 7807)
   app.setErrorHandler((error: FastifyError, _request, reply) => {
     if (error instanceof ErroDominio) {
       return reply
@@ -119,7 +117,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
       .send(formatarRespostaErro('ERRO_INTERNO', 'Ocorreu um erro interno no servidor.'));
   });
 
-  // Inicialização de Dependências
   let prisma: ClienteBanco | undefined = opcoes.prisma;
   if (!prisma && !opcoes.repository) {
     prisma = obterPrisma();
@@ -129,7 +126,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   const service = opcoes.service || new GestaoService(repository);
   const controller = new GestaoController(service);
 
-  // Registro de Módulos
   await app.register(rotasSaude, { prisma });
   await app.register(rotasGestao, { controller });
 

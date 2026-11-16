@@ -1,4 +1,3 @@
--- CreateTable
 CREATE TABLE "fichas_preparo" (
     "id" SERIAL NOT NULL,
     "comanda_id" INTEGER NOT NULL,
@@ -20,7 +19,6 @@ CREATE TABLE "fichas_preparo" (
     CONSTRAINT "fichas_preparo_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "eventos_processados" (
     "evento_id" UUID NOT NULL,
     "evento" VARCHAR(60) NOT NULL,
@@ -29,11 +27,8 @@ CREATE TABLE "eventos_processados" (
     CONSTRAINT "eventos_processados_pkey" PRIMARY KEY ("evento_id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX "fichas_preparo_item_comanda_id_key" ON "fichas_preparo"("item_comanda_id");
 
--- CreateIndex
 CREATE INDEX "fichas_preparo_fila_idx" ON "fichas_preparo"("setor", "status", "recebido_em" ASC);
 
--- CreateIndex
 CREATE INDEX "fichas_preparo_comanda_idx" ON "fichas_preparo"("comanda_id", "status");

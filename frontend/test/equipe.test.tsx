@@ -84,7 +84,6 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
       expect(screen.getByText('Marina Gerente')).toBeDefined();
       expect(screen.getByText('Lucas Antigo')).toBeDefined();
 
-      // Verifica os badges de perfil
       expect(screen.getAllByText('Garçom').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Caixa').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('Cozinha').length).toBeGreaterThanOrEqual(1);
@@ -98,7 +97,6 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
       await screen.findByText('Carlos Garçom');
 
-      // Total = 5, Garçons = 2, Caixas = 1, Cozinha = 1, Gerentes = 1, Inativos = 1
       expect(screen.getByText('Total')).toBeDefined();
       expect(screen.getByText('5')).toBeDefined();
     });
@@ -112,12 +110,10 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
       await screen.findByText('Carlos Garçom');
 
-      // Clica no filtro "Cozinha" dentro do grupo de perfil
       const filtroPerfilGroup = screen.getByRole('group', { name: /filtrar por perfil/i });
       const botaoCozinha = within(filtroPerfilGroup).getByRole('button', { name: /^Cozinha$/i });
       fireEvent.click(botaoCozinha);
 
-      // Deve exibir apenas Chef Thiago
       expect(screen.getByText('Chef Thiago')).toBeDefined();
       expect(screen.queryByText('Carlos Garçom')).toBeNull();
       expect(screen.queryByText('Ana Caixa')).toBeNull();
@@ -131,12 +127,10 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
       await screen.findByText('Carlos Garçom');
 
-      // Clica no filtro "Inativos"
       const filtroStatusGroup = screen.getByRole('group', { name: /filtrar por status/i });
       const botaoInativos = within(filtroStatusGroup).getByRole('button', { name: /^Inativos$/i });
       fireEvent.click(botaoInativos);
 
-      // Deve exibir apenas Lucas Antigo
       expect(screen.getByText('Lucas Antigo')).toBeDefined();
       expect(screen.queryByText('Carlos Garçom')).toBeNull();
       expect(screen.queryByText('Chef Thiago')).toBeNull();
@@ -196,7 +190,6 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
       const inputNome = screen.getByPlaceholderText(/ex\.: carlos da silva/i);
       fireEvent.change(inputNome, { target: { value: 'Juliana Caixa' } });
 
-      // Seleciona perfil Caixa
       const radioCaixa = screen.getByRole('radio', { name: /operador de caixa/i });
       fireEvent.click(radioCaixa);
 
@@ -233,7 +226,7 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
   describe('4. Edição de Colaborador', () => {
     it('deve carregar dados existentes no modal e invocar atualizar ao salvar', async () => {
-      const usuarioEditando = mockUsuarios[0]; // Carlos Garçom
+      const usuarioEditando = mockUsuarios[0];
       const usuarioAtualizado: Usuario = {
         ...usuarioEditando,
         nome: 'Carlos Eduardo Garçom',
@@ -271,7 +264,7 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
   describe('5. Inativação Lógica de Colaborador (RN14 — AC-EQ-03)', () => {
     it('deve abrir o diálogo de confirmação e inativar o colaborador ao confirmar', async () => {
-      const usuarioInativar = mockUsuarios[1]; // Ana Caixa
+      const usuarioInativar = mockUsuarios[1];
       const usuarioInativado: Usuario = {
         ...usuarioInativar,
         ativo: false,
@@ -348,7 +341,6 @@ describe('Story 2.3.4 — Gestão Frontend: Equipe e Usuários (M12 e M13)', () 
 
       renderWithQueryClient(<ModoGestaoPage />);
 
-      // Clica na aba Equipe na SideNav
       const botaoEquipe = screen.getByRole('button', { name: /equipe/i });
       fireEvent.click(botaoEquipe);
 

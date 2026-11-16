@@ -18,7 +18,6 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
         quantidade: 1,
         observacao: null,
         status: 'recebido',
-        // 300s atrás (5 min) -> normal (< 480s)
         recebidoEm: new Date(agora - 300 * 1000),
         iniciadoEm: null,
         prontoEm: null,
@@ -37,7 +36,6 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
         quantidade: 2,
         observacao: 'Bem passado',
         status: 'em_preparo',
-        // 600s atrás (10 min) -> atencao (480..900s)
         recebidoEm: new Date(agora - 600 * 1000),
         iniciadoEm: new Date(agora - 400 * 1000),
         prontoEm: null,
@@ -56,7 +54,6 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
         quantidade: 3,
         observacao: null,
         status: 'pronto',
-        // 1000s atrás (> 16 min) -> atrasado (> 900s)
         recebidoEm: new Date(agora - 1000 * 1000),
         iniciadoEm: new Date(agora - 800 * 1000),
         prontoEm: new Date(agora - 200 * 1000),
@@ -126,17 +123,14 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
     const corpo = JSON.parse(resposta.body);
 
     expect(corpo.fichas).toHaveLength(3);
-    // Ordenação FIFO: ficha 3 (1000s atrás), ficha 2 (600s atrás), ficha 1 (300s atrás)
     expect(corpo.fichas[0].id).toBe(3);
     expect(corpo.fichas[1].id).toBe(2);
     expect(corpo.fichas[2].id).toBe(1);
 
-    // Validação de SLA
-    expect(corpo.fichas[0].sla_status).toBe('atrasado'); // > 900s
-    expect(corpo.fichas[1].sla_status).toBe('atencao'); // 480..900s
-    expect(corpo.fichas[2].sla_status).toBe('normal'); // < 480s
+    expect(corpo.fichas[0].sla_status).toBe('atrasado');
+    expect(corpo.fichas[1].sla_status).toBe('atencao');
+    expect(corpo.fichas[2].sla_status).toBe('normal');
 
-    // Resumo agregado
     expect(corpo.resumo).toEqual({
       recebido: 1,
       em_preparo: 1,

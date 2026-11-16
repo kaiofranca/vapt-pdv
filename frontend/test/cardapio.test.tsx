@@ -99,7 +99,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
       expect(screen.getByText('Suco Natural de Laranja')).toBeDefined();
       expect(screen.getByText('Porção de Pastel Antiga')).toBeDefined();
 
-      // Formatação de valores monetários com R$
       expect(screen.getByText(/45,90/)).toBeDefined();
       expect(screen.getByText(/18,50/)).toBeDefined();
       expect(screen.getByText(/22,00/)).toBeDefined();
@@ -112,9 +111,8 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
 
       expect(await screen.findByText('Filé com Fritas')).toBeDefined();
 
-      // Contadores: Total = 5, Ativos = 4, Comidas = 2, Bebidas = 2, Estoque Crítico = 2 (id 2 e id 3)
-      expect(screen.getByText('5')).toBeDefined(); // Total Produtos
-      expect(screen.getByText('4')).toBeDefined(); // Ativos no Salão
+      expect(screen.getByText('5')).toBeDefined();
+      expect(screen.getByText('4')).toBeDefined();
     });
   });
 
@@ -125,7 +123,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
       renderWithQueryClient(<CardapioView />);
       expect(await screen.findByText('Filé com Fritas')).toBeDefined();
 
-      // Clica no filtro de Bebidas
       const chipBebidas = screen.getByRole('button', { name: /^bebidas$/i });
       fireEvent.click(chipBebidas);
 
@@ -141,7 +138,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
       renderWithQueryClient(<CardapioView />);
       expect(await screen.findByText('Filé com Fritas')).toBeDefined();
 
-      // Clica no filtro Inativos
       const btnInativos = screen.getByRole('button', { name: /^inativos$/i });
       fireEvent.click(btnInativos);
 
@@ -170,10 +166,8 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
       renderWithQueryClient(<CardapioView />);
       expect(await screen.findByText('Petit Gâteau')).toBeDefined();
 
-      // Petit Gâteau e Porção Antiga têm estoque = 0 -> devem ter badge "Esgotado"
       expect(screen.getAllByText('Esgotado').length).toBe(2);
 
-      // Cerveja Artesanal IPA tem estoque 4 <= min 10 -> alerta visual
       expect(screen.getByText('4 un')).toBeDefined();
     });
   });
@@ -232,19 +226,15 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
         />
       );
 
-      // Preenche nome
       const inputNome = screen.getByPlaceholderText(/ex.: filé com fritas/i);
       fireEvent.change(inputNome, { target: { value: 'Caipirinha Tradicional' } });
 
-      // Seleciona categoria Bebida
       const btnBebida = screen.getByRole('button', { name: /bebida sucos, refrigerantes/i });
       fireEvent.click(btnBebida);
 
-      // Preenche preço (com vírgula)
       const inputPreco = screen.getByPlaceholderText('0,00');
       fireEvent.change(inputPreco, { target: { value: '16,00' } });
 
-      // Preenche estoque
       const inputEstoque = screen.getByPlaceholderText('0');
       fireEvent.change(inputEstoque, { target: { value: '30' } });
 
@@ -286,7 +276,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
       expect(alertErro).toBeDefined();
       expect(within(alertErro).getByText(/já existe um produto ativo com este nome/i)).toBeDefined();
 
-      // Verifica que os campos ainda mantêm os dados
       expect(inputNome).toHaveProperty('value', 'Filé com Fritas');
     });
   });
@@ -314,7 +303,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
 
       expect(screen.getByText('Editar Produto (M03)')).toBeDefined();
 
-      // Altera preço de 45,90 para 49,90
       const inputPreco = screen.getByPlaceholderText('0,00');
       fireEvent.change(inputPreco, { target: { value: '49,90' } });
 
@@ -410,7 +398,6 @@ describe('Story 2.3.5 — Gestão Frontend: Cardápio e Gestão de Produtos (M02
 
       renderWithQueryClient(<ModoGestaoPage />);
 
-      // Clica na aba Cardápio na SideNav
       const botaoCardapio = screen.getByRole('button', { name: /cardápio/i });
       fireEvent.click(botaoCardapio);
 

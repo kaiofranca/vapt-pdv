@@ -28,14 +28,12 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
 }) => {
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroMesa>('todas');
 
-  // Mapeamento de id do garçom -> nome para exibição no card
   const garcomMap = useMemo(() => {
     const map = new Map<number, string>();
     garcons.forEach((g) => map.set(g.id, g.nome));
     return map;
   }, [garcons]);
 
-  // Lista de mesas padrão (1 até totalMesasSalao, mais qualquer mesa ativa adicional)
   const todasMesas = useMemo(() => {
     const lista: string[] = [];
     for (let i = 1; i <= totalMesasSalao; i++) {
@@ -49,7 +47,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
     return lista;
   }, [totalMesasSalao, comandas]);
 
-  // Mapa de mesa -> comanda aberta ou fechada (conta pedida)
   const comandaPorMesa = useMemo(() => {
     const map = new Map<string, Comanda>();
     comandas.forEach((cmd) => {
@@ -60,7 +57,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
     return map;
   }, [comandas]);
 
-  // Contadores para os filtros
   const contadores = useMemo(() => {
     let livres = 0;
     let abertas = 0;
@@ -93,7 +89,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
     };
   }, [todasMesas, comandaPorMesa, garcomLogadoId]);
 
-  // Filtra as mesas de acordo com o chip selecionado
   const mesasFiltradas = useMemo(() => {
     return todasMesas.filter((mesaNum) => {
       const cmd = comandaPorMesa.get(mesaNum);
@@ -110,9 +105,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
 
   return (
     <div className="relative pb-24">
-      {/* ─────────────────────────────────────────────────────────────
-          TOPO: Título, Saudação e Indicador de Conexão (Fiel a G01)
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <LogoMark size={40} className="shrink-0" />
@@ -122,13 +114,9 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
           </div>
         </div>
 
-        {/* Alternar tema claro/escuro */}
         <ThemeToggle variante="icon" />
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          CHIPS DE FILTRO HORIZONTAIS (Fiel a G01)
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none select-none">
         <button
           type="button"
@@ -224,9 +212,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
         </button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          GRADE DE MESAS (2 Colunas no Mobile - Fiel a G01)
-          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
         {mesasFiltradas.map((mesaNum) => {
           const comanda = comandaPorMesa.get(mesaNum);
@@ -245,9 +230,6 @@ export const MesasGrid: React.FC<MesasGridProps> = ({
         })}
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          FAB FLUTUANTE "+ Abrir mesa" (Fiel a G01)
-          ───────────────────────────────────────────────────────────── */}
       <div className="fixed bottom-20 right-4 sm:right-6 z-30">
         <button
           type="button"

@@ -6,10 +6,6 @@ export interface LogoMarkProps {
   ariaHidden?: boolean;
 }
 
-/**
- * Símbolo do VaptPDV: selo mostarda com um "V" (de Vapt) em traço único
- * e uma moeda no canto superior direito (o "PDV" — ponto de venda).
- */
 export const LogoMark: React.FC<LogoMarkProps> = ({
   size = 44,
   className = '',
@@ -40,9 +36,7 @@ export const LogoMark: React.FC<LogoMarkProps> = ({
 
 export interface LogoProps {
   size?: number;
-  /** Mostra o nome "VaptPDV" ao lado do símbolo. */
   comNome?: boolean;
-  /** `escuro` = nome em branco (para fundos escuros como a sidebar). */
   fundo?: 'claro' | 'escuro';
   className?: string;
 }

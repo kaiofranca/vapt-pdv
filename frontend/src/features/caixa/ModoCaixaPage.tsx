@@ -44,40 +44,32 @@ export const ModoCaixaPage: React.FC = () => {
   const { nomeOperador, perfilAtivo, logout } = useSessionStore();
   const { comandaAtivaId, setComandaAtivaId } = useComandaStore();
 
-  // Queries TanStack Query com dados reais do PostgreSQL
   const { data: todasComandas = [], refetch: refetchTodas } = useComandas();
   const { data: comandasSalao = [], refetch: refetchSalao } = useComandasSalao();
   const { data: produtos = [], isLoading: isLoadingProdutos } = useProdutosDisponiveis();
   const { data: garcons = [] } = useGarconsAtivos();
 
-  // Mutações
   const lancarItemMut = useLancarItem();
   const abrirComandaMut = useAbrirComanda();
   const fecharComandaMut = useFecharComanda();
   const cancelarComandaMut = useCancelarComanda();
 
-  // Navegação lateral interna (venda, mesas, pedidos, receber)
   const [abaNavegacao, setAbaNavegacao] = useState<AbaNavegacaoCaixa>('venda');
 
-  // Termo de busca e ref do input para atalho F2
   const [buscaValor, setBuscaValor] = useState<string>('');
   const buscaInputRef = useRef<HTMLInputElement>(null);
 
-  // Switch de taxa 10%
   const [taxa10, setTaxa10] = useState<boolean>(true);
 
-  // Dados do cliente vinculado
   const [nomeCliente, setNomeCliente] = useState<string>('');
   const [documentoCliente, setDocumentoCliente] = useState<string>('');
 
-  // Modais de Operação
   const [isModalPagamentoOpen, setIsModalPagamentoOpen] = useState<boolean>(false);
   const [comandaParaPagamento, setComandaParaPagamento] = useState<Comanda | null>(null);
 
   const [isModalReciboOpen, setIsModalReciboOpen] = useState<boolean>(false);
   const [comandaParaRecibo, setComandaParaRecibo] = useState<Comanda | null>(null);
 
-  // Fechar conta (pela tela de Mesas) e cancelar comanda (dupla validação)
   const [comandaParaFechar, setComandaParaFechar] = useState<Comanda | null>(null);
   const [taxaFechamento, setTaxaFechamento] = useState<boolean>(true);
   const [comandaParaCancelar, setComandaParaCancelar] = useState<Comanda | null>(null);
@@ -91,7 +83,6 @@ export const ModoCaixaPage: React.FC = () => {
   const [novaMesaInput, setNovaMesaInput] = useState<string>('');
   const [novoGarcomId, setNovoGarcomId] = useState<number | null>(null);
 
-  // Toasts de feedback
   const [toast, setToast] = useState<{
     tipo: 'sucesso' | 'erro' | 'info';
     mensagem: string;
@@ -102,12 +93,10 @@ export const ModoCaixaPage: React.FC = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Contagem de contas pedidas aguardando quitação no caixa
   const contasPedidasCount = useMemo(() => {
     return comandasSalao.filter((c) => c.status === 'fechada').length;
   }, [comandasSalao]);
 
-  // Garante que uma comanda esteja selecionada se houver mesas em atendimento
   useEffect(() => {
     if (comandasSalao.length > 0) {
       if (!comandaAtivaId || !comandasSalao.some((c) => c.id === comandaAtivaId)) {
@@ -118,17 +107,14 @@ export const ModoCaixaPage: React.FC = () => {
     }
   }, [comandasSalao, comandaAtivaId, setComandaAtivaId]);
 
-  // Garante seleção padrão de garçom para abertura de mesa
   useEffect(() => {
     if (garcons.length > 0 && !novoGarcomId) {
       setNovoGarcomId(garcons[0].id);
     }
   }, [garcons, novoGarcomId]);
 
-  // Comanda ativa selecionada no painel de venda
   const comandaAtiva = comandasSalao.find((c) => c.id === comandaAtivaId) || null;
 
-  // Lançamento rápido de produto no caixa
   const handleLancarItemCatalogo = async (produto: Produto) => {
     if (!comandaAtivaId || !comandaAtiva) {
       showToast('erro', 'Nenhuma comanda aberta. Abra uma mesa antes de lançar itens.');
@@ -161,25 +147,21 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  // Abertura do modal de pagamento para qualquer comanda
   const handleAbrirPagamento = (comanda: Comanda) => {
     setComandaParaPagamento(comanda);
     setIsModalPagamentoOpen(true);
   };
 
-  // Conclusão do pagamento
   const handlePagamentoConcluido = (_comandaPaga: Comanda) => {
     refetchSalao();
     refetchTodas();
   };
 
-  // Visualizar recibo / comprovante
   const handleVerRecibo = (comanda: Comanda) => {
     setComandaParaRecibo(comanda);
     setIsModalReciboOpen(true);
   };
 
-  // Ao clicar em 'Nova Venda' ou fechar após quitação, limpa dados do cliente anterior
   const handleNovaVenda = () => {
     setNomeCliente('');
     setDocumentoCliente('');
@@ -187,7 +169,6 @@ export const ModoCaixaPage: React.FC = () => {
     setComandaParaPagamento(null);
   };
 
-  // Criação de nova comanda pelo caixa
   const handleConfirmarAbrirMesa = async () => {
     if (!novaMesaInput.trim()) {
       showToast('erro', 'Informe o número da mesa.');
@@ -216,7 +197,6 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  // Abre a confirmação de fechamento com checagem prévia no KDS (:3001)
   const handleFecharConta = async (comanda: Comanda) => {
     if (!comanda.itens || comanda.itens.length === 0) {
       showToast('erro', `A Mesa ${comanda.mesa} não tem itens lançados. Lance itens ou cancele a comanda.`);
@@ -289,10 +269,8 @@ export const ModoCaixaPage: React.FC = () => {
     }
   };
 
-  // Atalhos Globais de Teclado Protegidos (F2, F4, F8, Esc)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Escape: Fechar Modais Secundários
       if (event.key === 'Escape') {
         if (isModalClienteOpen) {
           setIsModalClienteOpen(false);
@@ -306,19 +284,16 @@ export const ModoCaixaPage: React.FC = () => {
         }
       }
 
-      // Ignora atalhos de digitação se o foco estiver em INPUT ou TEXTAREA
       const target = event.target as HTMLElement | null;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
       if (isInput) {
         return;
       }
 
-      // Não dispara atalhos de venda/cobrança se o modal de pagamento já estiver aberto
       if (isModalPagamentoOpen || isModalReciboOpen) {
         return;
       }
 
-      // F2: Focar Busca (se estiver na aba de venda)
       if (event.key === 'F2') {
         event.preventDefault();
         setAbaNavegacao('venda');
@@ -329,14 +304,12 @@ export const ModoCaixaPage: React.FC = () => {
         return;
       }
 
-      // F4: Cliente / CPF
       if (event.key === 'F4') {
         event.preventDefault();
         setIsModalClienteOpen(true);
         return;
       }
 
-      // F8: Cobrar
       if (event.key === 'F8') {
         event.preventDefault();
         if (comandaAtiva && comandaAtiva.itens && comandaAtiva.itens.length > 0) {
@@ -383,7 +356,6 @@ export const ModoCaixaPage: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-row bg-bg text-text select-none">
-      {/* Toast Flutuante no Topo */}
       {toast && (
         <div className="fixed top-4 right-6 z-[60] animate-bounce">
           <div
@@ -405,16 +377,13 @@ export const ModoCaixaPage: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Barra Lateral Compacta de 88px */}
       <SidebarNav
         abaAtiva={abaNavegacao}
         onAbaChange={(aba) => setAbaNavegacao(aba)}
         contasPedidasCount={contasPedidasCount}
       />
 
-      {/* 2. Conteúdo Central + TopBar + Telas Integradas */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* TopBar Superior de 80px (DESIGN.md §6.1) */}
         <header className="h-20 min-h-[80px] max-h-[80px] bg-surface border-b border-border px-6 flex items-center justify-between shrink-0 z-10">
           <div className="flex items-center gap-4">
             <LogoMark size={40} className="shrink-0" />
@@ -437,7 +406,6 @@ export const ModoCaixaPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <ThemeToggle variante="icon" />
 
-            {/* Operador Ativo */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border shadow-soft text-xs font-semibold">
               <User className="w-4 h-4 text-brand-text" />
               <span>{nomeOperador}</span>
@@ -448,7 +416,6 @@ export const ModoCaixaPage: React.FC = () => {
               )}
             </div>
 
-            {/* Botão de Logout */}
             <button
               onClick={logout}
               title="Trocar Operador / Ir para Login"
@@ -460,10 +427,8 @@ export const ModoCaixaPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Área Central Renderizada Dinamicamente de acordo com a Aba Ativa */}
         {abaNavegacao === 'venda' && (
           <div className="flex-1 flex flex-row overflow-hidden animate-fadeIn">
-            {/* Catálogo de Produtos em 4 Colunas (C01 Venda.png) */}
             <CatalogoGrid
               produtos={produtos}
               isLoading={isLoadingProdutos}
@@ -474,7 +439,6 @@ export const ModoCaixaPage: React.FC = () => {
               comandaAbertaId={comandaAtivaId}
             />
 
-            {/* Painel Lateral Fixo de 440px Antissobreposição */}
             <PainelComanda
               comandaAtivaId={comandaAtivaId}
               comandasDisponiveis={comandasSalao}
@@ -531,7 +495,6 @@ export const ModoCaixaPage: React.FC = () => {
           />
         )}
 
-        {/* Rodapé de Atalhos de Teclado (DESIGN.md §6.1 / §8.5) */}
         <footer className="h-10 min-h-[40px] max-h-[40px] bg-surface-2 border-t border-border px-6 flex items-center justify-between text-xs text-text-2 shrink-0">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
@@ -562,7 +525,6 @@ export const ModoCaixaPage: React.FC = () => {
         </footer>
       </div>
 
-      {/* Modal de Pagamento em 3 Colunas com Split e Quitação Exata */}
       <ModalPagamento
         isOpen={isModalPagamentoOpen}
         onClose={handleNovaVenda}
@@ -574,7 +536,6 @@ export const ModoCaixaPage: React.FC = () => {
         onToast={showToast}
       />
 
-      {/* Confirmação de fechamento de conta (permite definir a gorjeta de 10%) */}
       <Modal
         isOpen={!!comandaParaFechar}
         onClose={() => setComandaParaFechar(null)}
@@ -633,7 +594,6 @@ export const ModoCaixaPage: React.FC = () => {
         })()}
       </Modal>
 
-      {/* Dupla validação para cancelar a comanda */}
       <ModalCancelarComanda
         isOpen={!!comandaParaCancelar}
         mesa={comandaParaCancelar?.mesa}
@@ -642,7 +602,6 @@ export const ModoCaixaPage: React.FC = () => {
         onConfirmar={handleConfirmarCancelamento}
       />
 
-      {/* Modal de Exibição / Reimpressão de Recibo Térmico */}
       {isModalReciboOpen && comandaParaRecibo && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2B2019]/60 backdrop-blur-sm animate-fadeIn"
@@ -681,7 +640,6 @@ export const ModoCaixaPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Rápido de Identificação do Cliente / CPF (F4) */}
       <Modal
         isOpen={isModalClienteOpen}
         onClose={() => setIsModalClienteOpen(false)}
@@ -718,7 +676,6 @@ export const ModoCaixaPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Modal Rápido de Abertura de Mesa */}
       <Modal
         isOpen={isModalAbrirMesaOpen}
         onClose={() => setIsModalAbrirMesaOpen(false)}
@@ -772,7 +729,6 @@ export const ModoCaixaPage: React.FC = () => {
           </div>
         </div>
       </Modal>
-      {/* Diálogo C04: Conflito de Encerramento (KDS :3001) */}
       <ModalPendenciasKds
         isOpen={isModalPendenciasOpen}
         mesa={comandaConflitoKds?.mesa}

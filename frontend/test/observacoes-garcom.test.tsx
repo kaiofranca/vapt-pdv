@@ -82,7 +82,6 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
       const textarea = screen.getByPlaceholderText(/Ex.: Sem cebola, carne ao ponto/i);
       fireEvent.change(textarea, { target: { value: 'Sem picles' } });
 
-      // 240 - 10 = 230
       expect(screen.getByText('230/240 caracteres')).toBeDefined();
     });
 
@@ -102,7 +101,6 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
       const textarea = screen.getByPlaceholderText<HTMLTextAreaElement>(/Ex.: Sem cebola, carne ao ponto/i);
       expect(textarea.value).toBe('Sem cebola');
 
-      // Clicar em outra tag rápida concatena com vírgula
       const btnAoPonto = screen.getByRole('button', { name: 'Ao ponto' });
       fireEvent.click(btnAoPonto);
 
@@ -123,7 +121,6 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
       const texto250 = 'A'.repeat(250);
       fireEvent.change(textarea, { target: { value: texto250 } });
 
-      // Deve truncar no limite de 240
       expect(textarea.value.length).toBe(240);
       expect(screen.getByText('0/240 caracteres')).toBeDefined();
       expect(screen.getByText(/Limite máximo de 240 caracteres atingido/i)).toBeDefined();
@@ -331,11 +328,9 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
         expect(screen.getByText('Mesa 12')).toBeDefined();
       });
 
-      // Localiza o botão de observação no cardápio (G03)
       const btnObs = await screen.findByRole('button', { name: 'Adicionar observação' });
       fireEvent.click(btnObs);
 
-      // BottomSheetObservacao (G04) abre
       expect(await screen.findByText('G04 · Observação e Alergia')).toBeDefined();
       expect(screen.getByText('Personalizar: X-Salada Especial')).toBeDefined();
     });
@@ -363,21 +358,17 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
         />
       );
 
-      // Abre bottom sheet
       const btnObs = await screen.findByRole('button', { name: 'Adicionar observação' });
       fireEvent.click(btnObs);
 
-      // Clica em chips rápidos
       const btnAoPonto = await screen.findByRole('button', { name: 'Ao ponto' });
       fireEvent.click(btnAoPonto);
       const btnSemCebola = screen.getByRole('button', { name: 'Sem cebola' });
       fireEvent.click(btnSemCebola);
 
-      // Confirma na bottom sheet
       const btnConfirmar = screen.getByRole('button', { name: /Confirmar Item/i });
       fireEvent.click(btnConfirmar);
 
-      // Barra inferior exibe "1 item novo" e botão "Enviar ao preparo"
       const btnEnviar = await screen.findByRole('button', { name: /Enviar ao preparo/i });
       fireEvent.click(btnEnviar);
 
@@ -410,11 +401,9 @@ describe('Story 2.1.8 — Core Salão: Observações e Alergias no PWA do Garço
         expect(screen.getByText('Mesa 12')).toBeDefined();
       });
 
-      // Alterna para sub-aba "Enviados"
       const btnEnviados = screen.getByRole('button', { name: /Enviados \(1\)/i });
       fireEvent.click(btnEnviados);
 
-      // Verifica exibição do item com observação em estilo itálico
       const obsElement = await screen.findByText('Sem tomate, alérgico');
       expect(obsElement).toBeDefined();
       expect(obsElement.parentElement?.className).toContain('italic');

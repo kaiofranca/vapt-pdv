@@ -18,7 +18,6 @@ import type {
   Usuario,
 } from '../src/types/api';
 
-// Mocks de dados de Gestão & BI
 const mockResumoDiario: ResumoDiarioGestao = {
   data: '2026-11-04',
   total_vendas: '4972.00',
@@ -158,7 +157,6 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
     vi.clearAllMocks();
     useSessionStore.getState().logout();
 
-    // Stub universal de fetch para a API do gestao-service (:3003)
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -261,23 +259,18 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
         />,
       );
 
-      // Logotipo e Identificação
       expect(screen.getByText(/Gestão Executiva & BI/i)).toBeDefined();
 
-      // Abas oficiais
       expect(screen.getByText('Visão Geral')).toBeDefined();
       expect(screen.getByText('Curva ABC')).toBeDefined();
       expect(screen.getByText('Garçons')).toBeDefined();
       expect(screen.getByText('Estoque')).toBeDefined();
 
-      // Badge de alerta de estoque crítico
       expect(screen.getByText('2')).toBeDefined();
 
-      // Alternância de abas
       fireEvent.click(screen.getByText('Curva ABC'));
       expect(onAbaChange).toHaveBeenCalledWith('curva-abc');
 
-      // Botão de Exportação
       fireEvent.click(screen.getByText(/Exportar Dados/i));
       expect(onAbrirExportacao).toHaveBeenCalledTimes(1);
     });
@@ -295,34 +288,26 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
         />,
       );
 
-      // Aguarda carregamento dos KPIs
       await waitFor(() => {
         expect(screen.getByText(/Visão Geral Executiva/i)).toBeDefined();
       });
 
-      // Total Bruto Faturado formatado em R$ 4.972,00 (no card e no cabeçalho do gráfico)
       await waitFor(() => {
         expect(screen.getAllByText(/R\$\s*4\.972,00/i).length).toBeGreaterThan(0);
       });
 
-      // Faturamento Líquido (Subtotal) R$ 4.520,00
       expect(screen.getByText(/R\$\s*4\.520,00/i)).toBeDefined();
 
-      // Gorjetas (10%) R$ 452,00
       expect(screen.getByText(/R\$\s*452,00/i)).toBeDefined();
 
-      // Ticket Médio R$ 103,58
       expect(screen.getByText(/R\$\s*103,58/i)).toBeDefined();
 
-      // Alertas de estoque crítico
       expect(screen.getByText('críticos')).toBeDefined();
 
-      // Breakdown de Pagamento: Pix, Cartão e Dinheiro
       expect(screen.getByText(/Pix/i)).toBeDefined();
       expect(screen.getByText(/Cartão/i)).toBeDefined();
       expect(screen.getByText(/Dinheiro/i)).toBeDefined();
 
-      // Preview dos itens mais vendidos da Curva ABC
       expect(screen.getByText('Hambúrguer Artesanal Vapt')).toBeDefined();
       expect(screen.getByText('Cerveja Artesanal IPA')).toBeDefined();
     });
@@ -336,23 +321,19 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
         expect(screen.getByText(/Curva ABC de Produtos/i)).toBeDefined();
       });
 
-      // Cards de Classe A, B e C
       await waitFor(() => {
         expect(screen.getByText(/Classe A · Até 80%/i)).toBeDefined();
       });
       expect(screen.getByText(/Classe B · 80% a 95%/i)).toBeDefined();
       expect(screen.getByText(/Classe C · Últimos 5%/i)).toBeDefined();
 
-      // Badges na tabela
       expect(screen.getAllByText('Classe A').length).toBeGreaterThan(0);
       expect(screen.getByText('Classe B')).toBeDefined();
       expect(screen.getByText('Classe C')).toBeDefined();
 
-      // Filtro de Categoria
       const btnBebidas = screen.getByRole('button', { name: /^Bebidas/i });
       fireEvent.click(btnBebidas);
 
-      // Apenas a cerveja deve permanecer
       expect(screen.getByText('Cerveja Artesanal IPA')).toBeDefined();
       expect(screen.queryByText('Hambúrguer Artesanal Vapt')).toBeNull();
     });
@@ -366,17 +347,14 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
         expect(screen.getByText(/Desempenho da Equipe e Comissões/i)).toBeDefined();
       });
 
-      // Equipe consolidada (22 + 16 + 10 = 48 comandas)
       await waitFor(() => {
         expect(screen.getByText('48')).toBeDefined();
       });
 
-      // Garçons listados no pódio e na tabela detalhada
       expect(screen.getAllByText('Lucas Silva').length).toBe(2);
       expect(screen.getAllByText('Ana Oliveira').length).toBe(2);
       expect(screen.getAllByText('Rodrigo Costa').length).toBe(2);
 
-      // Comissão de 10% do garçom #1 (R$ 240,00) no pódio e na tabela
       expect(screen.getAllByText(/240,00/).length).toBeGreaterThan(0);
     });
   });
@@ -389,16 +367,13 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
         expect(screen.getByText(/Controle de Estoque e Alertas/i)).toBeDefined();
       });
 
-      // Banner crítico de zerados
       await waitFor(() => {
         expect(screen.getByText(/Atenção: 1 produto\(s\) com estoque zerado/i)).toBeDefined();
       });
 
-      // Produtos listados
       expect(screen.getByText('Refrigerante Cola Zero')).toBeDefined();
       expect(screen.getByText('Pão Brioche Especial')).toBeDefined();
 
-      // Badges de nível
       expect(screen.getByText('Zerado')).toBeDefined();
       expect(screen.getByText('Baixo')).toBeDefined();
     });
@@ -416,11 +391,9 @@ describe('Estação Frontend do Modo Gestão & BI (Stories 16.1 e 16.2)', () => 
 
       expect(screen.getByText(/Exportação de Relatórios Gerenciais \(M15\)/i)).toBeDefined();
 
-      // Alternar formato para JSON
       const btnJson = screen.getByText(/JSON \(Estruturado\)/i);
       fireEvent.click(btnJson);
 
-      // Clicar em Gerar e Baixar Arquivo
       const btnGerar = screen.getByRole('button', { name: /Gerar e Baixar Arquivo/i });
       fireEvent.click(btnGerar);
 

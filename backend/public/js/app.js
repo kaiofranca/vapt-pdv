@@ -1,23 +1,15 @@
-/**
- * VaptPDV — Frontend Web/PWA do PDV Core
- * Integração direta com a API REST Fastify do PDV Core
- */
-
 (function () {
   'use strict';
 
-  // =========================================================================
-  // ESTADO GLOBAL DA APLICAÇÃO (CLIENT-SIDE)
-  // =========================================================================
   const state = {
-    mode: 'garcom', // 'garcom' | 'caixa'
+    mode: 'garcom',
     usuarios: [],
     garcomAtivoId: null,
     produtos: [],
     comandas: [],
     mesaSelecionada: null,
     comandaAtiva: null,
-    novoPedidoItens: {}, // { [produtoId]: quantidade }
+    novoPedidoItens: {},
     filtroMesaStatus: 'todas',
     filtroCategoriaGarcom: 'todas',
     filtroCategoriaCaixa: 'todas',
@@ -25,9 +17,6 @@
     formaPagamentoSelecionada: 'pix',
   };
 
-  // =========================================================================
-  // ELEMENTOS DO DOM
-  // =========================================================================
   const dom = {
     apiStatus: document.getElementById('api-status'),
     btnModeGarcom: document.getElementById('btn-mode-garcom'),
@@ -37,14 +26,12 @@
     selectGarcomAtivo: document.getElementById('select-garcom-ativo'),
     btnAbrirCadastros: document.getElementById('btn-abrir-cadastros'),
 
-    // Modo Garçom: Salão
     garcomSalaoSubview: document.getElementById('garcom-salao-subview'),
     garcomComandaSubview: document.getElementById('garcom-comanda-subview'),
     gridMesas: document.getElementById('grid-mesas'),
     filtroMesasChips: document.getElementById('filtro-mesas-chips'),
     fabAbrirMesa: document.getElementById('fab-abrir-mesa'),
 
-    // Modo Garçom: Comanda
     btnVoltarSalao: document.getElementById('btn-voltar-salao'),
     detalheComandaMesa: document.getElementById('detalhe-comanda-mesa'),
     detalheComandaMeta: document.getElementById('detalhe-comanda-meta'),
@@ -59,7 +46,6 @@
     valorNovosItens: document.getElementById('valor-novos-itens'),
     btnEnviarCozinha: document.getElementById('btn-enviar-cozinha'),
 
-    // Modo Caixa
     inputBuscaCaixa: document.getElementById('input-busca-caixa'),
     tabsCaixaNav: document.getElementById('tabs-caixa-nav'),
     caixaSubCardapio: document.getElementById('caixa-sub-cardapio'),
@@ -78,7 +64,6 @@
     btnCancelarComanda: document.getElementById('btn-cancelar-comanda'),
     btnAbrirPagamento: document.getElementById('btn-abrir-pagamento'),
 
-    // Modais
     modalAbrirMesa: document.getElementById('modal-abrir-mesa'),
     formAbrirComanda: document.getElementById('form-abrir-comanda'),
     inputMesaNumero: document.getElementById('input-mesa-numero'),
@@ -109,9 +94,6 @@
     toastContainer: document.getElementById('toast-container'),
   };
 
-  // =========================================================================
-  // CLIENTE HTTP REST
-  // =========================================================================
   async function apiRequest(endpoint, options = {}) {
     const defaultHeaders = {
       'Content-Type': 'application/json',
@@ -153,9 +135,6 @@
     }
   }
 
-  // =========================================================================
-  // TOASTS DE NOTIFICAÇÃO
-  // =========================================================================
   function showToast(mensagem, tipo = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast ${tipo}`;
@@ -170,7 +149,6 @@
     }, 3200);
   }
 
-  // Formatação monetária BRL
   function formatMoney(valor) {
     if (valor === null || valor === undefined) return 'R$ 0,00';
     const numero = typeof valor === 'number' ? valor : parseFloat(valor);
@@ -178,9 +156,6 @@
     return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  // =========================================================================
-  // CARREGAMENTO DE DADOS INICIAIS
-  // =========================================================================
   async function init() {
     setupEventListeners();
     setupShortcuts();
@@ -191,7 +166,6 @@
       await carregarProdutos();
       await carregarComandas();
 
-      // Checagem periódica a cada 10s
       setInterval(verificarSaude, 10000);
       setInterval(carregarComandas, 6000);
     } catch (e) {
@@ -276,7 +250,6 @@
       renderizarMesasGarcom();
       renderizarMesasCaixa();
 
-      // Atualiza comanda ativa caso esteja aberta
       if (state.comandaAtiva) {
         const atual = state.comandas.find((c) => c.id === state.comandaAtiva.id);
         if (atual) {
@@ -290,13 +263,9 @@
     }
   }
 
-  // =========================================================================
-  // MODO GARÇOM: RENDERIZAÇÃO E AÇÕES
-  // =========================================================================
   function renderizarMesasGarcom() {
     dom.gridMesas.innerHTML = '';
 
-    // Mapeamento de mesas padrão de 01 a 12
     const totalMesas = 12;
     const cards = [];
 
@@ -343,7 +312,6 @@
       cards.push({ card, status: comanda ? (comanda.status === 'fechada' ? 'conta' : 'ocupadas') : 'livres' });
     }
 
-    // Aplicação do filtro
     cards.forEach(({ card, status }) => {
       if (state.filtroMesaStatus === 'todas' || state.filtroMesaStatus === status) {
         dom.gridMesas.appendChild(card);
@@ -420,7 +388,6 @@
       dom.listaCardapioGarcom.appendChild(row);
     });
 
-    // Eventos dos steppers
     dom.listaCardapioGarcom.querySelectorAll('.btn-plus').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -456,7 +423,6 @@
       state.novoPedidoItens[produtoId] = novo;
     }
 
-    // Atualiza elemento visual do stepper
     const span = document.getElementById(`step-garcom-${produtoId}`);
     if (span) span.textContent = novo;
 
@@ -505,11 +471,9 @@
       state.novoPedidoItens = {};
       atualizarResumoNovoPedidoGarcom();
 
-      // Recarrega a comanda atualizada
       const comandaAtualizada = await apiRequest(`/comandas/${state.comandaAtiva.id}`);
       state.comandaAtiva = comandaAtualizada;
 
-      // Atualiza estoques
       await carregarProdutos();
       await carregarComandas();
       atualizarBannerComandaGarcom();
@@ -539,9 +503,6 @@
     }
   }
 
-  // =========================================================================
-  // MODO CAIXA: RENDERIZAÇÃO E AÇÕES
-  // =========================================================================
   function renderizarProdutosCaixa() {
     dom.gridProdutosCaixa.innerHTML = '';
     const busca = dom.inputBuscaCaixa.value.trim().toLowerCase();
@@ -646,7 +607,6 @@
       card.addEventListener('click', () => {
         state.comandaAtiva = comanda;
         renderizarPainelComandaCaixa();
-        // Alterna para o catálogo de produtos no caixa
         dom.tabsCaixaNav.querySelector('[data-view="cardapio"]').click();
       });
 
@@ -770,14 +730,10 @@
     }
   }
 
-  // =========================================================================
-  // MODAL DE PAGAMENTO & QUITAÇÃO (TELA 4)
-  // =========================================================================
   async function abrirModalPagamento() {
     const c = state.comandaAtiva;
     if (!c) return;
 
-    // Se estiver aberta, fecha primeiro aplicando ou não a taxa de serviço
     try {
       if (c.status === 'aberta') {
         const fechada = await apiRequest(`/comandas/${c.id}/fechar`, {
@@ -796,7 +752,6 @@
     dom.payTaxa.textContent = formatMoney(comandaPronta.taxa_servico || '0.00');
     dom.payTotal.textContent = formatMoney(comandaPronta.total);
 
-    // Lista resumida de itens
     dom.paymentItemsList.innerHTML = '';
     (comandaPronta.itens || []).forEach((it) => {
       const line = document.createElement('div');
@@ -841,9 +796,6 @@
     }
   }
 
-  // =========================================================================
-  // GESTÃO DE MODAIS E CADASTROS
-  // =========================================================================
   function abrirModalMesa(numeroMesa) {
     dom.inputMesaNumero.value = numeroMesa || '';
     dom.inputMesaCliente.value = '';
@@ -875,7 +827,6 @@
       dom.modalAbrirMesa.classList.remove('active');
       await carregarComandas();
 
-      // Se estiver no Modo Garçom, já navega diretamente para o pedido da comanda
       if (state.mode === 'garcom') {
         selecionarComandaGarcom(novaComanda);
       }
@@ -997,15 +948,10 @@
     });
   }
 
-  // =========================================================================
-  // LISTENERS E ATALHOS DE TECLADO
-  // =========================================================================
   function setupEventListeners() {
-    // Alternância de Modos
     dom.btnModeGarcom.addEventListener('click', () => setMode('garcom'));
     dom.btnModeCaixa.addEventListener('click', () => setMode('caixa'));
 
-    // Filtros de mesa no Garçom
     dom.filtroMesasChips.querySelectorAll('.chip').forEach((btn) => {
       btn.addEventListener('click', () => {
         dom.filtroMesasChips.querySelector('.active')?.classList.remove('active');
@@ -1015,7 +961,6 @@
       });
     });
 
-    // Filtros de categoria no Garçom
     dom.categoriasCardapioGarcom.querySelectorAll('.chip').forEach((btn) => {
       btn.addEventListener('click', () => {
         dom.categoriasCardapioGarcom.querySelector('.active')?.classList.remove('active');
@@ -1025,7 +970,6 @@
       });
     });
 
-    // Filtros de categoria no Caixa
     dom.categoriasCaixa.querySelectorAll('.chip').forEach((btn) => {
       btn.addEventListener('click', () => {
         dom.categoriasCaixa.querySelector('.active')?.classList.remove('active');
@@ -1035,7 +979,6 @@
       });
     });
 
-    // Ações do Garçom
     dom.fabAbrirMesa.addEventListener('click', () => abrirModalMesa(''));
     dom.btnVoltarSalao.addEventListener('click', () => {
       dom.garcomComandaSubview.classList.remove('active');
@@ -1046,7 +989,6 @@
     dom.btnEnviarCozinha.addEventListener('click', enviarPedidoParaCozinha);
     dom.btnPedirContaTopo.addEventListener('click', pedirContaMesaGarcom);
 
-    // Ver itens da comanda no Garçom
     dom.btnVerItensComanda.addEventListener('click', () => {
       if (!state.comandaAtiva) return;
       dom.listaItensComandaModal.innerHTML = '';
@@ -1062,7 +1004,6 @@
       dom.modalVerComanda.classList.add('active');
     });
 
-    // Ações do Caixa
     dom.inputBuscaCaixa.addEventListener('input', renderizarProdutosCaixa);
     dom.tabsCaixaNav.querySelectorAll('.caixa-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
@@ -1085,7 +1026,6 @@
     dom.btnAbrirPagamento.addEventListener('click', abrirModalPagamento);
     dom.btnConcluirPagamento.addEventListener('click', concluirPagamento);
 
-    // Meios de Pagamento (Tabs)
     dom.paymentTabs.querySelectorAll('.pay-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         dom.paymentTabs.querySelector('.active')?.classList.remove('active');
@@ -1106,7 +1046,6 @@
       });
     });
 
-    // Troco Dinheiro
     dom.inputDinheiroRecebido.addEventListener('input', () => {
       const total = parseFloat(state.comandaAtiva?.total || '0');
       const entregue = parseFloat(dom.inputDinheiroRecebido.value.replace(',', '.') || '0');
@@ -1114,17 +1053,14 @@
       dom.valorTrocoCalculado.textContent = formatMoney(troco);
     });
 
-    // Submissão de Formulários
     dom.formAbrirComanda.addEventListener('submit', submeterAbrirComanda);
     dom.formCadProduto.addEventListener('submit', cadastrarNovoProduto);
     dom.formCadUsuario.addEventListener('submit', cadastrarNovoUsuario);
 
-    // Botão de Cadastros
     dom.btnAbrirCadastros.addEventListener('click', () => {
       dom.modalCadastros.classList.add('active');
     });
 
-    // Abas de Cadastros
     document.querySelectorAll('.admin-tab').forEach((tab) => {
       tab.addEventListener('click', () => {
         document.querySelector('.admin-tab.active')?.classList.remove('active');
@@ -1135,7 +1071,6 @@
       });
     });
 
-    // Fechamento de Modais
     document.querySelectorAll('[data-close]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const modal = document.getElementById(btn.dataset.close);
@@ -1143,7 +1078,6 @@
       });
     });
 
-    // Seleção de Garçom Ativo
     dom.selectGarcomAtivo.addEventListener('change', (e) => {
       state.garcomAtivoId = parseInt(e.target.value, 10);
     });
@@ -1185,6 +1119,5 @@
     });
   }
 
-  // Inicializa o app ao carregar o DOM
   document.addEventListener('DOMContentLoaded', init);
 })();

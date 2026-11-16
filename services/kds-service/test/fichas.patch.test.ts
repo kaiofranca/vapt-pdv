@@ -305,4 +305,3 @@ describe('PATCH /kds/fichas/:id/status (Story 14.4)', () => {
     await app.close();
   });
 });
-

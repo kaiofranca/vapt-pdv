@@ -38,7 +38,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
   const internalInputRef = useRef<HTMLInputElement>(null);
   const inputRef = buscaInputRef || internalInputRef;
 
-  // Extrai lista única de categorias presentes nos produtos cadastrados
   const categorias = useMemo(() => {
     const cats = new Set<string>();
     cats.add('todos');
@@ -50,15 +49,12 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
     return Array.from(cats);
   }, [produtos]);
 
-  // Filtra produtos pela categoria e pelo termo de busca
   const produtosFiltrados = useMemo(() => {
     return produtos.filter((p) => {
-      // Filtro de categoria
       const matchCategoria =
         categoriaAtiva === 'todos' ||
         (p.categoria && p.categoria.toLowerCase() === categoriaAtiva);
 
-      // Filtro de busca
       const matchBusca =
         !buscaValor.trim() ||
         p.nome.toLowerCase().includes(buscaValor.toLowerCase()) ||
@@ -68,7 +64,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
     });
   }, [produtos, categoriaAtiva, buscaValor]);
 
-  // Mapeamento de ícone e cor por categoria (DESIGN.md §2.5)
   const getCategoriaConfig = (categoria: string) => {
     const cat = categoria?.toLowerCase() || '';
     if (cat.includes('lanche') || cat.includes('burger')) {
@@ -113,7 +108,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
     };
   };
 
-  // Tratamento de clique com debounce contra duplo clique simultâneo (250ms)
   const handleItemClick = (produto: Produto) => {
     if (produto.estoque <= 0 || !produto.ativo) {
       return;
@@ -128,7 +122,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-bg p-4 sm:p-6 gap-4">
-      {/* Topo do Catálogo: Campo de Busca Instantânea com F2 e Abas */}
       <div className="flex flex-col gap-3 shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
@@ -160,7 +153,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
           </span>
         </div>
 
-        {/* Abas / Chips de Categorias */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none select-none">
           {categorias.map((cat) => {
             const isAtiva = categoriaAtiva === cat;
@@ -187,7 +179,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
         </div>
       </div>
 
-      {/* Grid de 4 Colunas com Cards de Produto */}
       <div className="flex-1 min-h-0 overflow-y-auto pr-1">
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -229,7 +220,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
                       : `Selecione ou abra uma mesa para lançar ${prod.nome}`
                   }
                 >
-                  {/* Badge de Esgotado ou Estoque Baixo */}
                   {isEsgotado && (
                     <div className="absolute top-2 right-2 z-10">
                       <Badge variant="esgotado" size="sm">
@@ -238,14 +228,12 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
                     </div>
                   )}
 
-                  {/* Tile Tintado com Ícone */}
                   <div
                     className={`w-16 h-16 sm:w-20 sm:h-20 rounded-input ${bgClass} flex items-center justify-center transition-transform group-hover:scale-105 shrink-0 mb-2`}
                   >
                     <Icon className={`w-8 h-8 sm:w-9 sm:h-9 ${textClass}`} />
                   </div>
 
-                  {/* Nome do Produto */}
                   <div className="w-full text-center mb-1">
                     <span
                       className="text-xs sm:text-[13px] font-bold text-text line-clamp-2 leading-snug block"
@@ -258,7 +246,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
                     </span>
                   </div>
 
-                  {/* Preço Unitário Tabular */}
                   <div className="w-full text-center pt-1 border-t border-border/40">
                     <span className="font-extrabold text-sm sm:text-base text-text tabular-nums">
                       {formatCurrency(prod.preco)}
@@ -269,7 +256,6 @@ export const CatalogoGrid: React.FC<CatalogoGridProps> = ({
             })}
           </div>
         ) : (
-          /* Estado Vazio de Busca / Filtro */
           <div className="h-full flex flex-col items-center justify-center text-center p-8 text-text-2">
             <div className="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mb-3">
               <AlertCircle className="w-8 h-8 text-text-2/70" />

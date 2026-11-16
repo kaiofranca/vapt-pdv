@@ -29,21 +29,17 @@ import type {
 } from '../types';
 
 export const CardapioView: React.FC = () => {
-  // Consulta de produtos do PDV Core (:3000)
   const { data: produtos = [], isLoading, isError, error, refetch } = useProdutos();
 
-  // Estados de Filtros e Busca
   const [busca, setBusca] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState<FiltroCategoriaCardapio>('todas');
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatusCardapio>('todos');
 
-  // Estados dos Modais
   const [isModalProdutoAberto, setIsModalProdutoAberto] = useState(false);
   const [produtoParaEditar, setProdutoParaEditar] = useState<Produto | null>(null);
   const [produtoParaInativar, setProdutoParaInativar] = useState<Produto | null>(null);
   const [produtoParaRepor, setProdutoParaRepor] = useState<ProdutoParaReposicao | null>(null);
 
-  // Estado de Toast / Notificação
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
   const exibirToast = (msg: string) => {
@@ -53,7 +49,6 @@ export const CardapioView: React.FC = () => {
     }, 4000);
   };
 
-  // Contadores analíticos rápidos
   const contadores = useMemo(() => {
     const total = produtos.length;
     const ativos = produtos.filter((p) => p.ativo).length;
@@ -69,10 +64,8 @@ export const CardapioView: React.FC = () => {
     return { total, ativos, inativos, comidas, bebidas, sobremesas, outros, estoqueCritico };
   }, [produtos]);
 
-  // Filtragem dos produtos em memória
   const produtosFiltrados = useMemo(() => {
     return produtos.filter((p) => {
-      // 1. Busca por nome ou ID
       if (busca.trim()) {
         const termo = busca.toLowerCase().trim();
         const bateNome = p.nome.toLowerCase().includes(termo);
@@ -80,12 +73,10 @@ export const CardapioView: React.FC = () => {
         if (!bateNome && !bateId) return false;
       }
 
-      // 2. Filtro de Categoria
       if (filtroCategoria !== 'todas' && p.categoria !== filtroCategoria) {
         return false;
       }
 
-      // 3. Filtro de Status
       if (filtroStatus === 'ativo' && !p.ativo) return false;
       if (filtroStatus === 'inativo' && p.ativo) return false;
 
@@ -93,7 +84,6 @@ export const CardapioView: React.FC = () => {
     });
   }, [produtos, busca, filtroCategoria, filtroStatus]);
 
-  // Ícone e estilização por categoria
   const getCategoriaInfo = (cat: string) => {
     switch (cat) {
       case 'comida':
@@ -166,7 +156,6 @@ export const CardapioView: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
-      {/* Toast flutuante de sucesso */}
       {toastMensagem && (
         <div
           role="status"
@@ -185,7 +174,6 @@ export const CardapioView: React.FC = () => {
         </div>
       )}
 
-      {/* Topo: Título da Tela e Botão Novo Produto */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-3">
@@ -213,7 +201,6 @@ export const CardapioView: React.FC = () => {
         </Button>
       </div>
 
-      {/* Cards de Resumo */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <div className="p-3.5 rounded-xl bg-surface border border-border shadow-sm flex flex-col justify-between">
           <span className="text-xs font-semibold text-text-2 uppercase tracking-wide">
@@ -262,9 +249,7 @@ export const CardapioView: React.FC = () => {
         </div>
       </div>
 
-      {/* Barra de Filtros e Busca */}
       <div className="p-4 rounded-card bg-surface border border-border shadow-sm flex flex-col gap-4">
-        {/* Campo de Busca Textual */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-2 pointer-events-none" />
@@ -287,7 +272,6 @@ export const CardapioView: React.FC = () => {
             )}
           </div>
 
-          {/* Filtro de Status */}
           <div className="flex items-center gap-1.5 bg-surface-2 p-1 rounded-lg border border-border self-start sm:self-auto">
             <span className="text-xs font-semibold text-text-2 px-2 hidden sm:inline">
               Status:
@@ -309,7 +293,6 @@ export const CardapioView: React.FC = () => {
           </div>
         </div>
 
-        {/* Filtro de Categorias (Chips) */}
         <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60">
           <span className="text-xs font-semibold text-text-2 flex items-center gap-1.5 mr-1">
             <Filter className="w-3.5 h-3.5" />
@@ -343,7 +326,6 @@ export const CardapioView: React.FC = () => {
         </div>
       </div>
 
-      {/* Conteúdo Principal: Tabela de Produtos */}
       <div className="rounded-card bg-surface border border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3 text-text-2">
@@ -417,7 +399,6 @@ export const CardapioView: React.FC = () => {
                         !prod.ativo ? 'opacity-65 bg-surface-2/20' : ''
                       }`}
                     >
-                      {/* Produto: Nome e ID */}
                       <td className="py-3 px-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-text text-sm">
@@ -429,7 +410,6 @@ export const CardapioView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Categoria */}
                       <td className="py-3 px-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${catInfo.badgeClasse}`}
@@ -439,14 +419,12 @@ export const CardapioView: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Preço formatado */}
                       <td className="py-3 px-4 text-right">
                         <span className="font-mono tabular-nums font-black text-text text-sm">
                           {formatCurrency(prod.preco)}
                         </span>
                       </td>
 
-                      {/* Saldo de Estoque e Alerta */}
                       <td className="py-3 px-4 text-center">
                         <div className="flex flex-col items-center">
                           {isEsgotado ? (
@@ -469,7 +447,6 @@ export const CardapioView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Status Ativo/Inativo */}
                       <td className="py-3 px-4 text-center">
                         {prod.ativo ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
@@ -482,10 +459,8 @@ export const CardapioView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Ações: Repor, Editar e Inativar (sem DELETE físico - RN14) */}
                       <td className="py-3 px-4 text-right">
                         <div className="inline-flex items-center gap-1 justify-end">
-                          {/* Botão Repor Estoque (M06) */}
                           <button
                             type="button"
                             onClick={() => handleAbrirReposicao(prod)}
@@ -496,7 +471,6 @@ export const CardapioView: React.FC = () => {
                             <PackagePlus className="w-4 h-4" />
                           </button>
 
-                          {/* Botão Editar */}
                           <button
                             type="button"
                             onClick={() => handleAbrirEdicao(prod)}
@@ -507,7 +481,6 @@ export const CardapioView: React.FC = () => {
                             <Pencil className="w-4 h-4" />
                           </button>
 
-                          {/* Botão Inativar */}
                           {prod.ativo ? (
                             <button
                               type="button"
@@ -532,7 +505,6 @@ export const CardapioView: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Cadastro / Edição de Produto */}
       <ProdutoModal
         isOpen={isModalProdutoAberto}
         onClose={() => setIsModalProdutoAberto(false)}
@@ -540,7 +512,6 @@ export const CardapioView: React.FC = () => {
         onSalvoComSucesso={handleSalvoComSucesso}
       />
 
-      {/* Diálogo de Confirmação de Inativação Lógica (RN14) */}
       <InativarProdutoDialog
         isOpen={Boolean(produtoParaInativar)}
         onClose={() => setProdutoParaInativar(null)}
@@ -548,7 +519,6 @@ export const CardapioView: React.FC = () => {
         onInativadoComSucesso={handleInativadoComSucesso}
       />
 
-      {/* Modal de Reposição de Estoque (M06) */}
       <ReporEstoqueModal
         isOpen={Boolean(produtoParaRepor)}
         onClose={() => setProdutoParaRepor(null)}

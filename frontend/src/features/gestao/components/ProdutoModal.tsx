@@ -77,7 +77,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
   const [erroPreco, setErroPreco] = useState<string | null>(null);
   const [erroApi, setErroApi] = useState<string | null>(null);
 
-  // Sincroniza formulário ao abrir modal
   useEffect(() => {
     if (isOpen) {
       if (produtoParaEditar) {
@@ -87,7 +86,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
             ? (produtoParaEditar.categoria as CategoriaProduto)
             : 'comida'
         );
-        // Formata preço para o input com 2 casas
         setPreco(produtoParaEditar.preco.replace('.', ','));
         setEstoque(String(produtoParaEditar.estoque ?? 0));
         setEstoqueMinimo(String(produtoParaEditar.estoque_minimo ?? 0));
@@ -104,7 +102,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
     }
   }, [isOpen, produtoParaEditar]);
 
-  // Converte string de preço (ex: "14,90" ou "14.90") em número e valida
   const validarPreco = (valorTexto: string): { valido: boolean; numero: number; formatado: string } => {
     const textoLimpo = valorTexto.trim().replace(',', '.');
     const num = parseFloat(textoLimpo);
@@ -120,7 +117,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
     e.preventDefault();
     setErroApi(null);
 
-    // Validações
     let temErro = false;
     const nomeLimpo = nome.trim();
     if (!nomeLimpo) {
@@ -202,7 +198,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           </div>
         )}
 
-        {/* 1. Nome do Produto */}
         <div>
           <Input
             label="Nome do Produto *"
@@ -219,7 +214,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           />
         </div>
 
-        {/* 2. Seleção de Categoria */}
         <div>
           <label className="text-sm font-semibold text-text block mb-2">
             Categoria *
@@ -254,7 +248,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           </div>
         </div>
 
-        {/* 3. Preço e Estoque */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-semibold text-text block mb-1">
@@ -336,7 +329,6 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           </div>
         </div>
 
-        {/* Rodapé com Ações */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-2">
           <Button
             type="button"

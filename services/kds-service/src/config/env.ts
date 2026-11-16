@@ -50,4 +50,3 @@ export function carregarEnv(): VariaveisAmbiente {
     DATABASE_URL: databaseUrl,
   };
 }
-

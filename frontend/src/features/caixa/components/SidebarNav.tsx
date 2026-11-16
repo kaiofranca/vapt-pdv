@@ -26,7 +26,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 }) => {
   const { nomeOperador, perfilAtivo, setModo, logout } = useSessionStore();
 
-  // Compatibilidade com antigo id 'caixa' -> 'receber'
   const abaNormalizada: AbaNavegacaoCaixa =
     abaAtiva === 'caixa' ? 'receber' : (abaAtiva as AbaNavegacaoCaixa);
 
@@ -64,7 +63,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
       className="w-[88px] min-w-[88px] max-w-[88px] h-full bg-nav flex flex-col items-center justify-between py-4 select-none border-r border-[#43342A] z-20 shrink-0"
       aria-label="Navegação do Caixa"
     >
-      {/* Topo: Logotipo Vapt */}
       <div className="flex flex-col items-center gap-4 w-full">
         <button
           onClick={() => onAbaChange?.('venda')}
@@ -75,7 +73,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           <LogoMark size={48} />
         </button>
 
-        {/* Itens de Navegação Primária */}
         <nav className="flex flex-col items-center gap-2 mt-2 w-full px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -94,7 +91,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 aria-current={isAtivo ? 'page' : undefined}
                 title={item.label}
               >
-                {/* Badge de alerta de contas pendentes */}
                 {temBadge && (
                   <span className="absolute top-1 right-2 w-4 h-4 rounded-full bg-danger text-white text-[10px] font-black flex items-center justify-center animate-pulse">
                     {item.badgeCount}
@@ -112,9 +108,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         </nav>
       </div>
 
-      {/* Meio / Inferior: Alternar Modo e Operador */}
       <div className="flex flex-col items-center gap-3 w-full px-2">
-        {/* Alternar para Modo Garçom PWA */}
         <button
           onClick={() => setModo('garcom')}
           className="w-full py-2 px-1 rounded-[14px] flex flex-col items-center justify-center gap-1 text-[#C9B8A6] hover:bg-[#523C2E]/60 hover:text-[#F6EEE4] transition-colors"
@@ -124,10 +118,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           <span className="text-[10px] leading-tight text-center">Garçom</span>
         </button>
 
-        {/* Divisor */}
         <div className="w-8 h-px bg-[#43342A] my-1" />
 
-        {/* Operador Ativo */}
         <div
           className="w-10 h-10 rounded-full bg-[#523C2E] border border-[#8F7B69]/40 flex items-center justify-center text-[#F6EEE4] font-bold text-xs shadow-soft relative group cursor-pointer"
           title={`${nomeOperador} (${perfilAtivo || 'Operador'})`}
@@ -135,7 +127,6 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           <User className="w-4 h-4 text-brand" />
         </div>
 
-        {/* Botão de Logout / Trocar Operador */}
         <button
           onClick={logout}
           className="p-2 rounded-btn text-[#C9B8A6] hover:text-danger-soft hover:bg-danger/20 transition-colors"

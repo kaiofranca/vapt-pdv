@@ -83,7 +83,6 @@ export const InativarUsuarioDialog: React.FC<InativarUsuarioDialogProps> = ({
           </div>
         </div>
 
-        {/* Rodapé */}
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
           <Button
             type="button"

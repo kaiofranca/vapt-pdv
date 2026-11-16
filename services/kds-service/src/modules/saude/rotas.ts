@@ -55,4 +55,3 @@ export const rotasSaude: FastifyPluginAsync<OpcoesRotasSaude> = async (app, opco
     },
   );
 };
-

@@ -46,7 +46,6 @@ describe('Story 2.4.4 — Core: Padronização de Mesa como Inteiro, Timestamp e
 
     const app = await buildApp({ prisma: prisma as ClienteBanco, logger: false });
 
-    // String numérica
     const resString = await app.inject({
       method: 'POST',
       url: '/comandas',
@@ -112,7 +111,6 @@ describe('Story 2.4.4 — Core: Padronização de Mesa como Inteiro, Timestamp e
     expect(body.motivo_cancelamento).toBe('Cliente desistiu da espera por demora');
     expect(body.cancelada_em).toBeTruthy();
 
-    // Idempotência: cancelar comanda já cancelada retorna 200
     const resIdempotente = await app.inject({
       method: 'POST',
       url: '/comandas/2/cancelar',

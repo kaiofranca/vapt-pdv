@@ -55,11 +55,9 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Barra de progresso e textos
       expect(screen.getByText(/Já pago: R\$\s*0,00/i)).toBeDefined();
       expect(screen.getByText(/Falta: R\$\s*110,00/i)).toBeDefined();
 
-      // Teclas numéricas 0 a 9 e botões rápidos
       for (let i = 0; i <= 9; i++) {
         expect(screen.getByText(String(i))).toBeDefined();
       }
@@ -110,12 +108,10 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Troco = 150,00 - 110,00 = 40,00
       expect(screen.getByText(/Troco a Devolver/i)).toBeDefined();
       const trocoElement = screen.getByTestId('valor-troco');
       expect(trocoElement.textContent).toMatch(/40,00/);
 
-      // Botão habilitado para confirmação
       const botaoConfirmar = screen.getByRole('button', {
         name: /Confirmar Pagamento em Dinheiro/i,
       });
@@ -123,7 +119,6 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
       fireEvent.click(botaoConfirmar);
       expect(onConfirmar).toHaveBeenCalledTimes(1);
 
-      // Re-render com valor insuficiente
       rerender(
         <ModoDinheiroTeclado
           totalCentavos={11000}
@@ -156,11 +151,9 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Clicar no 5 -> deve resultar em '15'
       fireEvent.click(screen.getByText('5'));
       expect(onValorChange).toHaveBeenCalledWith('15');
 
-      // Re-render com '15'
       rerender(
         <ModoDinheiroTeclado
           totalCentavos={5000}
@@ -172,11 +165,9 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Clicar em backspace
       fireEvent.click(screen.getByLabelText(/Apagar dígito/i));
       expect(onValorChange).toHaveBeenCalledWith('1');
 
-      // Clicar em limpar 'C'
       fireEvent.click(screen.getByLabelText(/Limpar valor/i));
       expect(onValorChange).toHaveBeenCalledWith('');
     });
@@ -187,7 +178,6 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
       const onAplicarCota = vi.fn();
       const onClose = vi.fn();
 
-      // Comanda de R$ 100,00 dividida para 3 pessoas
       const comanda100: Comanda = {
         ...mockComandaBase,
         total: '100.00',
@@ -206,19 +196,15 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
 
       expect(screen.getByText(/Dividir Conta · Mesa 04/i)).toBeDefined();
 
-      // Inicialmente 2 pessoas (R$ 50,00 cada)
       expect(screen.getByTestId('num-pessoas-display').textContent).toBe('2');
       expect(screen.getByTestId('cota-pessoa-1').textContent).toMatch(/50,00/);
       expect(screen.getByTestId('cota-pessoa-2').textContent).toMatch(/50,00/);
 
-      // Incrementa para 3 pessoas via stepper
       const btnMais = screen.getByLabelText(/Aumentar pessoas/i);
       fireEvent.click(btnMais);
 
       expect(screen.getByTestId('num-pessoas-display').textContent).toBe('3');
 
-      // 10000 / 3 = 3333 centavos base + resto 1 centavo
-      // Pessoa 1 paga 33,34 e Pessoas 2 e 3 pagam 33,33. Total = exatamente 100,00
       const cota1 = screen.getByTestId('cota-pessoa-1');
       const cota2 = screen.getByTestId('cota-pessoa-2');
       const cota3 = screen.getByTestId('cota-pessoa-3');
@@ -227,7 +213,6 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
       expect(cota2.textContent).toMatch(/33,33/);
       expect(cota3.textContent).toMatch(/33,33/);
 
-      // Clica em cobrar cota 1
       const botoesCobrar = screen.getAllByRole('button', { name: /Cobrar Esta Cota/i });
       fireEvent.click(botoesCobrar[0]);
 
@@ -248,25 +233,20 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Alternar para aba "Por Itens Consumidos"
       const tabItens = screen.getByRole('button', { name: /Por Itens Consumidos/i });
       fireEvent.click(tabItens);
 
       expect(screen.getByText(/Selecione os itens a quitar agora/i)).toBeDefined();
 
-      // Itens: Hambúrguer 2x 35 = 70.00; Refrigerante 3x 10 = 30.00
       const checkHamburguer = screen.getByRole('checkbox', {
         name: /2x Hambúrguer Artesanal/i,
       });
 
-      // Seleciona apenas o Hambúrguer
       fireEvent.click(checkHamburguer);
 
-      // Subtotal do hambúrguer: R$ 70,00 + 10% gorjeta (R$ 7,00) = R$ 77,00
       const totalItensElement = screen.getByTestId('total-itens-split');
       expect(totalItensElement.textContent).toMatch(/77,00/);
 
-      // Clica no botão de cobrar cota selecionada
       const btnCobrarItens = screen.getByRole('button', {
         name: /Cobrar Cota Selecionada/i,
       });
@@ -307,7 +287,6 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
         />
       );
 
-      // Elementos do comprovante
       expect(screen.getByText(/VAPTPDV OPERAÇÕES S.A./i)).toBeDefined();
       expect(screen.getByText(/MESA:\s*04/i)).toBeDefined();
       expect(screen.getByText(/OPERADOR:\s*Operadora Carla/i)).toBeDefined();
@@ -319,14 +298,12 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
       const codigoElement = screen.getByTestId('codigo-autenticacao-recibo');
       expect(codigoElement.textContent).toBe(codigo);
 
-      // Botão de impressão térmica
       const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
       const btnImprimir = screen.getByRole('button', { name: /Imprimir Recibo/i });
       fireEvent.click(btnImprimir);
       expect(printSpy).toHaveBeenCalled();
       printSpy.mockRestore();
 
-      // Botão Nova Venda
       const btnNovaVenda = screen.getByRole('button', { name: /Nova Venda/i });
       fireEvent.click(btnNovaVenda);
       expect(onNovaVenda).toHaveBeenCalled();
@@ -349,11 +326,9 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
 
       expect(screen.getByText(/Comanda da Mesa 04 será cancelada permanentemente/i)).toBeDefined();
 
-      // Botão de confirmação começa desabilitado
       const btnConfirmar = screen.getByTestId('btn-confirmar-cancelamento');
       expect(btnConfirmar.hasAttribute('disabled')).toBe(true);
 
-      // Seleção de motivo (radio)
       const radioDesistencia = screen.getByRole('radio', { name: /Desistência do cliente/i });
       const radioErro = screen.getByRole('radio', { name: /Erro de digitação do garçom/i });
 
@@ -362,16 +337,13 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
 
       fireEvent.click(radioErro);
 
-      // Campo de digitação com texto incorreto
       const input = screen.getByPlaceholderText(FRASE_CANCELAMENTO);
       fireEvent.change(input, { target: { value: 'cancelar' } });
       expect(btnConfirmar.hasAttribute('disabled')).toBe(true);
 
-      // Digitando a frase correta (case-insensitive)
       fireEvent.change(input, { target: { value: 'CANCELAR COMANDA' } });
       expect(btnConfirmar.hasAttribute('disabled')).toBe(false);
 
-      // Submete o cancelamento
       fireEvent.click(btnConfirmar);
       expect(onConfirmar).toHaveBeenCalledWith('Erro de digitação do garçom');
     });
@@ -391,11 +363,9 @@ describe('Story 15.7 - Modo Caixa v2 Componentes', () => {
       const radioOutro = screen.getByRole('radio', { name: /Outro/i });
       fireEvent.click(radioOutro);
 
-      // Input do motivo 'Outro' aparece
       const inputOutro = screen.getByPlaceholderText(/Descreva brevemente o motivo/i);
       fireEvent.change(inputOutro, { target: { value: 'Mesa solicitou troca de salão' } });
 
-      // Digita a frase de confirmação
       const inputFrase = screen.getByPlaceholderText(FRASE_CANCELAMENTO);
       fireEvent.change(inputFrase, { target: { value: 'cancelar comanda' } });
 

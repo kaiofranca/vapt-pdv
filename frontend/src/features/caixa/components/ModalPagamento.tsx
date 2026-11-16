@@ -48,69 +48,53 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
   const [etapa, setEtapa] = useState<'pagamento' | 'comprovante'>('pagamento');
   const [comandaPaga, setComandaPaga] = useState<Comanda | null>(null);
 
-  // Forma selecionada na aba central
   const [formaAtiva, setFormaAtiva] = useState<'dinheiro' | 'pix' | 'cartao'>('dinheiro');
   const [subtipoCartao, setSubtipoCartao] = useState<'credito' | 'debito'>('debito');
 
-  // Parcelas já registradas nesta quitação
   const [parcelas, setParcelas] = useState<ParcelaPagamento[]>([]);
 
-  // Valor a cobrar na parcela atual (em formato string digitável)
   const [valorParcelaInput, setValorParcelaInput] = useState<string>('');
-  // Valor recebido em dinheiro pelo operador (para troco)
   const [valorRecebidoInput, setValorRecebidoInput] = useState<string>('');
 
-  // Opções fiscais
   const [documentoCliente, setDocumentoCliente] = useState<string>(documentoClienteInicial);
   const [imprimirViaCliente, setImprimirViaCliente] = useState<boolean>(true);
 
-  // Confirmação de segurança: tentar sair com dinheiro na gaveta
   const [showConfirmacaoGaveta, setShowConfirmacaoGaveta] = useState<boolean>(false);
 
-  // Split payment (dividir por pessoas ou itens - C11)
   const [isSplitOpen, setIsSplitOpen] = useState<boolean>(false);
 
-  // Feedback de cópia do código Pix
   const [pixCopiado, setPixCopiado] = useState<boolean>(false);
 
-  // Cronômetro Pix regressivo (5 minutos = 300 segundos)
   const [tempoPixRestante, setTempoPixRestante] = useState<number>(300);
 
-  // Estados de integração com satélite caixa-service (:3002)
   const [trocoOficialSat, setTrocoOficialSat] = useState<string | null>(null);
   const [reciboOficial, setReciboOficial] = useState<ReciboCompletoResposta | null>(null);
   const [paperText, setPaperText] = useState<string | null>(null);
   const [isProcessandoSat, setIsProcessandoSat] = useState<boolean>(false);
   const [erroSat, setErroSat] = useState<string | null>(null);
 
-  // Código Pix Copia-e-Cola simulado
   const codigoPixSimulado = useMemo(() => {
     const id = comanda ? comanda.id : '00';
     return `00020126580014br.gov.bcb.pix0136vapt-pdv-caixa-${id}@uern.br5204000053039865802BR5913VaptPDV6008MOSSORO62070503***6304ABCD`;
   }, [comanda]);
 
-  // Total da comanda em centavos inteiros (eliminando resíduos IEEE 754)
   const totalCentavos = useMemo(() => {
     if (!comanda) return 0;
     const valor = parseFloat(comanda.total || comanda.subtotal || '0');
     return Math.round(valor * 100);
   }, [comanda]);
 
-  // Total já pago acumulado em centavos
   const jaPagoCentavos = useMemo(() => {
     return parcelas.reduce((acc, p) => acc + p.valorCentavos, 0);
   }, [parcelas]);
 
-  // Falta pagar em centavos
   const faltaPagarCentavos = Math.max(0, totalCentavos - jaPagoCentavos);
 
-  // Troco calculado em centavos com validação estrita Number.isFinite
   const valorRecebidoNum = parseFloat(valorRecebidoInput.replace(',', '.'));
   const valorParcelaNum = parseFloat(valorParcelaInput.replace(',', '.'));
   const valorRecebidoCentavos = Number.isFinite(valorRecebidoNum) ? Math.round(valorRecebidoNum * 100) : 0;
   const valorParcelaCentavos = Number.isFinite(valorParcelaNum) ? Math.round(valorParcelaNum * 100) : 0;
 
-  // Inicializa valores ao abrir modal
   useEffect(() => {
     if (isOpen && comanda) {
       setEtapa('pagamento');
@@ -132,7 +116,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     }
   }, [isOpen, comanda, totalCentavos, documentoClienteInicial]);
 
-  // Atualiza o valor da parcela padrão quando o saldo restante mudar
   useEffect(() => {
     if (etapa === 'pagamento') {
       const saldoFormatado = (faltaPagarCentavos / 100).toFixed(2);
@@ -141,7 +124,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     }
   }, [faltaPagarCentavos, etapa]);
 
-  // Efeito do cronômetro regressivo Pix
   useEffect(() => {
     if (!isOpen || etapa !== 'pagamento' || formaAtiva !== 'pix') return;
 
@@ -152,21 +134,18 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     return () => clearInterval(timer);
   }, [isOpen, etapa, formaAtiva]);
 
-  // Formatação do cronômetro mm:ss
   const formatarTempo = (segundos: number) => {
     const min = Math.floor(segundos / 60);
     const seg = segundos % 60;
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  // Copiar código Pix
   const handleCopiarPix = () => {
     navigator.clipboard.writeText(codigoPixSimulado);
     setPixCopiado(true);
     setTimeout(() => setPixCopiado(false), 3000);
   };
 
-  // Adicionar / Quitar parcela via satélite caixa-service :3002 (EARS-CXSAT-05, EARS-CXSAT-08, EARS-CXSAT-09, EARS-CXSAT-10)
   const handleLancarParcela = async (forma: 'dinheiro' | 'pix' | 'cartao') => {
     if (!comanda) return;
 
@@ -239,7 +218,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           setReciboOficial(recibo);
           setPaperText(recibo.paper_text);
         } catch {
-          // Fallback para recibo formatado local
         }
 
         const cPaga: Comanda = {
@@ -261,19 +239,16 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           : err?.message || 'Erro na comunicação com caixa-service (:3002).';
       setErroSat(msg);
       onToast('erro', msg);
-      // EARS-CXSAT-10: NÃO reseta os inputs do usuário para permitir nova tentativa
     } finally {
       setIsProcessandoSat(false);
     }
   };
 
-  // Remover parcela (estorno)
   const handleRemoverParcela = (id: string) => {
     setParcelas((prev) => prev.filter((p) => p.id !== id));
     onToast('sucesso', 'Parcela estornada do pagamento.');
   };
 
-  // Aplica uma cota calculada pelo ModalSplitPayment (C11)
   const handleAplicarCotaSplit = (valorCentavos: number, descricao: string) => {
     const valorReais = (valorCentavos / 100).toFixed(2);
     setValorParcelaInput(valorReais);
@@ -281,7 +256,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     onToast('sucesso', `${descricao}: valor R$ ${formatCurrency(valorCentavos / 100)} selecionado.`);
   };
 
-  // Fechamento seguro do modal
   const handleTentarFechar = () => {
     const temDinheiroLancado = parcelas.some((p) => p.forma === 'dinheiro');
     if (etapa === 'pagamento' && temDinheiroLancado) {
@@ -291,7 +265,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     onClose();
   };
 
-  // Listener da tecla Escape chamando handleTentarFechar com proteção de gaveta
   useEffect(() => {
     if (!isOpen) return;
 
@@ -311,12 +284,10 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, showConfirmacaoGaveta, parcelas, etapa]);
 
-  // Concluir Venda (Liquidação final com obtenção do recibo térmico .paper de 48 colunas)
   const handleConcluirVenda = async () => {
     if (!comanda) return;
 
     if (faltaPagarCentavos > 0) {
-      // Se não há parcelas lançadas ainda, lança a forma ativa diretamente
       if (parcelas.length === 0) {
         await handleLancarParcela(formaAtiva);
         return;
@@ -329,7 +300,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     setErroSat(null);
 
     try {
-      // Busca recibo canônico térmico gerado por :3002
       let recibo = reciboOficial;
       if (!recibo) {
         try {
@@ -337,7 +307,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           setReciboOficial(recibo);
           setPaperText(recibo.paper_text);
         } catch {
-          // Fallback gracioso silencioso
         }
       }
 
@@ -366,7 +335,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
 
   if (!isOpen || !comanda) return null;
 
-  // Porcentagem de quitação para a ProgressBar
   const percentualQuitado =
     totalCentavos > 0 ? Math.min(100, Math.round((jaPagoCentavos / totalCentavos) * 100)) : 0;
 
@@ -377,16 +345,13 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
       aria-modal="true"
       aria-labelledby="titulo-modal-pagamento"
     >
-      {/* Backdrop com blur suave */}
       <div
         className="fixed inset-0 bg-[#2B2019]/60 backdrop-blur-sm transition-opacity"
         onClick={handleTentarFechar}
         aria-hidden="true"
       />
 
-      {/* Conteúdo do Modal Desktop */}
       <div className="relative w-full max-w-6xl rounded-card-lg bg-surface border border-border shadow-modal p-6 text-left transition-all z-10 max-h-[92vh] flex flex-col overflow-hidden">
-        {/* Cabeçalho do Modal */}
         <div className="flex items-center justify-between border-b border-border pb-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-input bg-brand text-on-brand flex items-center justify-center shadow-soft">
@@ -411,7 +376,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           </button>
         </div>
 
-        {/* Alerta de erro retornado pelo caixa-service com preservação de dados (EARS-CXSAT-10, AC-CXSAT-04) */}
         {erroSat && etapa === 'pagamento' && (
           <div
             role="alert"
@@ -422,7 +386,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
           </div>
         )}
 
-        {/* Corpo do Modal: Se etapa === 'comprovante', renderiza o recibo */}
         {etapa === 'comprovante' && comandaPaga ? (
           <div className="flex-1 min-h-0 overflow-y-auto py-2">
             <ComprovanteVenda
@@ -442,9 +405,7 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
             />
           </div>
         ) : (
-          /* Layout em 3 Colunas: Resumo, Formas de Pagamento e Quitação/Fiscal */
           <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 overflow-y-auto pr-1">
-            {/* ================= COLUNA 1: RESUMO DA VENDA & SPLITS (4 Colunas) ================= */}
             <div className="lg:col-span-4 flex flex-col gap-4 border-r border-border/80 pr-0 lg:pr-5">
               <div className="space-y-1">
                 <span className="text-xs font-bold uppercase text-text-2 tracking-wider">
@@ -458,7 +419,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               </div>
 
-              {/* Barra de Progresso da Quitação */}
               <div className="space-y-1.5 p-3 rounded-card bg-surface-2/60 border border-border">
                 <div className="flex justify-between text-xs font-semibold">
                   <span className="text-text-2">Progresso do Pagamento</span>
@@ -483,7 +443,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               </div>
 
-              {/* Troco Oficial Calculado pelo Satélite :3002 */}
               {trocoOficialSat && parseFloat(trocoOficialSat) > 0 && (
                 <div
                   className="p-3 rounded-card bg-success-soft border border-success/30 flex items-center justify-between animate-fadeIn"
@@ -498,7 +457,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               )}
 
-              {/* Botão C11: Dividir a Conta */}
               <Button
                 variant="outline"
                 fullWidth
@@ -509,7 +467,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 Dividir Conta (Split Payment)
               </Button>
 
-              {/* Lista de Parcelas Já Lançadas */}
               <div className="space-y-2 flex-1 min-h-0 flex flex-col">
                 <div className="flex justify-between items-center text-xs font-bold text-text-2 uppercase tracking-wider">
                   <span>Parcelas Lançadas ({parcelas.length})</span>
@@ -561,9 +518,7 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
               </div>
             </div>
 
-            {/* ================= COLUNA 2: FORMAS DE PAGAMENTO & ENTRADA (5 Colunas) ================= */}
             <div className="lg:col-span-5 flex flex-col gap-4 border-r border-border/80 pr-0 lg:pr-5">
-              {/* Abas das Formas de Pagamento */}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setFormaAtiva('dinheiro')}
@@ -602,7 +557,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </button>
               </div>
 
-              {/* Campo do Valor da Parcela Atual */}
               <div>
                 <label className="text-xs font-bold uppercase text-text-2 tracking-wider block mb-1">
                   Valor a Quitar nesta Parcela (R$)
@@ -623,7 +577,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               </div>
 
-              {/* Painel Específico da Forma Selecionada */}
               {formaAtiva === 'dinheiro' && (
                 <ModoDinheiroTeclado
                   totalCentavos={totalCentavos}
@@ -733,14 +686,12 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
               )}
             </div>
 
-            {/* ================= COLUNA 3: FISCAL, CONFERÊNCIA & CONCLUSÃO (3 Colunas) ================= */}
             <div className="lg:col-span-3 flex flex-col justify-between gap-4">
               <div className="space-y-4">
                 <span className="text-xs font-bold uppercase text-text-2 tracking-wider block">
                   Identificação & Fiscal
                 </span>
 
-                {/* CPF/CNPJ do Cliente (Opcional) */}
                 <div>
                   <label htmlFor="input-cpf" className="text-xs font-semibold text-text-2 block mb-1">
                     CPF / CNPJ na Nota (Opcional)
@@ -755,7 +706,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                   />
                 </div>
 
-                {/* Switches Fiscais */}
                 <div className="space-y-3 pt-2 border-t border-border/80">
                   <div className="flex items-center justify-between">
                     <div>
@@ -778,7 +728,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
                 </div>
               </div>
 
-              {/* Botão Primário: Concluir Venda */}
               <div className="pt-4 border-t border-border">
                 <Button
                   variant="primary"
@@ -806,7 +755,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
         )}
       </div>
 
-      {/* Diálogo de Segurança: Confirmação de Gaveta (Dinheiro Já Lançado) */}
       {showConfirmacaoGaveta && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center p-4"
@@ -856,7 +804,6 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
         </div>
       )}
 
-      {/* Modal C11: Dividir a Conta (Split Payment) */}
       <ModalSplitPayment
         isOpen={isSplitOpen}
         onClose={() => setIsSplitOpen(false)}

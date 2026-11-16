@@ -1,9 +1,3 @@
-/**
- * Gateway de Integração com o microsserviço satélite caixa-service (:3002).
- * Responsável pela sincronização HTTP síncrona do fechamento de contas com timeout estrito de 2000ms.
- * (ADR-07, RN17)
- */
-
 export interface RespostaNotificacaoCaixa {
   sucesso: boolean;
   statusCode?: number;
@@ -58,7 +52,6 @@ export class CaixaGateway implements ICaixaGateway {
       try {
         corpoResposta = await resposta.json();
       } catch {
-        // Corpo não-JSON ignorado
       }
 
       return {

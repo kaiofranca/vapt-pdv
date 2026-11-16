@@ -9,7 +9,6 @@ function obterTemaInicial(): Tema {
     const salvo = localStorage.getItem(STORAGE_KEY);
     if (salvo === 'claro' || salvo === 'escuro') return salvo;
   } catch {
-    // localStorage indisponível: segue para a preferência do sistema
   }
   if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
     return 'escuro';
@@ -36,7 +35,6 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     try {
       localStorage.setItem(STORAGE_KEY, tema);
     } catch {
-      // Ignora erro de gravação
     }
     aplicarTema(tema);
     set({ tema });
@@ -44,11 +42,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   alternarTema: () => get().definirTema(get().tema === 'claro' ? 'escuro' : 'claro'),
 }));
 
-// Aplica o tema salvo assim que o módulo é carregado no navegador (evita flash de tema errado)
 if (typeof window !== 'undefined') {
   aplicarTema(useThemeStore.getState().tema);
 
-  // Escuta mudanças de preferência do SO quando o usuário ainda não gravou escolha explícita
   try {
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
     mq?.addEventListener?.('change', (e) => {
@@ -57,10 +53,8 @@ if (typeof window !== 'undefined') {
           useThemeStore.getState().definirTema(e.matches ? 'escuro' : 'claro');
         }
       } catch {
-        // Ignora erro de acesso ao localStorage
       }
     });
   } catch {
-    // matchMedia não suportado
   }
 }

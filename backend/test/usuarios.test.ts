@@ -535,7 +535,6 @@ describe('CRUD de Usuários com Perfil (Story 2 - CAP-2)', () => {
       const corpo = resposta.json();
       expect(corpo.id).toBe(1);
       expect(corpo.ativo).toBe(false);
-      // Garantir idempotência: update não deve ser chamado se já inativo
       expect(usuarioMock.update).not.toHaveBeenCalled();
 
       await app.close();

@@ -59,7 +59,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       expect(corpo.status).toBe('aguardando_pagamento');
       expect(corpo.aplicar_taxa_servico).toBe(true);
       expect(corpo.subtotal).toBe('59.80');
-      // 59.80 * 0.10 = 5.98
       expect(corpo.taxa_servico).toBe('5.98');
       expect(corpo.total).toBe('65.78');
       expect(corpo.saldo_restante).toBe('65.78');
@@ -100,7 +99,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
     });
 
     it('deve recalcular taxa e saldo de comanda existente via toggle de taxa de serviço (C05, C06)', async () => {
-      // 1. Criar inicial com taxa (subtotal: 100.00, taxa: 10.00, total: 110.00)
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/60/fechar',
@@ -120,7 +118,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
         },
       });
 
-      // 2. Operador desmarca taxa de serviço no Caixa (aplicar_taxa_servico: false)
       const resToggleOff = await app.inject({
         method: 'POST',
         url: '/caixa/comandas/60/fechar',
@@ -137,7 +134,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       expect(corpoOff.total).toBe('100.00');
       expect(corpoOff.saldo_restante).toBe('100.00');
 
-      // 3. Operador remarca a taxa de serviço
       const resToggleOn = await app.inject({
         method: 'POST',
         url: '/caixa/comandas/60/fechar',
@@ -155,7 +151,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
     });
 
     it('deve retornar 409 COMANDA_IMUTAVEL se a comanda já estiver quitada', async () => {
-      // Inserir comanda já paga
       await repository.criar({
         comandaId: 70,
         mesa: 2,
@@ -251,7 +246,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
 
   describe('GET /caixa/comandas — Fila do Caixa e Resumo do Turno (Story 15.2, C01/C02/C15)', () => {
     beforeEach(async () => {
-      // Criar 2 comandas aguardando pagamento
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/10/fechar',
@@ -274,7 +268,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
         },
       });
 
-      // Criar 1 comanda paga hoje no repositório
       await repository.criar({
         comandaId: 30,
         mesa: 3,
@@ -305,7 +298,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       expect(corpo.resumo_turno.pagas_hoje).toBe(1);
       expect(corpo.resumo_turno.faturamento_turno).toBe('110.00');
 
-      // Cabeçalho / envelope direto
       expect(corpo.aguardando_pagamento).toBe(2);
       expect(corpo.pagas_hoje).toBe(1);
       expect(corpo.faturamento_turno).toBe('110.00');
@@ -352,7 +344,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
 
   describe('POST /caixa/comandas/:comandaId/dividir — Split Payment (Story 15.3, C11/RN19)', () => {
     beforeEach(async () => {
-      // Comanda de teste: Subtotal 59.80, Taxa 5.98, Total 65.78
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/42/fechar',
@@ -401,7 +392,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       const soma = cota1.add(cota2).add(cota3);
       expect(soma.toFixed(2)).toBe('65.78');
 
-      // Verifica se detalhes foram persistidos
       const detalheRes = await app.inject({
         method: 'GET',
         url: '/caixa/comandas/42',
@@ -425,7 +415,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       expect(res.statusCode).toBe(200);
       const corpo = res.json();
       expect(corpo.cotas).toHaveLength(2);
-      // 65.78 / 2 = 32.89 cada
       expect(corpo.cotas[0].valor).toBe('32.89');
       expect(corpo.cotas[1].valor).toBe('32.89');
     });
@@ -456,7 +445,6 @@ describe('Rotas HTTP caixa-service — Fila de Contas, Fechamento e Split Paymen
       expect(corpo.pessoas).toBe(2);
       expect(corpo.cotas).toHaveLength(2);
 
-      // Cada um paga 1 hambúrguer (29.90 + 10% = 32.89)
       expect(corpo.cotas[0].valor).toBe('32.89');
       expect(corpo.cotas[1].valor).toBe('32.89');
 

@@ -172,10 +172,10 @@ describe('POST /kds/fichas (Story 14.2)', () => {
         comanda_id: 42,
         item_comanda_id: 102,
         produto_id: 7,
-        mesa: 0, // inválido (mesa deve ser > 0)
+        mesa: 0,
         garcom_id: 1,
         nome_produto: 'Hambúrguer Artesanal',
-        quantidade: -1, // inválido
+        quantidade: -1,
       },
     });
 
@@ -187,4 +187,3 @@ describe('POST /kds/fichas (Story 14.2)', () => {
     await app.close();
   });
 });
-

@@ -25,9 +25,7 @@ export interface ModalSplitPaymentProps {
   isOpen: boolean;
   onClose: () => void;
   comanda: Comanda | null;
-  /** Callback acionado quando o operador escolhe uma cota calculada para pagar */
   onAplicarCota: (valorCentavos: number, descricao: string) => void;
-  /** Callback opcional quando a divisão é validada pelo satélite */
   onDivisaoValidada?: (cotas: CotaSat[]) => void;
 }
 
@@ -40,13 +38,6 @@ export interface CotaPessoa {
   rotulo?: string;
 }
 
-/**
- * Modal C11 - Dividir a Conta (Split Payment)
- * Suporta:
- * 1. Divisão por número de pessoas (2 a 20) com conservação exata de centavos (RN19/RN24) via satélite :3002
- * 2. Divisão por itens selecionados (com ou sem taxa de 10%)
- * 3. Degradação graciosa em caso de indisponibilidade do serviço (:3002)
- */
 export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
   isOpen,
   onClose,
@@ -59,21 +50,18 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
   const [itensSelecionados, setItensSelecionados] = useState<Record<number, boolean>>({});
   const [incluirTaxaItens, setIncluirTaxaItens] = useState<boolean>(true);
 
-  // Estados de integração com o satélite caixa-service (:3002)
   const [cotasSat, setCotasSat] = useState<CotaSat[] | null>(null);
   const [isDividindoSat, setIsDividindoSat] = useState<boolean>(false);
   const [erroSat, setErroSat] = useState<string | null>(null);
 
   const itens: ItemComanda[] = useMemo(() => comanda?.itens || [], [comanda]);
 
-  // Total da comanda em centavos
   const totalComandaCentavos = useMemo(() => {
     if (!comanda) return 0;
     const val = parseFloat(comanda.total || comanda.subtotal || '0');
     return Math.round(val * 100);
   }, [comanda]);
 
-  // Limpa estados ao reabrir modal
   useEffect(() => {
     if (isOpen) {
       setCotasSat(null);
@@ -82,7 +70,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     }
   }, [isOpen, comanda]);
 
-  // Cálculo padrão local das cotas por pessoas com conservação de centavos (fallback imediato)
   const cotasLocais: CotaPessoa[] = useMemo(() => {
     if (totalComandaCentavos <= 0 || numPessoas < 2) return [];
 
@@ -91,7 +78,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
 
     const lista: CotaPessoa[] = [];
     for (let i = 0; i < numPessoas; i++) {
-      // Distribui 1 centavo extra para os primeiros 'restoCentavos' participantes
       const cota = i < restoCentavos ? baseCentavos + 1 : baseCentavos;
       lista.push({
         indice: i + 1,
@@ -103,7 +89,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     return lista;
   }, [totalComandaCentavos, numPessoas]);
 
-  // Cotas exibidas: se o satélite retornou cotas, usa as cotas do satélite (:3002); senão, locais
   const cotasExibidas: CotaPessoa[] = useMemo(() => {
     if (cotasSat && cotasSat.length > 0) {
       return cotasSat.map((c) => {
@@ -119,7 +104,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     return cotasLocais;
   }, [cotasSat, cotasLocais]);
 
-  // Confirmação e cálculo de divisão pelo microsserviço satélite :3002 (RN19, EARS-CXSAT-03, EARS-CXSAT-04)
   const handleConfirmarDivisaoSat = async () => {
     if (!comanda) return;
     setIsDividindoSat(true);
@@ -141,7 +125,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
           ? err.message
           : err?.message || 'Falha ao conectar com o satélite caixa-service (:3002).';
       setErroSat(msg);
-      // Fallback gracioso com conservação de centavos local
       const fallback = calcularDivisaoLocal(totalComandaCentavos / 100, numPessoas);
       setCotasSat(fallback);
     } finally {
@@ -149,7 +132,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     }
   };
 
-  // Itens selecionados para rateio parcial
   const handleToggleItem = (itemId: number) => {
     setItensSelecionados((prev) => ({
       ...prev,
@@ -169,7 +151,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     setItensSelecionados({});
   };
 
-  // Cálculo do rateio por itens selecionados
   const { subtotalItensCentavos, taxaItensCentavos, totalItensCentavos, qtdItensSelecionados } =
     useMemo(() => {
       let subtotalCentavos = 0;
@@ -195,7 +176,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
       };
     }, [itens, itensSelecionados, incluirTaxaItens]);
 
-  // Handlers do Stepper de Pessoas
   const handleDecrementarPessoas = () => {
     setCotasSat(null);
     setNumPessoas((prev) => Math.max(2, prev - 1));
@@ -206,7 +186,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     setNumPessoas((prev) => Math.min(20, prev + 1));
   };
 
-  // Ao selecionar uma cota de pessoa para pagar
   const handleEscolherCotaPessoa = (cota: CotaPessoa) => {
     const rotuloCompleto = cota.rotulo
       ? `${cota.rotulo} - Cota ${cota.indice}/${numPessoas} (divisão igual)`
@@ -215,7 +194,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
     onClose();
   };
 
-  // Ao confirmar cota dos itens selecionados
   const handleEscolherCotaItens = () => {
     if (totalItensCentavos <= 0) return;
     onAplicarCota(
@@ -235,7 +213,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
       maxWidth="md"
     >
       <div className="space-y-4 py-1">
-        {/* Total da Comanda em Destaque */}
         <div className="p-3.5 rounded-card bg-surface-2/60 border border-border flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase text-text-2 tracking-wider block">
@@ -250,7 +227,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
           </span>
         </div>
 
-        {/* Alerta de erro ou timeout do satélite :3002 com degradação graciosa */}
         {erroSat && (
           <div
             role="alert"
@@ -261,7 +237,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
           </div>
         )}
 
-        {/* SegmentedControl para alternar entre Por Pessoas e Por Itens */}
         <div className="grid grid-cols-2 p-1 rounded-control bg-surface-2 border border-border">
           <button
             type="button"
@@ -290,10 +265,8 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
           </button>
         </div>
 
-        {/* ================= ABA 1: DIVISÃO POR NÚMERO DE PESSOAS ================= */}
         {tipoDivisao === 'pessoas' && (
           <div className="space-y-4 animate-fadeIn">
-            {/* Stepper de Quantidade de Pessoas (2 a 20) */}
             <div className="p-4 rounded-card bg-surface border border-border flex items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-bold uppercase text-text-2 tracking-wider block">
@@ -336,7 +309,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               </div>
             </div>
 
-            {/* Ação de confirmação com satélite :3002 e cabeçalho da lista */}
             <div className="flex justify-between items-center text-xs font-bold text-text-2 uppercase tracking-wider">
               <span>Cotas Individuais</span>
               <div className="flex items-center gap-2">
@@ -355,7 +327,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               </div>
             </div>
 
-            {/* Lista das Cotas Calculadas */}
             <div className="space-y-2">
               <div className="max-h-[220px] overflow-y-auto space-y-1.5 pr-1">
                 {cotasExibidas.map((cota) => (
@@ -395,7 +366,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
           </div>
         )}
 
-        {/* ================= ABA 2: DIVISÃO POR ITENS CONSUMIDOS ================= */}
         {tipoDivisao === 'itens' && (
           <div className="space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between text-xs">
@@ -421,7 +391,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               </div>
             </div>
 
-            {/* Lista dos Itens da Comanda */}
             <div className="max-h-[200px] overflow-y-auto space-y-1.5 pr-1 border border-border rounded-card p-2 bg-surface">
               {itens.length > 0 ? (
                 itens.map((it) => {
@@ -468,7 +437,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               )}
             </div>
 
-            {/* Switch de Taxa de Serviço 10% */}
             <div className="flex items-center justify-between p-3 rounded-card bg-surface-2/60 border border-border">
               <div className="flex items-center gap-2">
                 <Percent className="w-4 h-4 text-text-2" />
@@ -482,7 +450,6 @@ export const ModalSplitPayment: React.FC<ModalSplitPaymentProps> = ({
               />
             </div>
 
-            {/* Resumo da Cota de Itens */}
             <div className="p-3.5 rounded-card bg-surface border border-border space-y-1.5">
               <div className="flex justify-between text-xs text-text-2">
                 <span>Subtotal Itens Marcados ({qtdItensSelecionados})</span>

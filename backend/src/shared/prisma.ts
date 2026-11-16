@@ -12,7 +12,6 @@ export interface ClienteBanco {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __vaptPdvPrisma: PrismaClient | undefined;
 }
 
