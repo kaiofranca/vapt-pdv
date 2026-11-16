@@ -1,0 +1,1979 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [7 0 R 9 0 R 11 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 18410 >>
+stream
+0.169 0.125 0.098 rg
+38.00 715.89 519.28 88.00 re f
+0.949 0.659 0.114 rg
+38.00 715.89 519.28 4.00 re f
+0.949 0.659 0.114 rg
+52.00 782.89 190.00 13.00 re f
+BT
+/F2 7.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 58.00 786.89 Tm
+(M\323DULO 3  |  DOCKER COMPOSE & AWS EC2) Tj
+ET
+BT
+/F2 13.80 Tf
+1.000 1.000 1.000 rg
+1 0 0 1 52.00 765.89 Tm
+(Guia de Configura\347\343o e Orquestra\347\343o de Containers na AWS EC2) Tj
+ET
+BT
+/F1 8.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 52.00 752.89 Tm
+(VaptPDV \227 Ecossistema Distribu\355do de Ponto de Venda \(8 Containers | Database-per-Service\)) Tj
+ET
+0.70 w
+0.320 0.250 0.200 RG
+52.00 745.89 m 543.28 745.89 l S
+BT
+/F1 7.90 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 52.00 733.89 Tm
+(Institui\347\343o: DCC / UERN \227 Sistemas Distribu\355dos) Tj
+ET
+BT
+/F1 7.90 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 298.00 733.89 Tm
+(Docentes: Profa. Dra. Glaucia Melissa e Profa. Ma. Luiziane Paulino) Tj
+ET
+BT
+/F1 7.90 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 52.00 722.89 Tm
+(Discentes: Kaio Fran\347a e Mateus Neri) Tj
+ET
+BT
+/F1 7.90 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 298.00 722.89 Tm
+(Inst\342ncia EC2 Alvo: Ubuntu Server LTS \(IP: 54.234.157.236\)) Tj
+ET
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 689.89 Tm
+(1. Arquitetura, Topologia de Rede e Or\347amento de Recursos) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 686.39 m 557.28 686.39 l S
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 671.39 Tm
+(Este guia estabelece o procedimento oficial de implanta\347\343o em produ\347\343o na AWS EC2 \(Ubuntu Server) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 659.59 Tm
+(LTS\) da orquestra\347\343o Docker Compose do VaptPDV. O ecossistema opera 8 containers isolados na rede) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 647.79 Tm
+(bridge vaptpdv-net seguindo estritamente o padr\343o Database-per-Service \(ADR-01\), com 4) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 635.99 Tm
+(microsservi\347os Node.js 20 Alpine \(USER node\) e 4 bancos PostgreSQL 16 Alpine persistidos em) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 624.19 Tm
+(volumes nomeados.) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 472.89 519.28 146.00 re f
+1.00 w
+0.840 0.800 0.750 RG
+38.00 472.89 519.28 146.00 re S
+0.169 0.125 0.098 rg
+48.00 595.89 499.28 17.00 re f
+BT
+/F2 8.10 Tf
+1.000 1.000 1.000 rg
+1 0 0 1 110.00 601.89 Tm
+(Internet / Navegadores  ->  AWS Security Group \(Portas TCP 22, 3000, 3001, 3002, 3003\)) Tj
+ET
+1.000 1.000 1.000 rg
+48.00 556.89 118.82 31.00 re f
+1.50 w
+0.949 0.659 0.114 RG
+48.00 556.89 118.82 31.00 re S
+BT
+/F2 7.70 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 54.00 574.89 Tm
+(vapt-pdv-core \(:3000\)) Tj
+ET
+BT
+/F1 7.00 Tf
+0.400 0.330 0.280 rg
+1 0 0 1 54.00 563.39 Tm
+(Sal\343o + PWA + Proxy) Tj
+ET
+1.20 w
+0.169 0.125 0.098 RG
+107.41 556.89 m 107.41 547.89 l S
+0.169 0.125 0.098 rg
+48.00 518.89 118.82 29.00 re f
+BT
+/F2 7.50 Tf
+0.949 0.659 0.114 rg
+1 0 0 1 54.00 535.39 Tm
+(postgres-core \(:5432\)) Tj
+ET
+BT
+/F1 6.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 54.00 524.39 Tm
+(vaptpdv_db \(127.0.0.1\)) Tj
+ET
+1.20 w
+0.850 0.470 0.020 RG
+107.41 518.89 m 107.41 511.89 l S
+0.960 0.900 0.780 rg
+48.00 492.89 118.82 19.00 re f
+0.90 w
+0.850 0.470 0.020 RG
+48.00 492.89 118.82 19.00 re S
+BT
+/F2 7.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 56.00 498.39 Tm
+(Volume: pgdata_core) Tj
+ET
+1.000 1.000 1.000 rg
+174.82 556.89 118.82 31.00 re f
+1.00 w
+0.169 0.125 0.098 RG
+174.82 556.89 118.82 31.00 re S
+BT
+/F2 7.70 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 180.82 574.89 Tm
+(kds-service \(:3001\)) Tj
+ET
+BT
+/F1 7.00 Tf
+0.400 0.330 0.280 rg
+1 0 0 1 180.82 563.39 Tm
+(Cozinha, Bar & SLA) Tj
+ET
+1.20 w
+0.169 0.125 0.098 RG
+234.23 556.89 m 234.23 547.89 l S
+0.169 0.125 0.098 rg
+174.82 518.89 118.82 29.00 re f
+BT
+/F2 7.50 Tf
+0.949 0.659 0.114 rg
+1 0 0 1 180.82 535.39 Tm
+(postgres-kds \(:5432\)) Tj
+ET
+BT
+/F1 6.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 180.82 524.39 Tm
+(kds_db \(vaptpdv-net\)) Tj
+ET
+1.20 w
+0.850 0.470 0.020 RG
+234.23 518.89 m 234.23 511.89 l S
+0.960 0.900 0.780 rg
+174.82 492.89 118.82 19.00 re f
+0.90 w
+0.850 0.470 0.020 RG
+174.82 492.89 118.82 19.00 re S
+BT
+/F2 7.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 182.82 498.39 Tm
+(Volume: pgdata_kds) Tj
+ET
+1.000 1.000 1.000 rg
+301.64 556.89 118.82 31.00 re f
+1.00 w
+0.169 0.125 0.098 RG
+301.64 556.89 118.82 31.00 re S
+BT
+/F2 7.70 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 307.64 574.89 Tm
+(caixa-service \(:3002\)) Tj
+ET
+BT
+/F1 7.00 Tf
+0.400 0.330 0.280 rg
+1 0 0 1 307.64 563.39 Tm
+(Split Payment & .paper) Tj
+ET
+1.20 w
+0.169 0.125 0.098 RG
+361.05 556.89 m 361.05 547.89 l S
+0.169 0.125 0.098 rg
+301.64 518.89 118.82 29.00 re f
+BT
+/F2 7.50 Tf
+0.949 0.659 0.114 rg
+1 0 0 1 307.64 535.39 Tm
+(postgres-caixa \(:5432\)) Tj
+ET
+BT
+/F1 6.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 307.64 524.39 Tm
+(caixa_db \(vaptpdv-net\)) Tj
+ET
+1.20 w
+0.850 0.470 0.020 RG
+361.05 518.89 m 361.05 511.89 l S
+0.960 0.900 0.780 rg
+301.64 492.89 118.82 19.00 re f
+0.90 w
+0.850 0.470 0.020 RG
+301.64 492.89 118.82 19.00 re S
+BT
+/F2 7.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 309.64 498.39 Tm
+(Volume: pgdata_caixa) Tj
+ET
+1.000 1.000 1.000 rg
+428.46 556.89 118.82 31.00 re f
+1.00 w
+0.169 0.125 0.098 RG
+428.46 556.89 118.82 31.00 re S
+BT
+/F2 7.70 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 434.46 574.89 Tm
+(gestao-service \(:3003\)) Tj
+ET
+BT
+/F1 7.00 Tf
+0.400 0.330 0.280 rg
+1 0 0 1 434.46 563.39 Tm
+(OLAP, Curva ABC & BI) Tj
+ET
+1.20 w
+0.169 0.125 0.098 RG
+487.87 556.89 m 487.87 547.89 l S
+0.169 0.125 0.098 rg
+428.46 518.89 118.82 29.00 re f
+BT
+/F2 7.50 Tf
+0.949 0.659 0.114 rg
+1 0 0 1 434.46 535.39 Tm
+(postgres-gestao \(:5432\)) Tj
+ET
+BT
+/F1 6.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 434.46 524.39 Tm
+(gestao_db \(vaptpdv-net\)) Tj
+ET
+1.20 w
+0.850 0.470 0.020 RG
+487.87 518.89 m 487.87 511.89 l S
+0.960 0.900 0.780 rg
+428.46 492.89 118.82 19.00 re f
+0.90 w
+0.850 0.470 0.020 RG
+428.46 492.89 118.82 19.00 re S
+BT
+/F2 7.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 436.46 498.39 Tm
+(Volume: pgdata_gestao) Tj
+ET
+BT
+/F2 9.60 Tf
+0.300 0.200 0.140 rg
+1 0 0 1 38.00 454.89 Tm
+(1.1. Or\347amento de Recursos dos 8 Containers \(deploy.resources.limits\)) Tj
+ET
+0.169 0.125 0.098 rg
+38.00 434.69 519.28 15.20 re f
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 42.00 438.99 Tm
+(Container) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 120.00 438.99 Tm
+(Fun\347\343o Operacional) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 222.00 438.99 Tm
+(Imagem / Dockerfile) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 326.00 438.99 Tm
+(Porta Host EC2) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 398.00 438.99 Tm
+(Banco / Volume) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 501.00 438.99 Tm
+(RAM) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 533.00 438.99 Tm
+(CPU) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 419.49 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 419.49 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 423.79 Tm
+(postgres-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 423.79 Tm
+(SGBD Operacional Sal\343o) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 423.79 Tm
+(postgres:16-alpine) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 423.79 Tm
+(127.0.0.1:5432) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 423.79 Tm
+(vaptpdv_db / pgdata_core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 423.79 Tm
+(256M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 423.79 Tm
+(0.50) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 404.29 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 404.29 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 408.59 Tm
+(postgres-kds) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 408.59 Tm
+(SGBD Cozinha e Bar) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 408.59 Tm
+(postgres:16-alpine) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 408.59 Tm
+(Interna \(rede\)) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 408.59 Tm
+(kds_db / pgdata_kds) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 408.59 Tm
+(128M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 408.59 Tm
+(0.25) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 389.09 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 389.09 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 393.39 Tm
+(postgres-caixa) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 393.39 Tm
+(SGBD Cobran\347as e Split) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 393.39 Tm
+(postgres:16-alpine) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 393.39 Tm
+(Interna \(rede\)) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 393.39 Tm
+(caixa_db / pgdata_caixa) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 393.39 Tm
+(160M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 393.39 Tm
+(0.25) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 373.89 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 373.89 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 378.19 Tm
+(postgres-gestao) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 378.19 Tm
+(SGBD Anal\355tico \(OLAP\)) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 378.19 Tm
+(postgres:16-alpine) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 378.19 Tm
+(Interna \(rede\)) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 378.19 Tm
+(gestao_db / pgdata_gestao) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 378.19 Tm
+(192M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 378.19 Tm
+(0.30) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 358.69 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 358.69 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 362.99 Tm
+(vapt-pdv-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 362.99 Tm
+(Core + PWA + Proxy) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 362.99 Tm
+(backend/Dockerfile) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 362.99 Tm
+(3000:3000) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 362.99 Tm
+(postgres-core:5432) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 362.99 Tm
+(256M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 362.99 Tm
+(0.50) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 343.49 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 343.49 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 347.79 Tm
+(kds-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 347.79 Tm
+(Microsservi\347o KDS/SLA) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 347.79 Tm
+(kds-service/Dockerfile) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 347.79 Tm
+(3001:3001) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 347.79 Tm
+(postgres-kds:5432) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 347.79 Tm
+(160M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 347.79 Tm
+(0.25) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 328.29 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 328.29 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 332.59 Tm
+(caixa-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 332.59 Tm
+(Microsservi\347o Caixa) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 332.59 Tm
+(caixa-service/Dockerfile) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 332.59 Tm
+(3002:3002) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 332.59 Tm
+(postgres-caixa:5432) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 332.59 Tm
+(160M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 332.59 Tm
+(0.25) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 313.09 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 313.09 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 317.39 Tm
+(gestao-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 317.39 Tm
+(Microsservi\347o Gest\343o/BI) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 317.39 Tm
+(gestao-service/Dockerfile) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 317.39 Tm
+(3003:3003) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 317.39 Tm
+(postgres-gestao:5432) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 317.39 Tm
+(192M) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 317.39 Tm
+(0.30) Tj
+ET
+0.960 0.900 0.780 rg
+38.00 297.89 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 297.89 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 302.19 Tm
+(TOTAL \(8\)) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 120.00 302.19 Tm
+(Ecossistema Completo) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 222.00 302.19 Tm
+(Alpine Linux Multi-Stage) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 326.00 302.19 Tm
+(4 Portas HTTP) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 398.00 302.19 Tm
+(4 Volumes Isolados) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 501.00 302.19 Tm
+(1504M) Tj
+ET
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 533.00 302.19 Tm
+(2.60) Tj
+ET
+BT
+/F2 9.60 Tf
+0.300 0.200 0.140 rg
+1 0 0 1 38.00 279.89 Tm
+(1.2. Matriz de Comunica\347\343o Interna na Rede vaptpdv-net) Tj
+ET
+0.169 0.125 0.098 rg
+38.00 259.69 519.28 15.20 re f
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 42.00 263.99 Tm
+(Origem) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 110.00 263.99 Tm
+(Destino) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 178.00 263.99 Tm
+(Vari\341vel no Compose) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 270.00 263.99 Tm
+(URL Interna \(DNS\)) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 378.00 263.99 Tm
+(Finalidade Operacional) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 244.49 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 244.49 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 248.79 Tm
+(vapt-pdv-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 110.00 248.79 Tm
+(kds-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 178.00 248.79 Tm
+(KDS_SERVICE_URL) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 270.00 248.79 Tm
+(http://kds-service:3001) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 378.00 248.79 Tm
+(Envio de fichas, pend\352ncias C04 e proxy /kds/*) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 229.29 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 229.29 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 233.59 Tm
+(vapt-pdv-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 110.00 233.59 Tm
+(caixa-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 178.00 233.59 Tm
+(CAIXA_SERVICE_URL) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 270.00 233.59 Tm
+(http://caixa-service:3002) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 378.00 233.59 Tm
+(Sincroniza\347\343o de fechamento e proxy /caixa/*) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 214.09 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 214.09 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 218.39 Tm
+(vapt-pdv-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 110.00 218.39 Tm
+(gestao-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 178.00 218.39 Tm
+(GESTAO_SERVICE_URL) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 270.00 218.39 Tm
+(http://gestao-service:3003) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 378.00 218.39 Tm
+(Proxy /gestao/* \(incluindo CSV\) e /analytics/*) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 198.89 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 198.89 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 203.19 Tm
+(caixa-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 110.00 203.19 Tm
+(vapt-pdv-core) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 178.00 203.19 Tm
+(CORE_API_URL) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 270.00 203.19 Tm
+(http://vapt-pdv-core:3000) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 378.00 203.19 Tm
+(Baixa idempotente de estoque \(RN10\) ao quitar) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 183.69 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 183.69 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 187.99 Tm
+(caixa-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 110.00 187.99 Tm
+(gestao-service) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 178.00 187.99 Tm
+(GESTAO_API_URL) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 270.00 187.99 Tm
+(http://gestao-service:3003) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 378.00 187.99 Tm
+(Evento comanda.paga \(POST /analytics/eventos\)) Tj
+ET
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 160.69 Tm
+(2. Engenharia dos Dockerfiles Multi-Stage e Seguran\347a) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 157.19 m 557.28 157.19 l S
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 142.19 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 142.19 Tm
+(Build Multi-Stage Enxuto: No backend/Dockerfile, o est\341gio frontend-builder compila o React) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 130.69 Tm
+(19 + Vite \(frontend/dist\), o backend-builder gera o Prisma Client e compila o TypeScript, e o) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 119.19 Tm
+(runner recebe apenas os artefatos compilados \(./dist, ./public, ./prisma e node_modules de) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 107.69 Tm
+(produ\347\343o\).) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 94.69 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 94.69 Tm
+(Poda Cir\372rgica do Prisma: Remove engines n\343o utilizadas \(MySQL, SQLite, SQL Server,) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 83.19 Tm
+(CockroachDB, introspection e formatters\) e substitui o npm global no runner por um shim leve) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 71.69 Tm
+(em /usr/local/bin/npx, reduzindo as imagens para ~117 MB no Core e ~76\22677,6 MB nos sat\351lites.) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 58.69 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 58.69 Tm
+(Execu\347\343o N\343o-Root \(USER node\): Todos os artefatos s\343o copiados com --chown=node:node e) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 47.19 Tm
+(executados sob o usu\341rio sem privil\351gios root \(UID 1000\).) Tj
+ET
+0.70 w
+0.84 0.8 0.75 RG
+38 29 m 557.28 29 l S
+BT /F1 7.6 Tf 0.40 0.33 0.28 rg 1 0 0 1 38 18 Tm (VaptPDV \227 M\363dulo 3: Orquestra\347\343o Docker Compose na AWS EC2 \(DCC / UERN\)) Tj ET
+BT /F2 7.6 Tf 0.17 0.13 0.10 rg 1 0 0 1 499.28 18 Tm (P\341gina 1 de 3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 9815 >>
+stream
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 787.89 Tm
+(3. Configura\347\343o de Firewall na AWS \(Security Group\)) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 784.39 m 557.28 784.39 l S
+0.169 0.125 0.098 rg
+38.00 762.69 519.28 15.20 re f
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 42.00 766.99 Tm
+(Tipo) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 107.00 766.99 Tm
+(Protocolo) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 159.00 766.99 Tm
+(Porta) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 201.00 766.99 Tm
+(Origem) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 297.00 766.99 Tm
+(Servi\347o / Finalidade) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 747.49 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 747.49 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 751.79 Tm
+(SSH) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 107.00 751.79 Tm
+(TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 159.00 751.79 Tm
+(22) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 201.00 751.79 Tm
+(Seu IP ou 0.0.0.0/0) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 297.00 751.79 Tm
+(Administra\347\343o remota via terminal SSH) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 732.29 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 732.29 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 736.59 Tm
+(Custom TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 107.00 736.59 Tm
+(TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 159.00 736.59 Tm
+(3000) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 201.00 736.59 Tm
+(0.0.0.0/0) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 297.00 736.59 Tm
+(PDV Core + Frontend Web/PWA + Proxy Reverso + Swagger \(/docs\)) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 717.09 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 717.09 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 721.39 Tm
+(Custom TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 107.00 721.39 Tm
+(TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 159.00 721.39 Tm
+(3001) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 201.00 721.39 Tm
+(0.0.0.0/0) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 297.00 721.39 Tm
+(KDS Service \227 API REST e Swagger \(/docs\) da Cozinha e Bar) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 701.89 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 701.89 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 706.19 Tm
+(Custom TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 107.00 706.19 Tm
+(TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 159.00 706.19 Tm
+(3002) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 201.00 706.19 Tm
+(0.0.0.0/0) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 297.00 706.19 Tm
+(Caixa Service \227 API REST e Swagger \(/docs\) de Split Payment) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 686.69 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 686.69 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 690.99 Tm
+(Custom TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 107.00 690.99 Tm
+(TCP) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 159.00 690.99 Tm
+(3003) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 201.00 690.99 Tm
+(0.0.0.0/0) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 297.00 690.99 Tm
+(Gest\343o Service \227 API REST e Swagger \(/docs\) de Analytics e BI) Tj
+ET
+1.000 0.970 0.900 rg
+38.00 624.09 519.28 55.60 re f
+0.850 0.470 0.020 rg
+38.00 624.09 4.00 55.60 re f
+0.60 w
+0.850 0.470 0.020 RG
+38.00 624.09 519.28 55.60 re S
+BT
+/F2 8.00 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 48.00 668.69 Tm
+(AVISO DE SEGURAN\307A \227 PORTA 5432 FECHADA EXTERNAMENTE) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 657.19 Tm
+(Jamais abra a porta 5432 no Security Group da AWS. O container postgres-core faz bind) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 645.99 Tm
+(apenas em 127.0.0.1:5432:5432 \(acesso local na pr\363pria VM\), enquanto postgres-kds,) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 634.79 Tm
+(postgres-caixa e postgres-gestao operam exclusivamente na rede interna vaptpdv-net.) Tj
+ET
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 601.09 Tm
+(4. Prepara\347\343o da M\341quina Virtual AWS EC2 \(Ubuntu LTS\)) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 597.59 m 557.28 597.59 l S
+BT
+/F2 9.60 Tf
+0.300 0.200 0.140 rg
+1 0 0 1 38.00 580.09 Tm
+(4.1. Configurar Mem\363ria Swap de 2 GB \(Essencial para o Build do Vite/TS\)) Tj
+ET
+0.120 0.100 0.090 rg
+38.00 509.09 519.28 66.00 re f
+0.949 0.659 0.114 rg
+38.00 509.09 3.50 66.00 re f
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 561.09 Tm
+(# 1. Criar e ativar arquivo de Swap de 2 GB na inst\342ncia EC2) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 550.69 Tm
+(sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 540.29 Tm
+(sudo mkswap /swapfile && sudo swapon /swapfile) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 529.89 Tm
+(grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 519.49 Tm
+(free -h) Tj
+ET
+BT
+/F2 9.60 Tf
+0.300 0.200 0.140 rg
+1 0 0 1 38.00 492.09 Tm
+(4.2. Instalar Docker Engine e Docker Compose v2 Oficial) Tj
+ET
+0.120 0.100 0.090 rg
+38.00 369.09 519.28 118.00 re f
+0.949 0.659 0.114 rg
+38.00 369.09 3.50 118.00 re f
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 473.09 Tm
+(sudo apt-get update && sudo apt-get install -y ca-certificates curl git) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 462.69 Tm
+(sudo install -m 0755 -d /etc/apt/keyrings) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 452.29 Tm
+(sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \\) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 441.89 Tm
+(  -o /etc/apt/keyrings/docker.asc && sudo chmod a+r /etc/apt/keyrings/docker.asc) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 431.49 Tm
+(echo "deb [arch=$\(dpkg --print-architecture\) signed-by=/etc/apt/keyrings/docker.asc] \\) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 421.09 Tm
+(  https://download.docker.com/linux/ubuntu $\(. /etc/os-release && echo "$VERSION_CODENAME"\) \\) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 410.69 Tm
+(  stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 400.29 Tm
+(sudo apt-get update && sudo apt-get install -y \\) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 389.89 Tm
+(  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 379.49 Tm
+(sudo usermod -aG docker "$USER" && newgrp docker) Tj
+ET
+BT
+/F2 9.60 Tf
+0.300 0.200 0.140 rg
+1 0 0 1 38.00 352.09 Tm
+(4.3. Desativar PM2 e PostgreSQL Nativo dos M\363dulos 1 e 2) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 338.59 Tm
+(Para liberar as portas 3000\2263003 e 127.0.0.1:5432 antes de subir os containers, pare e desabilite) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 326.79 Tm
+(os servi\347os antigos da VM:) Tj
+ET
+0.120 0.100 0.090 rg
+38.00 265.89 519.28 55.60 re f
+0.949 0.659 0.114 rg
+38.00 265.89 3.50 55.60 re f
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 307.49 Tm
+(# Parar processos do PM2 e desabilitar PostgreSQL nativo do Ubuntu) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 297.09 Tm
+(command -v pm2 >/dev/null 2>&1 && pm2 stop all && pm2 delete all && pm2 save --force) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 286.69 Tm
+(sudo systemctl stop postgresql || true) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 276.29 Tm
+(sudo systemctl disable postgresql || true) Tj
+ET
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 243.89 Tm
+(5. Vari\341veis de Ambiente \(.env\), Subida e Inicializa\347\343o) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 240.39 m 557.28 240.39 l S
+0.120 0.100 0.090 rg
+38.00 136.69 519.28 97.20 re f
+0.949 0.659 0.114 rg
+38.00 136.69 3.50 97.20 re f
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 219.89 Tm
+(cd ~/vapt-pdv && git fetch origin && git checkout develop && git pull origin develop) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 209.49 Tm
+(cp .env.docker.example .env) Tj
+ET
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 199.09 Tm
+(# Edite o arquivo .env \(nano .env\) para definir uma senha forte em POSTGRES_PASSWORD) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 188.69 Tm
+(docker compose up -d --build) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 178.29 Tm
+(docker compose ps) Tj
+ET
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 167.89 Tm
+(# \(Opcional\) Popular cat\341logo inicial de produtos no container postgres-core:) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 157.49 Tm
+(docker compose exec -T postgres-core \\) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 147.09 Tm
+(  psql -U vaptpdv -d vaptpdv_db < backend/prisma/seed-produtos.sql) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 122.19 Tm
+(Sincroniza\347\343o determin\355stica no boot: Os 4 containers postgres-* executam pg_isready a cada 5s.) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 110.39 Tm
+(Somente ap\363s atingirem service_healthy, os 4 microsservi\347os Node.js iniciam, rodam npx prisma) Tj
+ET
+BT
+/F1 8.90 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 38.00 98.59 Tm
+(migrate deploy automaticamente e sobem os servidores Fastify \(:3000 a :3003\).) Tj
+ET
+0.70 w
+0.84 0.8 0.75 RG
+38 29 m 557.28 29 l S
+BT /F1 7.6 Tf 0.40 0.33 0.28 rg 1 0 0 1 38 18 Tm (VaptPDV \227 M\363dulo 3: Orquestra\347\343o Docker Compose na AWS EC2 \(DCC / UERN\)) Tj ET
+BT /F2 7.6 Tf 0.17 0.13 0.10 rg 1 0 0 1 499.28 18 Tm (P\341gina 2 de 3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 7493 >>
+stream
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 787.89 Tm
+(6. Valida\347\343o em Produ\347\343o, Persist\352ncia \(down -> up\) e Opera\347\343o) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 784.39 m 557.28 784.39 l S
+0.120 0.100 0.090 rg
+38.00 587.09 519.28 190.80 re f
+0.949 0.659 0.114 rg
+38.00 587.09 3.50 190.80 re f
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 763.89 Tm
+(# 1. Verificar sa\372de dos 4 microsservi\347os localmente na EC2) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 753.49 Tm
+(curl -fsS http://127.0.0.1:3000/health && curl -fsS http://127.0.0.1:3001/health) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 743.09 Tm
+(curl -fsS http://127.0.0.1:3002/health && curl -fsS http://127.0.0.1:3003/health) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 732.69 Tm
+() Tj
+ET
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 722.29 Tm
+(# 2. Executar prova automatizada E2E de persist\352ncia nos 4 volumes \(ciclo down -> up\)) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 711.89 Tm
+(bash scripts/testar-persistencia-docker.sh) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 701.49 Tm
+() Tj
+ET
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 691.09 Tm
+(# 3. Atualizar vers\343o em produ\347\343o sem perda de dados nos volumes pgdata_*) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 680.69 Tm
+(cd ~/vapt-pdv && git pull origin develop) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 670.29 Tm
+(docker compose up -d --build --remove-orphans && docker image prune -f) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 659.89 Tm
+() Tj
+ET
+BT
+/F3 7.80 Tf
+0.760 0.840 0.700 rg
+1 0 0 1 47.00 649.49 Tm
+(# 4. Backup SQL dos 4 bancos isolados) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 639.09 Tm
+(mkdir -p ~/backups-vaptpdv && DATA=$\(date +%Y%m%d_%H%M%S\)) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 628.69 Tm
+(docker compose exec -T postgres-core pg_dump -U vaptpdv vaptpdv_db > ~/backups-vaptpdv/core_$DATA.sql) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 618.29 Tm
+(docker compose exec -T postgres-kds pg_dump -U vaptpdv kds_db > ~/backups-vaptpdv/kds_$DATA.sql) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 607.89 Tm
+(docker compose exec -T postgres-caixa pg_dump -U vaptpdv caixa_db > ~/backups-vaptpdv/caixa_$DATA.sql) Tj
+ET
+BT
+/F3 7.80 Tf
+0.970 0.950 0.910 rg
+1 0 0 1 47.00 597.49 Tm
+(docker compose exec -T postgres-gestao pg_dump -U vaptpdv gestao_db > ~/backups-vaptpdv/gestao_$DATA.sql) Tj
+ET
+0.996 0.949 0.949 rg
+38.00 514.29 519.28 66.80 re f
+0.860 0.150 0.150 rg
+38.00 514.29 4.00 66.80 re f
+0.60 w
+0.860 0.150 0.150 RG
+38.00 514.29 519.28 66.80 re S
+BT
+/F2 8.00 Tf
+0.860 0.150 0.150 rg
+1 0 0 1 48.00 570.09 Tm
+(CUIDADO CR\315TICO EM PRODU\307\303O \227 PRESERVA\307\303O DOS VOLUMES NOMEADOS) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 558.59 Tm
+(Nunca execute "docker compose down -v" em produ\347\343o. A flag "-v" apaga os 4 volumes) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 547.39 Tm
+(nomeados \(pgdata_core, pgdata_kds, pgdata_caixa e pgdata_gestao\). Para reiniciar ou parar) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 536.19 Tm
+(os containers mantendo 100% dos dados, utilize apenas "docker compose down" ou "docker) Tj
+ET
+BT
+/F1 8.50 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 48.00 524.99 Tm
+(compose restart".) Tj
+ET
+BT
+/F2 11.40 Tf
+0.169 0.125 0.098 rg
+1 0 0 1 38.00 491.29 Tm
+(7. Troubleshooting R\341pido e Checklist de Implanta\347\343o na EC2) Tj
+ET
+1.70 w
+0.949 0.659 0.114 RG
+38.00 487.79 m 557.28 487.79 l S
+0.169 0.125 0.098 rg
+38.00 466.09 519.28 15.20 re f
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 42.00 470.39 Tm
+(Sintoma Observado) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 204.00 470.39 Tm
+(Causa Prov\341vel) Tj
+ET
+BT
+/F2 7.80 Tf
+0.984 0.969 0.945 rg
+1 0 0 1 366.00 470.39 Tm
+(Resolu\347\343o) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 450.89 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 450.89 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 455.19 Tm
+(Bind for 0.0.0.0:3000 failed \(port allocated\)) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 204.00 455.19 Tm
+(PM2 ou PostgreSQL nativo ainda ativos na VM) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 366.00 455.19 Tm
+(Execute a Se\347\343o 4.3 \(pm2 delete all e stop postgresql\)) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 435.69 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 435.69 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 439.99 Tm
+(Build falha com Killed / heap out of memory) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 204.00 439.99 Tm
+(Exaust\343o de RAM na compila\347\343o do Vite/TS) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 366.00 439.99 Tm
+(Ative o arquivo de Swap de 2 GB da Se\347\343o 4.1 \(free -h\)) Tj
+ET
+1.000 1.000 1.000 rg
+38.00 420.49 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 420.49 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 424.79 Tm
+(Erro 503 SERVICO_INDISPONIVEL no proxy) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 204.00 424.79 Tm
+(Sat\351lite ainda aplicando migra\347\365es ou offline) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 366.00 424.79 Tm
+(Verifique docker compose ps e docker compose logs) Tj
+ET
+0.984 0.969 0.945 rg
+38.00 405.29 519.28 15.20 re f
+0.50 w
+0.840 0.800 0.750 RG
+38.00 405.29 519.28 15.20 re S
+BT
+/F2 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 42.00 409.59 Tm
+(Portas 3000-3003 inacess\355veis externamente) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 204.00 409.59 Tm
+(Portas bloqueadas no firewall da AWS) Tj
+ET
+BT
+/F1 7.60 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 366.00 409.59 Tm
+(Libere TCP 3000 a 3003 no Security Group \(Se\347\343o 3\)) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 389.79 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 389.79 Tm
+([ ] Security Group AWS: Portas TCP 22, 3000, 3001, 3002 e 3003 abertas nas Inbound Rules) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 378.29 Tm
+(\(porta 5432 fechada\).) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 365.29 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 365.29 Tm
+([ ] Mem\363ria Swap 2 GB: Arquivo /swapfile ativo \(free -h\) e persistido em /etc/fstab.) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 352.29 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 352.29 Tm
+([ ] Legado Desativado: pm2 delete all e sudo systemctl disable --now postgresql executados.) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 339.29 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 339.29 Tm
+([ ] Containers Saud\341veis: 8 containers em estado Up \(healthy\) em docker compose ps e /health) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 327.79 Tm
+(respondendo 200.) Tj
+ET
+BT
+/F2 9.20 Tf
+0.850 0.470 0.020 rg
+1 0 0 1 43.00 314.79 Tm
+(\225) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 314.79 Tm
+([ ] Prova de Persist\352ncia: bash scripts/testar-persistencia-docker.sh conclu\355do com 100% de) Tj
+ET
+BT
+/F1 8.80 Tf
+0.150 0.120 0.100 rg
+1 0 0 1 53.00 303.29 Tm
+(sucesso ap\363s down -> up.) Tj
+ET
+0.70 w
+0.84 0.8 0.75 RG
+38 29 m 557.28 29 l S
+BT /F1 7.6 Tf 0.40 0.33 0.28 rg 1 0 0 1 38 18 Tm (VaptPDV \227 M\363dulo 3: Orquestra\347\343o Docker Compose na AWS EC2 \(DCC / UERN\)) Tj ET
+BT /F2 7.6 Tf 0.17 0.13 0.10 rg 1 0 0 1 499.28 18 Tm (P\341gina 3 de 3) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents 10 0 R >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000134 00000 n 
+0000000231 00000 n 
+0000000333 00000 n 
+0000000428 00000 n 
+0000018891 00000 n 
+0000019043 00000 n 
+0000028910 00000 n 
+0000029062 00000 n 
+0000036608 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+36762
+%%EOF
