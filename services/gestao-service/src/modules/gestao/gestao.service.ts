@@ -38,10 +38,8 @@ export class GestaoService {
           ? new Date(evento.timestamp)
           : new Date();
 
-    // 1. Registrar o processamento do evento (idempotência)
     await this.repository.registrarEventoProcessado(evento.evento_id, evento.evento, timestamp);
 
-    // 2. Despachar para processamento de agregação de acordo com o tipo
     if (evento.evento === 'comanda.paga') {
       const dataRef = evento.paga_em
         ? new Date(evento.paga_em)
@@ -213,7 +211,6 @@ export class GestaoService {
       };
     }
 
-    // Formatar CSV (RFC 4180)
     const linhasCsv: string[] = [];
     linhasCsv.push(colunas.join(','));
 

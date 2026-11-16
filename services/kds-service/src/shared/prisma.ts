@@ -30,4 +30,3 @@ export async function desconectarPrisma(): Promise<void> {
     prismaInstance = null;
   }
 }
-

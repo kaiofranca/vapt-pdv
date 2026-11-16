@@ -78,7 +78,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
   const [erroMensagem, setErroMensagem] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<boolean>(false);
 
-  // Sincroniza tipo inicial quando reaberto
   useEffect(() => {
     if (isOpen) {
       setTipo(tipoInicial);
@@ -87,7 +86,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
     }
   }, [isOpen, tipoInicial]);
 
-  // Fechar com ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !isDownloading) {
@@ -116,7 +114,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
       acionarDownloadNavegador(blob, filename);
       setSucesso(true);
 
-      // Fecha automaticamente após 1.5s após sucesso
       setTimeout(() => {
         setIsDownloading(false);
         onClose();
@@ -133,7 +130,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-      {/* Backdrop escuro com blur */}
       <div
         className="fixed inset-0 bg-text/50 backdrop-blur-sm transition-opacity"
         onClick={() => {
@@ -142,14 +138,12 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
         aria-hidden="true"
       />
 
-      {/* Caixa do Diálogo Modal sobre surface-raised */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-exportacao-titulo"
         className="relative w-full max-w-xl rounded-card-lg bg-surface-raised border border-border shadow-modal p-6 text-left z-10 transition-all space-y-6"
       >
-        {/* Cabeçalho */}
         <div className="flex items-start justify-between border-b border-border/70 pb-4">
           <div className="flex items-center gap-3">
             <span className="p-2.5 rounded-card bg-brand-soft text-brand-text">
@@ -178,7 +172,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </button>
         </div>
 
-        {/* 1. Seleção do Tipo de Relatório */}
         <div className="space-y-2.5">
           <label className="block text-xs font-bold text-text uppercase tracking-wider">
             1. Selecione o Relatório
@@ -225,7 +218,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         </div>
 
-        {/* 2. Seleção de Formato */}
         <div className="space-y-2.5">
           <label className="block text-xs font-bold text-text uppercase tracking-wider">
             2. Formato do Arquivo
@@ -279,7 +271,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         </div>
 
-        {/* 3. Filtro Opcional de Período */}
         <div className="space-y-2.5">
           <label className="block text-xs font-bold text-text uppercase tracking-wider">
             3. Intervalo de Datas <span className="font-normal text-text-2 lowercase">(opcional)</span>
@@ -315,7 +306,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         </div>
 
-        {/* Feedback de Erro ou Sucesso */}
         {erroMensagem && (
           <div className="p-3.5 rounded-card bg-danger-soft border border-danger/30 text-danger-text text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
@@ -330,7 +320,6 @@ export const ModalExportacao: React.FC<ModalExportacaoProps> = ({
           </div>
         )}
 
-        {/* Rodapé de Ações */}
         <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-3 border-t border-border/70">
           <Button
             type="button"

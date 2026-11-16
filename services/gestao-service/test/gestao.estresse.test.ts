@@ -6,9 +6,6 @@ import { buildApp } from '../src/app';
 import { MemoriaGestaoRepository } from './helpers/memoria.repository';
 import { GestaoService } from '../src/modules/gestao/gestao.service';
 
-/**
- * Parser de CSV compatível com RFC 4180 para validação rigorosa
- */
 function parsearCsvRfc4180(csv: string): string[][] {
   const linhas: string[][] = [];
   let linhaAtual: string[] = [];
@@ -23,12 +20,10 @@ function parsearCsvRfc4180(csv: string): string[][] {
     if (dentroDeAspas) {
       if (char === '"') {
         if (proxChar === '"') {
-          // Aspa escapada: "" -> "
           campoAtual += '"';
           i += 2;
           continue;
         } else {
-          // Fechamento de aspas
           dentroDeAspas = false;
           i++;
           continue;
@@ -98,9 +93,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     await app.close();
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // a) Ingestão concorrente de múltiplos eventos comanda.paga
-  // ─────────────────────────────────────────────────────────────
   it('a) Ingestão concorrente de 50 eventos comanda.paga de mesas e garçons distintos com contabilidade exata', async () => {
     const totalComandas = 50;
     const garcons = [
@@ -128,7 +120,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       const forma = formas[i % formas.length];
       const mesa = (i % 20) + 1;
 
-      // Valores variáveis: ex: subtotal R$ 80.00, taxa 10% R$ 8.00, total R$ 88.00
       const subtotalItem = new Prisma.Decimal((50 + (i * 2)).toFixed(2));
       const taxaItem = subtotalItem.mul('0.10');
       const totalItem = subtotalItem.add(taxaItem);
@@ -174,7 +165,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
 
     const respostas = await Promise.all(promessasIngestao);
 
-    // Todas as 50 requisições devem responder 202 Accepted
     for (const res of respostas) {
       expect(res.statusCode).toBe(202);
       const json = JSON.parse(res.payload);
@@ -182,7 +172,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       expect(json.duplicado).toBe(false);
     }
 
-    // Conferência do Resumo Diário Consolidado
     const resResumo = await app.inject({
       method: 'GET',
       url: '/gestao/resumo-diario?data=2026-11-05',
@@ -201,7 +190,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(resumo.por_forma_pagamento.cartao).toBe(porFormaEsperada.cartao.toFixed(2));
     expect(resumo.por_forma_pagamento.dinheiro).toBe(porFormaEsperada.dinheiro.toFixed(2));
 
-    // Conferência do Desempenho dos Garçons
     const resGarcons = await app.inject({
       method: 'GET',
       url: '/gestao/desempenho-garcons',
@@ -223,22 +211,10 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(somaVendasGarcons.toFixed(2)).toBe(subtotalEsperado.toFixed(2));
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // b) Cálculo de Curva ABC com empate de receitas e dezenas de produtos
-  // ─────────────────────────────────────────────────────────────
   it('b) Cálculo determinístico de Curva ABC com empate de receitas em dezenas de produtos', async () => {
-    // Cenário: 40 produtos:
-    // P1..P5: Receita alta de R$ 800.00 cada (5 * 800 = R$ 4000.00) -> devem ser Classe A
-    // P6..P15: 10 produtos empatados com exatamente R$ 75.00 cada (10 * 75 = R$ 750.00) -> Classe B
-    // P16..P40: 25 produtos empatados com exatamente R$ 10.00 cada (25 * 10 = R$ 250.00) -> Classe C
-    // Total Geral: R$ 5000.00
-    // P1..P5 acumulam 4000/5000 = 80.00% -> exatamente classe A
-    // P6..P15 acumulam 4000 + 750 = 4750/5000 = 95.00% -> classe B
-    // P16..P40 acumulam restante 250 = 100.00% -> classe C
 
     const itensPayload: any[] = [];
 
-    // P1..P5
     for (let p = 1; p <= 5; p++) {
       itensPayload.push({
         produto_id: p,
@@ -250,7 +226,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       });
     }
 
-    // P6..P15 (Empate na receita R$ 75.00)
     for (let p = 6; p <= 15; p++) {
       itensPayload.push({
         produto_id: p,
@@ -262,7 +237,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       });
     }
 
-    // P16..P40 (Empate na receita R$ 10.00)
     for (let p = 16; p <= 40; p++) {
       itensPayload.push({
         produto_id: p,
@@ -299,26 +273,22 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(body.produtos.length).toBe(40);
     expect(body.receita_total_acumulada).toBe('5000.00');
 
-    // Validação das posições sequenciais sem lacunas
     for (let i = 0; i < body.produtos.length; i++) {
       expect(body.produtos[i].posicao).toBe(i + 1);
     }
 
-    // P1..P5 devem ser Classe A
     for (let i = 0; i < 5; i++) {
       expect(body.produtos[i].classe_abc).toBe('A');
       expect(body.produtos[i].receita_gerada).toBe('800.00');
     }
 
-    // P6..P15 devem estar ordenados determinística e sequencialmente por produto_id
     for (let i = 5; i < 15; i++) {
       const p = body.produtos[i];
       expect(p.classe_abc).toBe('B');
       expect(p.receita_gerada).toBe('75.00');
-      expect(p.produto_id).toBe(i + 1); // Desempate determinístico por produto_id crescente
+      expect(p.produto_id).toBe(i + 1);
     }
 
-    // P16..P40 devem ser Classe C
     for (let i = 15; i < 40; i++) {
       const p = body.produtos[i];
       expect(p.classe_abc).toBe('C');
@@ -326,20 +296,11 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       expect(p.produto_id).toBe(i + 1);
     }
 
-    // O último produto deve ter percentual acumulado de 100.00%
     const ultimo = body.produtos[body.produtos.length - 1];
     expect(Number(ultimo.percentual_acumulado)).toBeCloseTo(100.00, 2);
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // c) Verificação rigorosa de arredondamento em DECIMAL(10,2) / DECIMAL(12,2)
-  // ─────────────────────────────────────────────────────────────
   it('c) Verificação rigorosa de arredondamento sem deriva de centavos em dízimas e somas fracionárias', async () => {
-    // Teste com dízimas fracionárias: 3 comandas de subtotal R$ 33.33, taxa R$ 3.33 (10%), total R$ 36.66
-    // Soma exata esperada:
-    // Subtotal: 3 * 33.33 = 99.99
-    // Taxa: 3 * 3.33 = 9.99
-    // Total: 3 * 36.66 = 109.98
     for (let i = 1; i <= 3; i++) {
       const res = await app.inject({
         method: 'POST',
@@ -379,10 +340,8 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(resumo.total_subtotal).toBe('99.99');
     expect(resumo.total_taxa_servico).toBe('9.99');
     expect(resumo.total_vendas).toBe('109.98');
-    // Ticket médio: 109.98 / 3 = 36.66
     expect(resumo.ticket_medio).toBe('36.66');
 
-    // Comissão do garçom deve ser exatamente 9.99
     const resGarcom = await app.inject({
       method: 'GET',
       url: '/gestao/desempenho-garcons',
@@ -394,11 +353,7 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(garcom10.comissao_gerada).toBe('9.99');
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // d) Exportação CSV em larga escala testando conformidade com RFC 4180
-  // ─────────────────────────────────────────────────────────────
   it('d) Exportação CSV em conformidade estrita com RFC 4180 (aspas, quebras de linha e vírgulas em strings)', async () => {
-    // Cadastrar produtos e garçons com caracteres especiais que exigem escape RFC 4180
     const nomeComVirgula = 'Prato Executivo, Completo com Salada & Fritas';
     const nomeComAspas = 'Chopp Artesanal "Super" Gelado 500ml';
     const nomeComQuebraLinha = 'Pizza Grande\nBorda Vulcânica de Catupiry';
@@ -447,7 +402,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       },
     });
 
-    // 1. Testar exportação de PRODUTOS
     const resCsvProdutos = await app.inject({
       method: 'GET',
       url: '/gestao/exportar?tipo=produtos&formato=csv',
@@ -459,7 +413,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     const csvProds = resCsvProdutos.payload;
     const matrizProds = parsearCsvRfc4180(csvProds);
 
-    // Linha 0 = Cabeçalho RFC 4180
     expect(matrizProds[0]).toEqual([
       'posicao',
       'produto_id',
@@ -472,7 +425,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       'classe_abc',
     ]);
 
-    // Verificar se os 3 produtos foram recuperados com exatidão pelo parser RFC 4180
     const linhasDados = matrizProds.slice(1);
     const prodVirgula = linhasDados.find((l) => l[1] === '501');
     const prodAspas = linhasDados.find((l) => l[1] === '502');
@@ -487,7 +439,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(prodQuebra).toBeDefined();
     expect(prodQuebra![2]).toBe(nomeComQuebraLinha);
 
-    // 2. Testar exportação de GARÇONS
     const resCsvGarcons = await app.inject({
       method: 'GET',
       url: '/gestao/exportar?tipo=garcons&formato=csv',
@@ -498,7 +449,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(garcomRecuperado).toBeDefined();
     expect(garcomRecuperado![1]).toBe(garcomComAspasEVirgula);
 
-    // 3. Testar exportação de FATURAMENTO
     const resCsvFat = await app.inject({
       method: 'GET',
       url: '/gestao/exportar?tipo=faturamento&formato=csv',
@@ -519,11 +469,7 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     ]);
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // e) Ingestão com payload inválido retornando 400 sem corromper estado analítico
-  // ─────────────────────────────────────────────────────────────
   it('e) Ingestão com múltiplos payloads inválidos rejeitada com 400 sem corromper estado analítico', async () => {
-    // 1. Criar estado analítico inicial válido
     await app.inject({
       method: 'POST',
       url: '/gestao/eventos',
@@ -557,14 +503,13 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(resumoInicial.quantidade_pedidos).toBe(1);
     expect(resumoInicial.total_vendas).toBe('110.00');
 
-    // 2. Disparar rajada de payloads maliciosos ou inválidos
     const payloadsInvalidos = [
-      {}, // Vazio
-      { evento: 'comanda.paga' }, // Sem evento_id
-      { evento_id: '123' }, // Sem evento
-      { evento_id: '456', evento: 'comanda.paga', total: 110.0 }, // total como number em vez de string
-      { evento_id: '789', evento: 'comanda.paga', itens: 'nao-e-array' }, // itens inválido
-      { evento_id: '000', evento: 'comanda.paga', itens: [{ quantidade: -5 }] }, // quantidade negativa
+      {},
+      { evento: 'comanda.paga' },
+      { evento_id: '123' },
+      { evento_id: '456', evento: 'comanda.paga', total: 110.0 },
+      { evento_id: '789', evento: 'comanda.paga', itens: 'nao-e-array' },
+      { evento_id: '000', evento: 'comanda.paga', itens: [{ quantidade: -5 }] },
     ];
 
     for (const p of payloadsInvalidos) {
@@ -578,7 +523,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       expect(err.erro).toBeDefined();
     }
 
-    // 3. Garantir que o estado analítico não foi corrompido ou alterado
     const checkResumo = await app.inject({
       method: 'GET',
       url: '/gestao/resumo-diario?data=2026-11-05',
@@ -587,9 +531,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(resumoFinal).toEqual(resumoInicial);
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // f) Idempotência absoluta com o mesmo evento_id repetido em rajada
-  // ─────────────────────────────────────────────────────────────
   it('f) Idempotência absoluta com o mesmo evento_id repetido em rajada de 20 requisições simultâneas', async () => {
     const mesmoEventoId = randomUUID();
     const payloadUnico = {
@@ -615,7 +556,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       ],
     };
 
-    // Disparar 20 requisições simultâneas com exatamente o mesmo evento_id
     const rajadaPromessas = Array.from({ length: 20 }, () =>
       app.inject({
         method: 'POST',
@@ -626,7 +566,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
 
     const resultados = await Promise.all(rajadaPromessas);
 
-    // Contar requisições aceitas (202) e duplicadas idempotentes (200)
     let aceitasPrimeiraVez = 0;
     let rejeitadasPorIdempotencia = 0;
 
@@ -644,11 +583,9 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
       }
     }
 
-    // Exatamente uma requisição deve ter sido processada originalmente
     expect(aceitasPrimeiraVez).toBe(1);
     expect(rejeitadasPorIdempotencia).toBe(19);
 
-    // Validar que o faturamento aumentou exatamente UMA vez (R$ 220.00 e 1 pedido)
     const resResumo = await app.inject({
       method: 'GET',
       url: '/gestao/resumo-diario?data=2026-11-05',
@@ -659,7 +596,6 @@ describe('Bateria de Testes de Estresse, Resiliência e Concorrência — gestao
     expect(resumo.total_subtotal).toBe('200.00');
     expect(resumo.total_taxa_servico).toBe('20.00');
 
-    // Validar produto computado exatamente uma vez
     const resRanking = await app.inject({
       method: 'GET',
       url: '/gestao/ranking-produtos',

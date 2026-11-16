@@ -1,7 +1,5 @@
--- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateTable
 CREATE TABLE "cobrancas_comanda" (
     "id" SERIAL NOT NULL,
     "comanda_id" INTEGER NOT NULL,
@@ -26,7 +24,6 @@ CREATE TABLE "cobrancas_comanda" (
     CONSTRAINT "cobrancas_comanda_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "pagamentos_parcela" (
     "id" SERIAL NOT NULL,
     "cobranca_id" INTEGER NOT NULL,
@@ -42,7 +39,6 @@ CREATE TABLE "pagamentos_parcela" (
     CONSTRAINT "pagamentos_parcela_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "recibos_venda" (
     "id" SERIAL NOT NULL,
     "codigo_autenticacao" VARCHAR(64) NOT NULL,
@@ -54,7 +50,6 @@ CREATE TABLE "recibos_venda" (
     CONSTRAINT "recibos_venda_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "eventos_processados" (
     "evento_id" UUID NOT NULL,
     "evento" VARCHAR(60) NOT NULL,
@@ -63,7 +58,6 @@ CREATE TABLE "eventos_processados" (
     CONSTRAINT "eventos_processados_pkey" PRIMARY KEY ("evento_id")
 );
 
--- CreateTable
 CREATE TABLE "outbox_eventos" (
     "id" UUID NOT NULL,
     "tipo_evento" VARCHAR(60) NOT NULL,
@@ -77,29 +71,20 @@ CREATE TABLE "outbox_eventos" (
     CONSTRAINT "outbox_eventos_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX "cobrancas_comanda_comanda_id_key" ON "cobrancas_comanda"("comanda_id");
 
--- CreateIndex
 CREATE INDEX "cobrancas_comanda_status_idx" ON "cobrancas_comanda"("status", "fechada_em" DESC);
 
--- CreateIndex
 CREATE INDEX "pagamentos_parcela_cobranca_idx" ON "pagamentos_parcela"("cobranca_id", "numero_parcela" ASC);
 
--- CreateIndex
 CREATE UNIQUE INDEX "recibos_venda_codigo_autenticacao_key" ON "recibos_venda"("codigo_autenticacao");
 
--- CreateIndex
 CREATE UNIQUE INDEX "recibos_venda_comanda_id_key" ON "recibos_venda"("comanda_id");
 
--- CreateIndex
 CREATE UNIQUE INDEX "recibos_venda_cobranca_id_key" ON "recibos_venda"("cobranca_id");
 
--- CreateIndex
 CREATE INDEX "caixa_outbox_pendentes_idx" ON "outbox_eventos"("status", "criado_em" ASC);
 
--- AddForeignKey
 ALTER TABLE "pagamentos_parcela" ADD CONSTRAINT "pagamentos_parcela_cobranca_id_fkey" FOREIGN KEY ("cobranca_id") REFERENCES "cobrancas_comanda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- AddForeignKey
 ALTER TABLE "recibos_venda" ADD CONSTRAINT "recibos_venda_cobranca_id_fkey" FOREIGN KEY ("cobranca_id") REFERENCES "cobrancas_comanda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

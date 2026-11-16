@@ -29,18 +29,15 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
   const mesclarComandasMut = useMesclarComandas();
   const { data: comandasAbertas = [], isLoading: isLoadingComandas } = useComandasAbertas();
 
-  // Filtra comandas abertas elegíveis (todas abertas exceto a comanda de destino atual)
   const comandasElegiveis = comandasAbertas.filter(
     (c) => c.id !== comandaDestinoId && c.status === 'aberta'
   );
 
-  // Inicialização ao abrir modal
   useEffect(() => {
     if (isOpen) {
       setErroLocal(null);
       setMesaFiltroManual('');
 
-      // Pré-seleciona comanda sugerida se existir
       if (mesaOrigemSugerida) {
         const comandaSugerida = comandasAbertas.find(
           (c) =>
@@ -58,7 +55,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
     }
   }, [isOpen, mesaOrigemSugerida, comandaDestinoId, comandasAbertas]);
 
-  // Fechar com tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -73,7 +69,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
 
   const comandaOrigemSelecionada = comandasElegiveis.find((c) => c.id === comandaOrigemId);
 
-  // Filtragem rápida de mesas por digitação
   const comandasFiltradas = comandasElegiveis.filter((c) => {
     if (!mesaFiltroManual.trim()) return true;
     return (
@@ -128,17 +123,14 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
       aria-modal="true"
       aria-labelledby="mesclar-comandas-titulo"
     >
-      {/* Backdrop */}
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
 
       <div
         className="relative w-full sm:max-w-md bg-surface rounded-t-[28px] sm:rounded-[28px] p-6 shadow-modal border border-border space-y-5 animate-in slide-in-from-bottom duration-200 z-10 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle visual da gaveta móvel */}
         <div className="w-12 h-1.5 bg-border rounded-full mx-auto sm:hidden -mt-1 mb-2" />
 
-        {/* Topo: Título e Botão Fechar X */}
         <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-full bg-brand-soft text-brand-text flex items-center justify-center">
@@ -167,7 +159,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
           </button>
         </div>
 
-        {/* Erro Local */}
         {erroLocal && (
           <div
             role="alert"
@@ -178,7 +169,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
           </div>
         )}
 
-        {/* Aviso de Auditoria e Cancelamento da Origem (EARS-TRANSF-04) */}
         <div className="p-3.5 rounded-[16px] bg-brand-soft border border-brand/30 text-brand-text text-xs leading-relaxed shrink-0">
           <div className="flex items-start gap-2 font-bold mb-1">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-brand-edge" />
@@ -192,7 +182,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
-          {/* Campo de Busca Rápida ou Seleção da Origem */}
           <div>
             <label
               htmlFor="mesa-origem-busca"
@@ -213,7 +202,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
             />
           </div>
 
-          {/* Lista de Comandas Elegíveis */}
           <div className="space-y-2">
             <span className="text-[11px] font-bold text-text-2 uppercase tracking-wider block">
               Selecione a comanda aberta para incorporar:
@@ -278,7 +266,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
             )}
           </div>
 
-          {/* Resumo da Mesclagem Selecionada */}
           {comandaOrigemSelecionada && (
             <div className="p-3 rounded-[14px] bg-surface-2 border border-border text-xs flex items-center justify-between">
               <div>
@@ -296,7 +283,6 @@ export const ModalMesclarComandas: React.FC<ModalMesclarComandasProps> = ({
             </div>
           )}
 
-          {/* Botões de Ação */}
           <div className="flex items-center gap-2 pt-3 border-t border-border shrink-0">
             <button
               type="button"

@@ -89,23 +89,19 @@ describe('Story 2.1.6 — KDS Frontend: Habilitação do Perfil Cozinha, Sessão
   });
 
   it('EARS-AUTH-06 & EARS-AUTH-08: App deve renderizar ModoKdsPage quando modo for kds e voltar ao deslogar', async () => {
-    // Configura sessão ativa como cozinha
     useSessionStore.getState().login(mockUsuarios[2]);
     expect(useSessionStore.getState().modo).toBe('kds');
 
     renderWithClient(<App />);
 
-    // Deve exibir o cabeçalho do KDS
     const kdsLogo = await screen.findByText('KDS');
     expect(kdsLogo).toBeDefined();
     expect(screen.getByText('Painel TV')).toBeDefined();
     expect(screen.getByText(/Chef Thiago/i)).toBeDefined();
 
-    // Clica no botão de logout / sair
     const btnSair = screen.getByTitle('Sair / Trocar Operador');
     fireEvent.click(btnSair);
 
-    // Deve ter voltado para a tela de login
     await screen.findByText('Quem está entrando?');
     expect(useSessionStore.getState().modo).toBe('login');
   });

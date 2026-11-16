@@ -20,10 +20,6 @@ export interface OpcoesModuloComandas {
   gestaoGateway?: IGestaoGateway;
 }
 
-/**
- * Orquestra o ciclo de vida da comanda comunicando-se com Usuários, Produtos
- * e microsserviços satélites apenas por contratos/gateways de serviço.
- */
 export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
   fastify,
   opcoes = {},

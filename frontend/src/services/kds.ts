@@ -27,11 +27,6 @@ function resolverKdsBaseUrl(): string {
 
 const KDS_BASE_URL = resolverKdsBaseUrl();
 
-/**
- * Consulta a situação dos itens no KDS (:3001) para a comanda informada.
- * Aplica timeout estrito de 2000ms e degradação graciosa caso o serviço esteja offline ou em timeout.
- * (Story 2.2.9, RF23, C04, ADR-07)
- */
 export const obterPendenciasComanda = async (
   comandaId: number
 ): Promise<RespostaChecagemPendenciasKds> => {
@@ -73,8 +68,6 @@ export const obterPendenciasComanda = async (
       recebido_em: String(item.recebido_em ?? ''),
     }));
 
-    // Se o payload já forneceu pendências diretamente (ex: testes/mocks), mantém a lista.
-    // Se forneceu lista bruta de todos os itens do KDS, filtra os que não foram entregues nem cancelados.
     const itensPendentes = data.pendencias
       ? pendencias
       : pendencias.filter((it) => it.status !== 'entregue' && it.status !== 'cancelado');

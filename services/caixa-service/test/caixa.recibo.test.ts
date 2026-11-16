@@ -38,7 +38,6 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
   });
 
   async function fecharEQuitarComanda(comandaId = 42, mesa = 12) {
-    // 1. Fechar comanda
     await app.inject({
       method: 'POST',
       url: `/caixa/comandas/${comandaId}/fechar`,
@@ -67,10 +66,6 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
       },
     });
 
-    // 2. Quitar comanda com pagamento em dinheiro e troco
-    // Subtotal: (29.90 * 2) + 7.00 = 66.80
-    // Taxa de serviço 10%: 6.68
-    // Total: 73.48
     const resPagar = await app.inject({
       method: 'POST',
       url: `/caixa/comandas/${comandaId}/pagar`,
@@ -100,7 +95,6 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
     });
 
     it('deve retornar 404 NAO_ENCONTRADO se a comanda existir mas não estiver totalmente quitada (status aguardando_pagamento)', async () => {
-      // Cria cobrança fechada mas não paga
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/100/fechar',
@@ -149,7 +143,6 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
         },
       });
 
-      // Paga só metade
       await app.inject({
         method: 'POST',
         url: '/caixa/comandas/101/pagar',
@@ -179,7 +172,6 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
       expect(res.statusCode).toBe(200);
       const corpo = res.json();
 
-      // Campos estruturados
       expect(corpo.comanda_id).toBe(42);
       expect(corpo.mesa).toBe(12);
       expect(corpo.garcom_nome).toBe('Carlos Garçom');
@@ -187,14 +179,11 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
       expect(corpo.subtotal).toBe('66.80');
       expect(corpo.taxa_servico).toBe('6.68');
       expect(corpo.total).toBe('73.48');
-      // 100.00 - 73.48 = 26.52
       expect(corpo.troco_total).toBe('26.52');
 
-      // Código de autenticação no formato VAPT-YYYYMMDD-MESA-XXXX
       expect(corpo.codigo_autenticacao).toMatch(/^VAPT-\d{8}-M12-[A-F0-9]{4}$/);
       expect(corpo.emitido_em).toBeDefined();
 
-      // Lista de itens
       expect(corpo.itens).toHaveLength(2);
       expect(corpo.itens[0]).toEqual({
         nome: 'Hambúrguer Artesanal',
@@ -209,14 +198,12 @@ describe('Story 15.5 — Emissão e Consulta do Recibo Operacional Térmico .pap
         subtotal: '7.00',
       });
 
-      // Lista de pagamentos
       expect(corpo.pagamentos).toHaveLength(1);
       expect(corpo.pagamentos[0].forma_pagamento).toBe('dinheiro');
       expect(corpo.pagamentos[0].valor_aplicado).toBe('73.48');
       expect(corpo.pagamentos[0].valor_recebido).toBe('100.00');
       expect(corpo.pagamentos[0].troco).toBe('26.52');
 
-      // Texto térmico .paper gerado
       expect(corpo.paper_text).toBeDefined();
       expect(typeof corpo.paper_text).toBe('string');
       expect(corpo.paper_text).toContain('VAPT PDV - BAR & RESTAURANTE');

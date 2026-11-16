@@ -28,8 +28,6 @@ export const useComandaStore = create<ComandaStoreState>((set, get) => ({
   comandaAtivaId: null,
   carrinho: {},
 
-  // Os setters retornam o mesmo estado quando nada muda: evita re-render em cascata
-  // (antes, setComandaAtivaId(null) dentro de useEffect gerava loop infinito no Caixa).
   setMesaAtiva: (mesaAtiva) =>
     set((state) =>
       state.mesaAtiva === mesaAtiva ? state : { mesaAtiva, carrinho: {} },

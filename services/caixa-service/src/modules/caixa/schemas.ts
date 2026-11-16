@@ -284,4 +284,3 @@ export const ReciboCompletoRespostaSchema = Type.Object({
   emitido_em: Type.String(),
   paper_text: Type.String(),
 });
-

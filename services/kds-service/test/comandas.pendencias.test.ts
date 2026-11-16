@@ -203,4 +203,3 @@ describe('GET /kds/comandas/:comandaId/pendencias e alias (Story 14.5)', () => {
     await app.close();
   });
 });
-

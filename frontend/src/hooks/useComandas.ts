@@ -16,7 +16,7 @@ export function useComandas(filtros?: ListarComandasFiltros) {
   return useQuery({
     queryKey: [...COMANDAS_QUERY_KEY, filtros],
     queryFn: () => comandasApi.listar(filtros),
-    refetchInterval: 1000 * 10, // polling a cada 10s para manter status do salão atualizado
+    refetchInterval: 1000 * 10,
   });
 }
 
@@ -27,7 +27,7 @@ export function useComandasSalao() {
       const todas = await comandasApi.listar();
       return todas.filter((cmd) => cmd.status === 'aberta' || cmd.status === 'fechada');
     },
-    refetchInterval: 1000 * 5, // polling a cada 5s para salão
+    refetchInterval: 1000 * 5,
   });
 }
 
@@ -35,7 +35,7 @@ export function useComandasAbertas() {
   return useQuery({
     queryKey: [...COMANDAS_QUERY_KEY, { status: 'aberta' }],
     queryFn: () => comandasApi.listar({ status: 'aberta' }),
-    refetchInterval: 1000 * 5, // polling a cada 5s para salão
+    refetchInterval: 1000 * 5,
   });
 }
 

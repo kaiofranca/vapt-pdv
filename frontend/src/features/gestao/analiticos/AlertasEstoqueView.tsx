@@ -44,7 +44,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
 
   const alertas = data?.alertas ?? [];
 
-  // Contadores para o banner
   const { totalZerados, totalBaixos } = useMemo(() => {
     let zerados = 0;
     let baixos = 0;
@@ -58,14 +57,11 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
     return { totalZerados: zerados, totalBaixos: baixos };
   }, [alertas]);
 
-  // Filtros combinados
   const alertasFiltrados = useMemo(() => {
     return alertas.filter((item) => {
-      // Filtro de nível
       if (filtroNivel !== 'todos' && item.nivel !== filtroNivel) {
         return false;
       }
-      // Filtro de texto
       if (buscaNome.trim()) {
         const termo = buscaNome.toLowerCase();
         const corresponde =
@@ -96,7 +92,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -142,7 +137,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
         </div>
       </div>
 
-      {/* Banner de Alerta de Reposição Imediata */}
       {!isLoading && !isError && (
         <>
           {alertas.length > 0 ? (
@@ -219,10 +213,8 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
         </>
       )}
 
-      {/* Barra de Filtros e Busca */}
       <div className="rounded-card bg-surface border border-border p-4 shadow-soft">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Busca por texto */}
           <div className="relative flex-1 min-w-[240px]">
             <Search className="w-4 h-4 text-text-2 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
             <input
@@ -234,7 +226,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
             />
           </div>
 
-          {/* Filtro por Nível de Severidade */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
             <span className="text-xs font-semibold text-text-2 mr-1 flex items-center gap-1 shrink-0">
               <Filter className="w-3.5 h-3.5" /> Nível:
@@ -274,7 +265,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
             </button>
           </div>
 
-          {/* Switch / Toggle "Apenas produtos ativos" */}
           <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-text-2 min-h-[44px]">
             <input
               type="checkbox"
@@ -287,7 +277,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
         </div>
       </div>
 
-      {/* Tabela de Produtos em Alerta */}
       <div className="rounded-card bg-surface border border-border shadow-soft overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
@@ -350,20 +339,17 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
                           : 'hover:bg-surface-2/40'
                       )}
                     >
-                      {/* Nome do Produto */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-text">{item.nome_produto}</div>
                         <div className="text-[11px] text-text-2">ID: #{item.produto_id}</div>
                       </td>
 
-                      {/* Categoria */}
                       <td className="py-3.5 px-4">
                         <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-2 text-text-2 border border-border">
                           {item.categoria}
                         </span>
                       </td>
 
-                      {/* Estoque Atual */}
                       <td className="py-3.5 px-4 text-center">
                         <span
                           className={cn(
@@ -377,12 +363,10 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
                         </span>
                       </td>
 
-                      {/* Estoque Mínimo */}
                       <td className="py-3.5 px-4 text-center text-text-2 font-semibold tabular-nums">
                         {item.estoque_minimo} un
                       </td>
 
-                      {/* Barra de Progresso Visual de Nível */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-1">
                           <div className="w-full bg-surface-2 rounded-full h-2 overflow-hidden border border-border/50">
@@ -405,7 +389,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Status / Severidade Pill */}
                       <td className="py-3.5 px-4 text-center">
                         {isZerado ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-danger-soft text-danger border border-danger/40">
@@ -420,7 +403,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
                         )}
                       </td>
 
-                      {/* Último Movimento */}
                       <td className="py-3.5 px-4 text-right text-xs text-text-2 tabular-nums whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="w-3 h-3 text-text-2/70" />
@@ -435,7 +417,6 @@ export const AlertasEstoqueView: React.FC<AlertasEstoqueViewProps> = ({
           </div>
         )}
 
-        {/* Rodapé com totalizadores */}
         {!isLoading && !isError && alertasFiltrados.length > 0 && (
           <div className="p-4 bg-surface-2/60 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-text-2 gap-2">
             <span>

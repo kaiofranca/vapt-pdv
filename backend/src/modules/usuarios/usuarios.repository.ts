@@ -6,10 +6,6 @@ import {
   UsuarioEntidade,
 } from './usuario.entity';
 
-/**
- * Contrato de persistência para o módulo de Usuários (Repository Pattern).
- * Permite trocar a implementação de banco ou simular em testes sem alterar regras de negócio.
- */
 export interface IUsuariosRepository {
   criar(dados: { nome: string; perfil: PerfilUsuarioTipo; ativo?: boolean }): Promise<UsuarioEntidade>;
   buscarPorId(id: number): Promise<UsuarioEntidade | null>;
@@ -20,9 +16,6 @@ export interface IUsuariosRepository {
   ): Promise<UsuarioEntidade>;
 }
 
-/**
- * Implementação do repositório de usuários utilizando Prisma ORM.
- */
 export class UsuariosRepositoryPrisma implements IUsuariosRepository {
   constructor(private readonly prisma: ClienteBanco) {}
 

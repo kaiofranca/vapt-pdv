@@ -211,11 +211,9 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
         />
       );
 
-      // Título e identificação do conflito C04
       expect(screen.getByText(/C04 Conflito de Encerramento/i)).toBeDefined();
       expect(screen.getByText(/Mesa 07 possui pedidos não entregues no KDS/i)).toBeDefined();
 
-      // Lista detalhada de itens
       expect(screen.getAllByText('Hambúrguer Artesanal').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('2x')).toBeDefined();
       expect(screen.getByText(/Setor: Cozinha/i)).toBeDefined();
@@ -226,12 +224,10 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
       expect(screen.getByText(/Setor: Bar/i)).toBeDefined();
       expect(screen.getByText('Recebido')).toBeDefined();
 
-      // Checkbox de consentimento (EARS-PEND-08)
       expect(
         screen.getByText(/Estou ciente de que há itens em preparo e confirmo o encerramento/i)
       ).toBeDefined();
 
-      // Botões de ação com alvos de toque adequados
       const btnAguardar = screen.getByRole('button', { name: /Aguardar Entrega/i });
       const btnFechar = screen.getByRole('button', { name: /Fechar Mesmo Assim/i });
       expect(btnAguardar).toBeDefined();
@@ -322,7 +318,6 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
       const btnCobrar = screen.getByRole('button', { name: /Cobrar comanda/i });
       fireEvent.click(btnCobrar);
 
-      // Deve abrir o diálogo C04
       await waitFor(() => {
         expect(screen.getByText(/C04 Conflito de Encerramento/i)).toBeDefined();
       });
@@ -330,7 +325,6 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
       expect(screen.getAllByText('Hambúrguer Artesanal').length).toBeGreaterThanOrEqual(1);
       expect(onAbrirPagamento).not.toHaveBeenCalled();
 
-      // Clicar em "Aguardar Entrega" aborta o encerramento e fecha o modal
       const btnAguardar = screen.getByRole('button', { name: /Aguardar Entrega/i });
       fireEvent.click(btnAguardar);
 
@@ -419,7 +413,6 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
 
       globalThis.fetch = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
         if (url.includes('/kds/comandas/42/pendencias')) {
-          // Simula falha de conexão (KDS offline)
           return Promise.reject(new Error('connect ECONNREFUSED 127.0.0.1:3001'));
         }
         if (url.includes('/comandas/42/fechar') && opts?.method === 'POST') {
@@ -453,7 +446,6 @@ describe('Story 2.2.9 — Caixa & Salão: Checagem de Pendências do KDS no Fech
       const btnCobrar = screen.getByRole('button', { name: /Cobrar comanda/i });
       fireEvent.click(btnCobrar);
 
-      // Não deve travar a tela: deve emitir aviso do KDS e prosseguir com fechamento
       await waitFor(() => {
         expect(onToast).toHaveBeenCalledWith(
           'info',

@@ -105,7 +105,6 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
           </div>
         </div>
 
-        {/* Lista de Navegação Principal */}
         <nav className="flex flex-col gap-1.5" aria-label="Abas de Gestão">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -150,7 +149,6 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
             );
           })}
 
-          {/* Botão de Ação Rápida: Exportar Relatórios (M15) */}
           <button
             type="button"
             onClick={onAbrirExportacao}
@@ -172,7 +170,6 @@ export const SideNavGestao: React.FC<SideNavGestaoProps> = ({
         </nav>
       </div>
 
-      {/* Rodapé: Operador Logado + Troca/Sair + Tema */}
       <div className="pt-4 border-t border-[#43342A] flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2.5 min-w-0">

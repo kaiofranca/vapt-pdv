@@ -175,7 +175,6 @@ describe('Split Payment Calculator — Divisão por Itens (Story 15.3, RN19)', (
   ];
 
   it('deve dividir itens entre 2 clientes com taxa de 10% conservando centavos exatos', () => {
-    // Total esperado: (29.90*2 + 6.00*2) = 59.80 + 12.00 = 71.80 + 10% (7.18) = 78.98
     const cotasConfig = [
       {
         rotulo: 'Cliente A',
@@ -209,10 +208,6 @@ describe('Split Payment Calculator — Divisão por Itens (Story 15.3, RN19)', (
   });
 
   it('deve ajustar resíduo de centavo na taxa da última cota quando há dízima na taxa individual', () => {
-    // Exemplo: 3 itens de 1.05. Subtotal = 3.15. Taxa 10% de 3.15 = 0.32 (ROUND_HALF_UP). Total = 3.47.
-    // Individualmente: 1 item de 1.05 -> taxa 10% de 1.05 = 0.11 (ROUND_HALF_UP). Total cota = 1.16.
-    // 3 cotas * 1.16 = 3.48 (diferença de +0.01).
-    // O calculador deve deduzir o centavo excedente da última cota para somar exatamente 3.47.
     const itens: ItemComandaParaDivisao[] = [
       { item_comanda_id: 1, nome: 'Café Expresso', preco_unitario: '1.05', quantidade: 3 },
     ];
@@ -279,7 +274,7 @@ describe('Split Payment Calculator — Divisão por Itens (Story 15.3, RN19)', (
       },
       {
         rotulo: 'Cliente B',
-        itens: [{ item_comanda_id: 101, quantidade: 1 }], // Total 3, mas comanda só tem 2
+        itens: [{ item_comanda_id: 101, quantidade: 1 }],
       },
     ];
 

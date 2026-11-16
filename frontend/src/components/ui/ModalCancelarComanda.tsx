@@ -18,13 +18,6 @@ export interface ModalCancelarComandaProps {
   onConfirmar: (motivo?: string) => void;
 }
 
-/**
- * Modal C13 - Cancelamento Seguro de Comanda
- * Conformidade com DESIGN.md §16 e SRS:
- * 1. Alerta crítico de ação destrutiva
- * 2. Seleção de motivo (Radio buttons: Desistência do cliente, Erro de digitação do garçom, Outro)
- * 3. Digitação obrigatória da frase "cancelar comanda" para habilitar o botão de confirmação
- */
 export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
   isOpen,
   mesa,
@@ -68,7 +61,6 @@ export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
       maxWidth="sm"
     >
       <form onSubmit={handleSubmit} className="space-y-4 py-1">
-        {/* Banner de Atenção Crítica (Tomate #C4391D) */}
         <div className="flex items-start gap-3 p-3.5 rounded-card bg-danger-soft border border-danger/30 text-danger-text">
           <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
@@ -82,7 +74,6 @@ export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
           </div>
         </div>
 
-        {/* Motivo do Cancelamento (Radio buttons) */}
         <div>
           <label className="text-xs font-bold uppercase text-text-2 tracking-wider block mb-2">
             Motivo do Cancelamento
@@ -116,7 +107,6 @@ export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
             ))}
           </div>
 
-          {/* Campo extra se motivo for "Outro" */}
           {motivoSelecionado === 'Outro' && (
             <div className="mt-2.5 animate-fadeIn">
               <input
@@ -130,7 +120,6 @@ export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
           )}
         </div>
 
-        {/* Campo de confirmação estrita da frase */}
         <div>
           <label
             htmlFor="input-frase-cancelamento"
@@ -151,7 +140,6 @@ export const ModalCancelarComanda: React.FC<ModalCancelarComandaProps> = ({
           />
         </div>
 
-        {/* Rodapé com Botões */}
         <div className="flex justify-end gap-2 pt-3 border-t border-border">
           <Button
             type="button"

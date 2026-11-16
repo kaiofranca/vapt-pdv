@@ -74,7 +74,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
-  // Headers de CORS para permitir integração com frontend e outros serviços
   app.addHook('onRequest', async (request, reply) => {
     reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
@@ -84,7 +83,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     }
   });
 
-  // Documentação OpenAPI / Swagger
   await app.register(swagger, {
     openapi: {
       info: {
@@ -112,7 +110,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   });
 
-  // Handler Global de Erros Padronizado (RFC 7807)
   app.setErrorHandler((error: FastifyError, _request, reply) => {
     if (error instanceof ErroDominio) {
       return reply
@@ -133,7 +130,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
       .send(formatarRespostaErro('ERRO_INTERNO', 'Ocorreu um erro interno no servidor.'));
   });
 
-  // Inicialização do Banco e Repositórios
   let prisma: ClienteBanco | undefined = opcoes.prisma;
   if (!prisma && !opcoes.repository && !opcoes.service && process.env.NODE_ENV !== 'test') {
     prisma = obterPrisma();
@@ -156,7 +152,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
       ? new CobrancasService(repository, estoqueGateway, gestaoGateway)
       : undefined);
 
-  // Registro de Módulos
   await app.register(rotasSaude, { prisma });
 
   if (service) {

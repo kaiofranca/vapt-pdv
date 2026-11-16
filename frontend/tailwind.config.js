@@ -1,5 +1,3 @@
-/** @type {import('tailwindcss').Config} */
-// Cores baseadas em variáveis CSS (src/index.css) para suportar tema claro/escuro.
 const cor = (nome) => `rgb(var(--c-${nome}) / <alpha-value>)`;
 
 export default {

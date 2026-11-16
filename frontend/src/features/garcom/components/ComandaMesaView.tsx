@@ -48,27 +48,20 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
   const lancarItemMut = useLancarItem();
   const cancelarComandaMut = useCancelarComanda();
 
-  // Sub-abas quando a mesa está aberta: 'novos' (cardápio) vs 'enviados' (itens já no banco)
   const [subAba, setSubAba] = useState<'novos' | 'enviados'>('novos');
 
-  // Modo de visualização de fechamento ('comanda' ou 'pedir_conta')
   const [modoFechamento, setModoFechamento] = useState<boolean>(false);
 
-  // Switch de Gorjeta 10% no pedido da conta (G06)
   const [aplicarGorjeta, setAplicarGorjeta] = useState<boolean>(true);
 
-  // Busca e categoria do cardápio
   const [busca, setBusca] = useState('');
   const [categoriaAtiva, setCategoriaAtiva] = useState<string>('todos');
 
-  // Carrinho local de novos itens a lançar: Map<produtoId, ItemCarrinhoNovo>
   const [carrinhoNovos, setCarrinhoNovos] = useState<Map<number, ItemCarrinhoNovo>>(new Map());
 
-  // Bottom Sheet G04 de Observação e Alergia
   const [produtoObservacao, setProdutoObservacao] = useState<Produto | null>(null);
   const [isObservacaoOpen, setIsObservacaoOpen] = useState(false);
 
-  // Menu de opções rápidas (...)
   const [menuOpcoesAberto, setMenuOpcoesAberto] = useState(false);
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
   const [isModalPendenciasOpen, setIsModalPendenciasOpen] = useState(false);
@@ -76,7 +69,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
   const [isChecandoPendenciasKds, setIsChecandoPendenciasKds] = useState(false);
   const [isEnviandoItens, setIsEnviandoItens] = useState(false);
 
-  // Extrai lista única de categorias
   const categorias = useMemo(() => {
     const setCat = new Set<string>();
     produtos.forEach((p) => {
@@ -85,7 +77,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     return ['todos', ...Array.from(setCat)];
   }, [produtos]);
 
-  // Produtos filtrados por busca e categoria
   const produtosFiltrados = useMemo(() => {
     return produtos.filter((p) => {
       const matchBusca =
@@ -97,12 +88,10 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     });
   }, [produtos, busca, categoriaAtiva]);
 
-  // Quantidade de um produto no carrinho de novos itens
   const getQtdNoCarrinho = (produtoId: number): number => {
     return carrinhoNovos.get(produtoId)?.quantidade || 0;
   };
 
-  // Observação de um produto no carrinho de novos itens
   const getObsNoCarrinho = (produtoId: number): string | undefined => {
     return carrinhoNovos.get(produtoId)?.observacao;
   };
@@ -158,7 +147,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     setProdutoObservacao(null);
   };
 
-  // Resumo do carrinho de novos itens
   const resumoNovos = useMemo(() => {
     let totalQtd = 0;
     let totalValor = 0;
@@ -174,7 +162,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     return { totalQtd, totalValor };
   }, [carrinhoNovos, produtos]);
 
-  // Enviar novos itens ao preparo (Fastify POST /comandas/:id/itens)
   const handleEnviarAoPreparo = async () => {
     if (carrinhoNovos.size === 0) return;
     setIsEnviandoItens(true);
@@ -224,7 +211,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     }
   };
 
-  // Confirmar e avisar o caixa (Fastify POST /comandas/:id/fechar) com checagem KDS
   const handleConfirmarPedirConta = async () => {
     setIsChecandoPendenciasKds(true);
     try {
@@ -243,14 +229,12 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         return;
       }
     } catch {
-      // Degradação suave em caso de falha de rede/timeout
     } finally {
       setIsChecandoPendenciasKds(false);
     }
     await executarFechamento();
   };
 
-  // Cancelar comanda (chamado somente após a dupla validação no modal)
   const handleCancelarComanda = async () => {
     try {
       await cancelarComandaMut.mutateAsync(comandaId);
@@ -294,13 +278,9 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
   const itensEnviados = comanda.itens || [];
   const tempoAberto = formatElapsedTime(comanda.aberta_em);
 
-  // ─────────────────────────────────────────────────────────────────
-  // CASO 1: CONTA JÁ PEDIDA / FECHADA (Fiel a G11 Conta aguardando.png)
-  // ─────────────────────────────────────────────────────────────────
   if (isContaPedida) {
     return (
       <div className="space-y-4 pb-20">
-        {/* Topo com Seta Voltar e Badge "Conta pedida" */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -323,7 +303,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </span>
         </div>
 
-        {/* Card Destaque: Aguardando o Caixa (Fiel a G11) */}
         <div className="bg-surface border-2 border-danger rounded-[24px] p-6 text-center shadow-soft space-y-3">
           <div className="w-12 h-12 rounded-full bg-danger-soft text-danger flex items-center justify-center mx-auto">
             <Hourglass className="w-6 h-6 animate-pulse" />
@@ -346,7 +325,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </div>
         </div>
 
-        {/* Lista de Itens Consumidos */}
         <div className="bg-surface border border-border rounded-[20px] p-4 space-y-3 shadow-soft">
           <div className="text-xs font-bold text-text-2">Itens consumidos</div>
           <div className="divide-y divide-border/60">
@@ -371,13 +349,11 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </div>
         </div>
 
-        {/* Alerta de Ajuste */}
         <div className="p-4 rounded-[16px] bg-brand-soft border border-brand/30 text-xs text-brand-text flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>Errou algo? Solicite ao caixa no balcão para reabrir a comanda.</span>
         </div>
 
-        {/* Botão Desabilitado com Cadeado (Fiel a G11) */}
         <div className="fixed bottom-4 left-4 right-4 sm:max-w-md sm:mx-auto z-20">
           <button
             type="button"
@@ -392,9 +368,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // CASO 2: TELA DE PEDIR A CONTA / TAXA 10% (Fiel a G06 Pedir a conta.png)
-  // ─────────────────────────────────────────────────────────────────
   if (modoFechamento) {
     const subtotalNum = itensEnviados.reduce(
       (acc, i) => acc + Number(i.preco_copiado) * i.quantidade,
@@ -405,7 +378,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
 
     return (
       <div className="space-y-4 pb-28">
-        {/* Topo com Seta Voltar à Comanda */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -422,7 +394,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </div>
         </div>
 
-        {/* Card Resumo com Todos os Itens e Subtotal */}
         <div className="bg-surface border border-border rounded-[24px] p-5 shadow-soft space-y-4">
           <div className="divide-y divide-border/60">
             {itensEnviados.map((item) => (
@@ -463,7 +434,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </div>
         </div>
 
-        {/* Card com Switch Toggle da Gorjeta de 10% (Fiel a G06) */}
         <div className="bg-surface border border-border rounded-[20px] p-4 flex items-center justify-between shadow-soft">
           <div>
             <div className="font-extrabold text-sm text-text">Gorjeta de 10%</div>
@@ -485,13 +455,11 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </button>
         </div>
 
-        {/* Alerta Informativo */}
         <div className="p-4 rounded-[16px] bg-brand-soft border border-brand/30 text-xs text-brand-text flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>O caixa será avisado. Você não conseguirá mais lançar itens depois de fechar.</span>
         </div>
 
-        {/* Barra Fixa de Ação */}
         <div className="fixed bottom-4 left-4 right-4 sm:max-w-md sm:mx-auto z-20 space-y-2">
           <button
             type="button"
@@ -514,12 +482,8 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // CASO 3: COMANDA ABERTA (Fiel a G03 Comanda e G05 Itens enviados)
-  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4 pb-28">
-      {/* Topo com Seta Voltar, Título da Mesa e Menu de Ações */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -537,7 +501,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </div>
         </div>
 
-        {/* Menu Três Pontos (...) */}
         <div className="relative">
           <button
             type="button"
@@ -576,7 +539,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         </div>
       </div>
 
-      {/* Pill Switcher: "Novos" (Lançar do Cardápio) vs "Enviados" (Consumo já no banco) */}
       <div className="flex p-1 bg-surface-2 border border-border rounded-full select-none">
         <button
           type="button"
@@ -603,9 +565,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         </button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          SUB-ABA "ENVIADOS" (Fiel a G05 Itens enviados.png)
-          ───────────────────────────────────────────────────────────── */}
       {subAba === 'enviados' && (
         <div className="space-y-3">
           {itensEnviados.length === 0 ? (
@@ -655,7 +614,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
                 </div>
               ))}
 
-              {/* Botão de Fechar Pedindo a Conta na Base */}
               <div className="pt-4">
                 <div className="flex items-center justify-between px-2 mb-3">
                   <span className="text-xs font-bold text-text-2">Total da comanda</span>
@@ -678,12 +636,8 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          SUB-ABA "CARDÁPIO / NOVOS" (Fiel a G03 Comanda.png)
-          ───────────────────────────────────────────────────────────── */}
       {subAba === 'novos' && (
         <div className="space-y-3">
-          {/* Campo de Busca Rápida */}
           <div className="relative">
             <Search className="w-4 h-4 text-text-2 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
@@ -695,7 +649,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
             />
           </div>
 
-          {/* Chips Horizontais de Categorias (Fiel a G03) */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none select-none">
             {categorias.map((cat) => (
               <button
@@ -713,7 +666,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
             ))}
           </div>
 
-          {/* Lista de Produtos do Cardápio com Stepper Âmbar */}
           {isLoadingProdutos ? (
             <div className="py-8 text-center text-xs text-text-2">Carregando cardápio...</div>
           ) : produtosFiltrados.length === 0 ? (
@@ -736,7 +688,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
             </div>
           )}
 
-          {/* Barra Fixa Inferior: "X itens novos" / "R$ Total" / Botão "🔥 Enviar ao preparo" */}
           {resumoNovos.totalQtd > 0 && (
             <div className="fixed bottom-4 left-4 right-4 sm:max-w-md sm:mx-auto bg-surface border border-border rounded-[24px] p-3 shadow-modal z-30 space-y-2">
               <div className="flex items-center justify-between px-2 text-xs">
@@ -766,7 +717,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         </div>
       )}
 
-      {/* Dupla validação para cancelar a comanda */}
       <ModalCancelarComanda
         isOpen={modalCancelarAberto}
         mesa={String(comanda.mesa)}
@@ -775,7 +725,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         onConfirmar={handleCancelarComanda}
       />
 
-      {/* Bottom Sheet G04 de Observação e Alergia */}
       <BottomSheetObservacao
         isOpen={isObservacaoOpen}
         produtoNome={produtoObservacao?.nome || ''}
@@ -787,7 +736,6 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         }}
       />
     
-      {/* Diálogo C04: Conflito de Encerramento (KDS :3001) */}
       <ModalPendenciasKds
         isOpen={isModalPendenciasOpen}
         mesa={comanda?.mesa}

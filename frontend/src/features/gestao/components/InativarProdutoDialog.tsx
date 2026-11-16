@@ -86,7 +86,6 @@ export const InativarProdutoDialog: React.FC<InativarProdutoDialogProps> = ({
           </div>
         </div>
 
-        {/* Rodapé com Ações */}
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
           <Button
             type="button"

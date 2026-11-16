@@ -74,7 +74,6 @@ export class MemoriaGestaoRepository implements GestaoRepository {
     const totalDec = new Prisma.Decimal(dados.total || '0.00');
     const forma = (dados.formaPagamento || 'dinheiro').toLowerCase();
 
-    // 1. Faturamento
     const fatAtual = this.faturamentos.get(dataStr) || {
       comandasPagas: 0,
       comandasCanceladas: 0,
@@ -101,7 +100,6 @@ export class MemoriaGestaoRepository implements GestaoRepository {
     }
     this.faturamentos.set(dataStr, fatAtual);
 
-    // 2. Vendas Produtos
     for (const item of dados.itens) {
       const prodAtual = this.produtos.get(item.produto_id) || {
         produto_id: item.produto_id,
@@ -116,7 +114,6 @@ export class MemoriaGestaoRepository implements GestaoRepository {
       this.produtos.set(item.produto_id, prodAtual);
     }
 
-    // Recalcular ABC com ordenação secundária por produto_id (desempate determinístico)
     const todosProds = Array.from(this.produtos.values()).sort((a, b) => {
       const diff = b.receita_gerada.sub(a.receita_gerada).toNumber();
       if (diff !== 0) return diff;
@@ -143,7 +140,6 @@ export class MemoriaGestaoRepository implements GestaoRepository {
       }
     }
 
-    // 3. Garçom
     if (dados.garcomId) {
       const garcAtual = this.garcons.get(dados.garcomId) || {
         garcom_id: dados.garcomId,
@@ -233,7 +229,6 @@ export class MemoriaGestaoRepository implements GestaoRepository {
       prods = prods.filter((p) => p.categoria.toLowerCase() === categoria.toLowerCase());
     }
 
-    // Ordenação secundária por produto_id em caso de empate na receita
     prods.sort((a, b) => {
       const diff = b.receita_gerada.sub(a.receita_gerada).toNumber();
       if (diff !== 0) return diff;

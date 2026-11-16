@@ -184,7 +184,6 @@ export const DisponibilidadeRespostaSchema = Type.Object(
 
 export type DisponibilidadeRespostaTipo = Static<typeof DisponibilidadeRespostaSchema>;
 
-
 export const BaixaEstoqueItemSchema = Type.Object(
   {
     produto_id: Type.Integer({

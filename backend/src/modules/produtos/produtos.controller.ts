@@ -11,10 +11,6 @@ import {
 import { ServicoProdutos } from './produtos.service';
 import { ProdutoEntidade } from './produtos.entity';
 
-/**
- * Controller HTTP do Módulo de Produtos.
- * Responsável por orquestrar requisições e respostas HTTP do Fastify.
- */
 export class ProdutosController {
   constructor(private readonly service: ServicoProdutos) {}
 

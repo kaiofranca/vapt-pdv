@@ -23,10 +23,6 @@ export interface ComprovanteVendaProps {
   reciboOficial?: ReciboCompletoResposta | null;
 }
 
-/**
- * Componente C12 - Comprovante de Venda Concluída
- * Exibe o marco de sucesso, integra o ReciboPaperView (.paper) e botões de ação final.
- */
 export const ComprovanteVenda: React.FC<ComprovanteVendaProps> = ({
   comanda,
   parcelas,
@@ -38,7 +34,6 @@ export const ComprovanteVenda: React.FC<ComprovanteVendaProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center p-2 text-text animate-fadeIn">
-      {/* Marco de Sucesso */}
       <div className="flex flex-col items-center text-center mb-4">
         <div className="w-16 h-16 rounded-full bg-success-soft text-success flex items-center justify-center mb-2 shadow-soft">
           <CheckCircle2 className="w-10 h-10 text-success" />
@@ -49,7 +44,6 @@ export const ComprovanteVenda: React.FC<ComprovanteVendaProps> = ({
         </p>
       </div>
 
-      {/* Recibo Térmico Operacional .paper */}
       <ReciboPaperView
         comanda={comanda}
         parcelas={parcelas}

@@ -13,7 +13,6 @@ export const ModoGestaoPage: React.FC = () => {
   const [abaAtiva, setAbaAtiva] = useState<AbaNavegacaoGestao>('visao-geral');
   const [isModalExportacaoOpen, setIsModalExportacaoOpen] = useState<boolean>(false);
 
-  // Consulta de alertas para exibir badge de contagem crítica na SideNav
   const { data: alertasData } = useAlertasEstoque({ apenas_ativos: true });
   const totalAlertas = alertasData?.alertas?.length ?? 0;
 

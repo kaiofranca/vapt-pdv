@@ -59,15 +59,12 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
   const fecharComandaMut = useFecharComanda();
 
   const [itemMutatingId, setItemMutatingId] = useState<number | null>(null);
-  // Painel recolhível: libera espaço para o catálogo quando o operador não precisa da comanda
   const [recolhido, setRecolhido] = useState<boolean>(false);
 
-  // Estados de checagem do KDS (:3001) para conflito C04
   const [isModalPendenciasOpen, setIsModalPendenciasOpen] = useState<boolean>(false);
   const [pendenciasKds, setPendenciasKds] = useState<ItemPendenciaModal[]>([]);
   const [isChecandoPendencias, setIsChecandoPendencias] = useState<boolean>(false);
 
-  // Comanda efetiva (detalhes frescos do useComanda ou item da lista de salão)
   const comanda: Comanda | null =
     comandaAtualizada ||
     comandasDisponiveis.find((c) => c.id === comandaAtivaId) ||
@@ -80,13 +77,10 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
   const isCancelada = comanda?.status === 'cancelada';
   const isBloqueada = isFechada || isPaga || isCancelada;
 
-  // Subtotal calculado a partir dos itens copiados ou vindo da API
   const subtotalNumero = itens.reduce((acc, it) => {
     return acc + Number(it.preco_copiado || 0) * it.quantidade;
   }, 0);
 
-  // Se já está fechada, usa os valores persistidos no backend (snapshot oficial);
-  // se ainda estiver aberta, calcula a prévia com ou sem a taxa de 10%
   const taxa10Valor = taxa10 ? Math.round(subtotalNumero * 0.1 * 100) / 100 : 0;
   const totalCalculado = subtotalNumero + taxa10Valor;
 
@@ -96,7 +90,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
     : taxa10Valor;
   const totalExibido = comanda?.total ? Number(comanda.total) : totalCalculado;
 
-  // Alteração de quantidade (+ / -) com feedback otimista e travamento de múltiplos cliques
   const handleAlterarQuantidade = async (
     itemId: number,
     quantidadeAtual: number,
@@ -162,7 +155,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
     }
   };
 
-  // Disparo do fluxo de Cobrança / Fechamento com checagem de pendências no KDS
   const handleCobrarClick = async () => {
     if (!comanda) {
       onToast('erro', 'Nenhuma mesa ou comanda selecionada.');
@@ -177,13 +169,11 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
       return;
     }
 
-    // Se comanda já está fechada, abre o modal de pagamento diretamente
     if (comanda.status === 'fechada') {
       onAbrirModalPagamento(comanda);
       return;
     }
 
-    // Se comanda ainda estiver 'aberta', consulta pendências no KDS (:3001) com timeout de 2000ms
     setIsChecandoPendencias(true);
     try {
       const resKds = await obterPendenciasComanda(comanda.id);
@@ -202,7 +192,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
     }
   };
 
-  // Versão recolhida: trilho fino com resumo (mesa, itens e total) e botão para expandir
   if (recolhido) {
     return (
       <aside
@@ -264,7 +253,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
       className="w-[440px] min-w-[440px] max-w-[440px] h-full flex flex-col bg-surface border-l border-border select-none z-10"
       aria-label="Painel de comanda ativa"
     >
-      {/* 1. Topo: Cabeçalho com Seleção de Comanda e Recolhimento */}
       <div className="px-5 py-4 border-b border-border space-y-3 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -309,7 +297,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
           </div>
         </div>
 
-        {/* Dropdown de Comandas/Mesas em Aberto */}
         <div className="relative">
           <select
             value={comandaAtivaId || ''}
@@ -329,7 +316,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
           <ChevronDown className="w-4 h-4 text-text-2 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
-        {/* Metadados: Cliente e Tempo Aberta */}
         {comanda && (
           <div className="flex items-center justify-between text-xs text-text-2 pt-0.5">
             <button
@@ -352,7 +338,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
         )}
       </div>
 
-      {/* 2. Corpo: Lista de Itens Rolável com Rolagem Suave */}
       <div
         className="flex-1 overflow-y-auto px-5 py-3 divide-y divide-border/60 min-h-0"
         aria-label="Lista de itens da comanda"
@@ -405,7 +390,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
                   )}
                 </div>
 
-                {/* Controles de Quantidade (+ / - / Lixeira) */}
                 <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                   {!isBloqueada ? (
                     <>
@@ -462,9 +446,7 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
         )}
       </div>
 
-      {/* 3. Rodapé Fixo: Totais, Taxa de 10% e Botão de Cobrança (F8) */}
       <div className="p-5 border-t border-border bg-surface shrink-0 space-y-4">
-        {/* Alternância da Taxa de Serviço de 10% */}
         <div className="flex items-center justify-between py-1 border-b border-border/60">
           <div>
             <div className="text-xs font-bold text-text">Taxa de Serviço (10%)</div>
@@ -489,7 +471,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
           )}
         </div>
 
-        {/* Linhas de Subtotal e Taxa */}
         <div className="space-y-1.5 text-xs">
           <div className="flex justify-between text-text-2">
             <span>Subtotal</span>
@@ -506,7 +487,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
           )}
         </div>
 
-        {/* Opção secundária: Cancelamento Seguro de Comanda */}
         {comanda && !isPaga && !isCancelada && (
           <div className="flex justify-end pt-0.5">
             <button
@@ -520,7 +500,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
           </div>
         )}
 
-        {/* Botão de Cobrança Gigante (F8) */}
         <button
           onClick={handleCobrarClick}
           disabled={!comanda || !possuiItens || fecharComandaMut.isPending || isChecandoPendencias || isPaga || isCancelada}
@@ -556,7 +535,6 @@ export const PainelComanda: React.FC<PainelComandaProps> = ({
         </button>
       </div>
 
-      {/* Diálogo C04: Conflito de Encerramento (KDS :3001) */}
       <ModalPendenciasKds
         isOpen={isModalPendenciasOpen}
         mesa={comanda?.mesa}

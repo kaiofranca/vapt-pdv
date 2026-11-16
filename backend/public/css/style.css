@@ -1,11 +1,4 @@
-/* ==========================================================================
-   VaptPDV — Design System & Folha de Estilos Oficial
-   Tokens: Mostarda (#F2A81D), Café (#2B2019), Creme (#FBF7F1)
-   Tipografia: Plus Jakarta Sans com tabular-nums
-   ========================================================================== */
-
 :root {
-  /* Paleta Oficial DESIGN.md */
   --bg: #FBF7F1;
   --surface: #FFFFFF;
   --surface-2: #F3ECE1;
@@ -33,23 +26,19 @@
   --danger-soft: #FBE3DC;
   --danger-text: #8A220D;
 
-  /* Formas & Raios */
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-pill: 999px;
 
-  /* Sombras sutis */
   --shadow-subtle: 0 1px 3px rgba(43, 32, 25, 0.05);
   --shadow-card: 0 4px 12px rgba(43, 32, 25, 0.06);
   --shadow-modal: 0 16px 40px rgba(43, 32, 25, 0.16);
 
-  /* Transições */
   --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Reset e Base */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -69,7 +58,6 @@ body {
   flex-direction: column;
 }
 
-/* Números tabulares obrigatórios para alinhamento contábil e de preços */
 .tabular-num,
 .mesa-price,
 .f-value,
@@ -81,16 +69,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Estrutura da Aplicação */
 .app-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* ==========================================================================
-   Barra Superior Global
-   ========================================================================== */
 .top-nav {
   background-color: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -152,7 +136,6 @@ body {
   display: inline-block;
 }
 
-/* Seletor de Modo (Garçom vs Caixa) */
 .mode-switcher {
   display: flex;
   background-color: var(--surface-2);
@@ -187,7 +170,6 @@ body {
   box-shadow: 0 1px 4px rgba(43, 32, 25, 0.12);
 }
 
-/* Área direita do header */
 .top-nav-right {
   display: flex;
   align-items: center;
@@ -239,9 +221,6 @@ body {
   background-color: var(--border);
 }
 
-/* ==========================================================================
-   Painéis Principais (Alternância de Modo)
-   ========================================================================== */
 .main-content {
   flex: 1;
   display: flex;
@@ -258,9 +237,6 @@ body {
   flex-direction: column;
 }
 
-/* ==========================================================================
-   MODO GARÇOM (Mobile-first, Responsivo)
-   ========================================================================== */
 #view-garcom {
   max-width: 600px;
   width: 100%;
@@ -299,7 +275,6 @@ body {
   margin-top: 2px;
 }
 
-/* Filtros em Chips */
 .filter-chips,
 .categories-bar {
   display: flex;
@@ -340,12 +315,11 @@ body {
   box-shadow: 0 1px 3px rgba(43, 32, 25, 0.1);
 }
 
-/* Grade de Mesas */
 .mesas-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  padding-bottom: 80px; /* Espaço para o FAB */
+  padding-bottom: 80px;
 }
 
 .mesa-card {
@@ -446,7 +420,6 @@ body {
   color: var(--text-muted);
 }
 
-/* FAB Flutuante Abrir Mesa */
 .fab-btn {
   position: fixed;
   bottom: 24px;
@@ -473,9 +446,6 @@ body {
   transform: scale(1.03);
 }
 
-/* ==========================================================================
-   Comanda da Mesa (Modo Garçom)
-   ========================================================================== */
 .comanda-header {
   display: flex;
   align-items: center;
@@ -537,7 +507,6 @@ body {
   border-color: var(--danger);
 }
 
-/* Banner de Itens Confirmados */
 .confirmed-banner {
   background-color: var(--success-soft);
   border: 1px solid #B8E0C4;
@@ -580,13 +549,12 @@ body {
   cursor: pointer;
 }
 
-/* Lista de Produtos (Cardápio) */
 .cardapio-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 14px;
-  padding-bottom: 120px; /* Espaço para o rodapé fixo */
+  padding-bottom: 120px;
 }
 
 .product-row {
@@ -643,7 +611,6 @@ body {
   font-weight: 700;
 }
 
-/* Stepper de Quantidade */
 .stepper {
   display: flex;
   align-items: center;
@@ -688,7 +655,6 @@ body {
   text-align: center;
 }
 
-/* Rodapé Fixo do Pedido */
 .action-footer {
   position: fixed;
   bottom: 0;
@@ -749,9 +715,6 @@ body {
   border: 1px solid var(--border);
 }
 
-/* ==========================================================================
-   MODO CAIXA / BALCÃO (Desktop / Widescreen)
-   ========================================================================== */
 #view-caixa {
   padding: 16px 20px;
 }
@@ -840,7 +803,6 @@ body {
   display: flex;
 }
 
-/* Grid de Produtos do Caixa */
 .caixa-products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -897,14 +859,12 @@ body {
   color: var(--text-muted);
 }
 
-/* Mesas no Caixa */
 .mesas-grid-caixa {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
 }
 
-/* Rodapé de Atalhos */
 .shortcuts-bar {
   display: flex;
   align-items: center;
@@ -928,9 +888,6 @@ body {
   font-weight: 700;
 }
 
-/* ==========================================================================
-   Painel Lateral da Comanda (Caixa - 440px)
-   ========================================================================== */
 .comanda-panel {
   background-color: var(--surface);
   border: 1px solid var(--border);
@@ -982,7 +939,6 @@ body {
   background-color: var(--border);
 }
 
-/* Lista de Itens da Comanda no Caixa */
 .comanda-items-scroll {
   flex: 1;
   overflow-y: auto;
@@ -1046,7 +1002,6 @@ body {
   background-color: var(--danger-soft);
 }
 
-/* Bloco Financeiro */
 .financial-block {
   border-top: 1px solid var(--border);
   padding-top: 16px;
@@ -1191,9 +1146,6 @@ body {
   border: 1px solid var(--border);
 }
 
-/* ==========================================================================
-   Modais Globais
-   ========================================================================== */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -1330,7 +1282,6 @@ body {
   background-color: var(--brand-hover);
 }
 
-/* Modal Pagamento Grid */
 .payment-grid {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -1481,7 +1432,6 @@ body {
   background-color: var(--brand-hover);
 }
 
-/* Modal Cadastros Tabs & Table */
 .admin-tabs {
   display: flex;
   gap: 8px;
@@ -1542,7 +1492,6 @@ body {
   color: var(--text-2);
 }
 
-/* Toasts de Notificação */
 .toast-container {
   position: fixed;
   bottom: 24px;
@@ -1589,7 +1538,6 @@ body {
   }
 }
 
-/* Estado vazio */
 .empty-state {
   text-align: center;
   padding: 30px 16px;
@@ -1598,7 +1546,6 @@ body {
   font-weight: 600;
 }
 
-/* Responsividade adicional */
 @media (max-width: 900px) {
   .caixa-workspace {
     grid-template-columns: 1fr;

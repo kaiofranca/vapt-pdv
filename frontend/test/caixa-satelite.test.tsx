@@ -98,7 +98,6 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
       expect(resultado.cotas[1].valor).toBe('33.33');
       expect(resultado.cotas[2].valor).toBe('33.34');
 
-      // Soma estrita conservando 100% dos centavos (RN19)
       const soma = resultado.cotas.reduce((acc, c) => acc + parseFloat(c.valor), 0);
       expect(soma.toFixed(2)).toBe('100.00');
     });
@@ -239,11 +238,9 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         />,
       );
 
-      // Incrementa para 3 pessoas
       const btnMais = screen.getByLabelText(/Aumentar pessoas/i);
       fireEvent.click(btnMais);
 
-      // Clica em Confirmar Divisão para acionar satélite :3002
       const btnConfirmar = screen.getByTestId('btn-confirmar-divisao');
       fireEvent.click(btnConfirmar);
 
@@ -254,7 +251,6 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         });
       });
 
-      // Valida que as cotas retornadas pelo satélite foram renderizadas
       const cota1 = screen.getByTestId('cota-pessoa-1');
       const cota2 = screen.getByTestId('cota-pessoa-2');
       const cota3 = screen.getByTestId('cota-pessoa-3');
@@ -263,7 +259,6 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
       expect(cota2.textContent).toMatch(/33,33/);
       expect(cota3.textContent).toMatch(/33,34/);
 
-      // Clica para cobrar a terceira cota (R$ 33,34)
       const botoesCobrar = screen.getAllByRole('button', { name: /Cobrar Esta Cota/i });
       fireEvent.click(botoesCobrar[2]);
 
@@ -335,11 +330,9 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         />,
       );
 
-      // Clica na cédula rápida ou digita valor recebido de R$ 120,00
       const btnValor100 = screen.getByText('R$ 100');
       fireEvent.click(btnValor100);
 
-      // Clica em Confirmar Pagamento em Dinheiro
       const btnConfirmarDinheiro = screen.getByRole('button', {
         name: /Confirmar Pagamento em Dinheiro/i,
       });
@@ -397,13 +390,11 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
       expect(elementoPre.textContent).toContain('Mesa: 5');
       expect(elementoPre.textContent).toContain('R$ 100.00');
 
-      // Verifica se cada linha não excede 48 colunas
       const linhas = elementoPre.textContent?.split('\n') || [];
       linhas.forEach((linha) => {
         expect(linha.length).toBeLessThanOrEqual(48);
       });
 
-      // Código de autenticação destacado
       const codigoAuth = screen.getByTestId('codigo-autenticacao-recibo');
       expect(codigoAuth.textContent).toBe('VAPT-20261105-M05-ABCD');
     });
@@ -448,7 +439,6 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         expect(screen.getByRole('alert').textContent).toContain('indisponível');
       });
 
-      // Valida que fallback com conservação de centavos continua funcionando na tela
       const cota1 = screen.getByTestId('cota-pessoa-1');
       expect(cota1).toBeDefined();
       expect(cota1.textContent).toMatch(/50,00/);
@@ -471,7 +461,6 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         />,
       );
 
-      // Clica para confirmar pagamento em dinheiro
       const btnConfirmarDinheiro = screen.getByRole('button', {
         name: /Confirmar Pagamento em Dinheiro/i,
       });
@@ -482,13 +471,11 @@ describe('Story 2.2.8 — Caixa Frontend: Reconexão ao Satélite caixa-service 
         expect(screen.getByRole('alert').textContent).toContain('caixa-service (:3002) inacessível');
       });
 
-      // EARS-CXSAT-10: Garante que o operador não perdeu os dados e botão continuar visível
       expect(onToast).toHaveBeenCalledWith('erro', expect.stringContaining('inacessível'));
       expect(screen.getByRole('button', { name: /Confirmar Pagamento em Dinheiro/i })).toBeDefined();
     });
 
     it('calcularDivisaoLocal deve dividir valores ímpares conservando 100% dos centavos', () => {
-      // Divide R$ 100,00 entre 3 pessoas
       const cotas = calcularDivisaoLocal('100.00', 3);
       expect(cotas).toHaveLength(3);
       expect(cotas[0].valor).toBe('33.33');

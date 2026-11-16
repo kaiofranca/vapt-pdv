@@ -8,11 +8,6 @@ import {
 import { ServicoUsuarios } from './usuarios.service';
 import { UsuarioEntidade } from './usuario.entity';
 
-/**
- * Camada de Apresentação HTTP (Controller).
- * Responsabilidade: Atender requisições Fastify, delegar para a camada de serviço
- * e formatar/serializar as respostas HTTP adequadamente.
- */
 export class UsuariosController {
   constructor(private readonly service: ServicoUsuarios) {}
 

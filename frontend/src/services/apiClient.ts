@@ -90,7 +90,6 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     if (err instanceof ApiError) {
       throw err;
     }
-    // Falha de rede ou timeout
     throw new ApiError(503, {
       codigo: 'SERVICO_INDISPONIVEL',
       mensagem: 'Não foi possível comunicar com o servidor da API. Verifique a conexão.',

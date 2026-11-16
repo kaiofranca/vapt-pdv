@@ -12,7 +12,7 @@ export function useUsuarios(filtros?: ListarUsuariosFiltros) {
   return useQuery({
     queryKey: [...USUARIOS_QUERY_KEY, filtros],
     queryFn: () => usuariosApi.listar(filtros),
-    staleTime: 1000 * 60, // 1 minuto
+    staleTime: 1000 * 60,
   });
 }
 
@@ -20,7 +20,7 @@ export function useGarconsAtivos() {
   return useQuery({
     queryKey: [...USUARIOS_QUERY_KEY, { perfil: 'garcom', ativo: true }],
     queryFn: () => usuariosApi.listar({ perfil: 'garcom', ativo: true }),
-    staleTime: 1000 * 60 * 2, // 2 minutos
+    staleTime: 1000 * 60 * 2,
   });
 }
 
@@ -28,7 +28,7 @@ export function useUsuariosAtivos() {
   return useQuery({
     queryKey: [...USUARIOS_QUERY_KEY, { ativo: true }],
     queryFn: () => usuariosApi.listar({ ativo: true }),
-    staleTime: 1000 * 60 * 2, // 2 minutos
+    staleTime: 1000 * 60 * 2,
   });
 }
 

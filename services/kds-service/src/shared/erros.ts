@@ -47,4 +47,3 @@ export class ErroDominio extends Error {
     return new ErroDominio(400, 'VALIDACAO', 'Erro de validação dos dados enviados.', detalhes);
   }
 }
-

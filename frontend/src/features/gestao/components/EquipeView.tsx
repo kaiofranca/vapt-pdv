@@ -24,17 +24,14 @@ import type { Usuario, PerfilUsuario, FiltroPerfilEquipe, FiltroStatusEquipe } f
 export const EquipeView: React.FC = () => {
   const { data: usuarios = [], isLoading, isError, error, refetch } = useUsuarios();
 
-  // Estados de Filtros e Busca
   const [busca, setBusca] = useState('');
   const [filtroPerfil, setFiltroPerfil] = useState<FiltroPerfilEquipe>('todos');
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatusEquipe>('todos');
 
-  // Estados dos Modais
   const [isModalUsuarioAberto, setIsModalUsuarioAberto] = useState(false);
   const [usuarioParaEditar, setUsuarioParaEditar] = useState<Usuario | null>(null);
   const [usuarioParaInativar, setUsuarioParaInativar] = useState<Usuario | null>(null);
 
-  // Estado de Toast / Notificação
   const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
   const exibirToast = (msg: string) => {
@@ -44,7 +41,6 @@ export const EquipeView: React.FC = () => {
     }, 4000);
   };
 
-  // Contadores analíticos
   const contadores = useMemo(() => {
     const total = usuarios.length;
     const garcons = usuarios.filter((u) => u.perfil === 'garcom').length;
@@ -57,10 +53,8 @@ export const EquipeView: React.FC = () => {
     return { total, garcons, caixas, cozinhas, gerentes, ativos, inativos };
   }, [usuarios]);
 
-  // Filtragem dos colaboradores em memória
   const colaboradoresFiltrados = useMemo(() => {
     return usuarios.filter((u) => {
-      // 1. Busca por nome ou ID
       if (busca.trim()) {
         const termo = busca.toLowerCase().trim();
         const bateNome = u.nome.toLowerCase().includes(termo);
@@ -68,12 +62,10 @@ export const EquipeView: React.FC = () => {
         if (!bateNome && !bateId) return false;
       }
 
-      // 2. Filtro por Perfil
       if (filtroPerfil !== 'todos' && u.perfil !== filtroPerfil) {
         return false;
       }
 
-      // 3. Filtro por Status
       if (filtroStatus === 'ativo' && !u.ativo) return false;
       if (filtroStatus === 'inativo' && u.ativo) return false;
 
@@ -81,7 +73,6 @@ export const EquipeView: React.FC = () => {
     });
   }, [usuarios, busca, filtroPerfil, filtroStatus]);
 
-  // Iniciais do Colaborador
   const obterIniciais = (nome: string): string => {
     if (!nome) return '??';
     const partes = nome.trim().split(/\s+/);
@@ -91,7 +82,6 @@ export const EquipeView: React.FC = () => {
     return partes[0].slice(0, 2).toUpperCase();
   };
 
-  // Cores do avatar por perfil
   const getAvatarBadge = (perfil: PerfilUsuario) => {
     switch (perfil) {
       case 'gerente':
@@ -105,7 +95,6 @@ export const EquipeView: React.FC = () => {
     }
   };
 
-  // Rótulo amigável do perfil
   const getPerfilLabel = (perfil: PerfilUsuario) => {
     switch (perfil) {
       case 'gerente':
@@ -249,7 +238,6 @@ export const EquipeView: React.FC = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-4 rounded-xl bg-surface border border-border shadow-sm">
-        {/* Campo de Busca Textual */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-2 pointer-events-none" />
           <input
@@ -270,9 +258,7 @@ export const EquipeView: React.FC = () => {
           )}
         </div>
 
-        {/* Filtros por Perfil e Status */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Grupo de Perfis */}
           <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2 border border-border" role="group" aria-label="Filtrar por Perfil">
             {(
               [
@@ -298,7 +284,6 @@ export const EquipeView: React.FC = () => {
             ))}
           </div>
 
-          {/* Grupo de Status */}
           <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2 border border-border" role="group" aria-label="Filtrar por Status">
             {(
               [
@@ -390,7 +375,6 @@ export const EquipeView: React.FC = () => {
                         !u.ativo ? 'opacity-60 bg-surface-2/20' : ''
                       }`}
                     >
-                      {/* Colaborador: Avatar + Nome + ID */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div
@@ -414,7 +398,6 @@ export const EquipeView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Perfil Operacional */}
                       <td className="py-3.5 px-4">
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold">
                           <IconePerfil className="w-3.5 h-3.5" />
@@ -422,7 +405,6 @@ export const EquipeView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Status: Ativo / Inativo */}
                       <td className="py-3.5 px-4">
                         {u.ativo ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-xs font-semibold">
@@ -437,7 +419,6 @@ export const EquipeView: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Data de Cadastro */}
                       <td className="py-3.5 px-4 text-text-2 text-xs hidden md:table-cell">
                         {u.criado_em
                           ? new Date(u.criado_em).toLocaleDateString('pt-BR', {
@@ -448,10 +429,8 @@ export const EquipeView: React.FC = () => {
                           : '—'}
                       </td>
 
-                      {/* Ações */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="inline-flex items-center justify-end gap-1.5">
-                          {/* Botão Editar */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -465,7 +444,6 @@ export const EquipeView: React.FC = () => {
                             Editar
                           </Button>
 
-                          {/* Botão Inativar (só para ativos) */}
                           {u.ativo ? (
                             <Button
                               variant="ghost"

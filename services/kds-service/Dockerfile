@@ -1,6 +1,3 @@
-# ==============================================================================
-# Estágio 1: Builder (Compilação TypeScript + Prisma Client + Limpeza)
-# ==============================================================================
 FROM node:20-alpine AS builder
 
 WORKDIR /build
@@ -49,9 +46,6 @@ RUN npx prisma generate \
            node_modules/@vitest \
  && find node_modules dist -type f \( -name "*.d.ts" -o -name "*.d.mts" -o -name "*.d.ts.map" -o -name "*.js.map" -o -name "*.mjs.map" -o -name "*.ts.map" \) -delete
 
-# ==============================================================================
-# Estágio 2: Runner (Imagem final enxuta < 160MB, usuário não-root)
-# ==============================================================================
 FROM node:20-alpine AS runner
 
 WORKDIR /app

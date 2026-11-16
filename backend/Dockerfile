@@ -1,6 +1,3 @@
-# syntax=docker/dockerfile:1
-
-# Estágio 1: Build do Frontend Web/PWA (React 19 + Vite)
 FROM node:20-alpine AS frontend-builder
 WORKDIR /build/frontend
 
@@ -10,7 +7,6 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# Estágio 2: Build do Backend Core (TypeScript + Prisma Client) e poda de produção
 FROM node:20-alpine AS backend-builder
 WORKDIR /build/backend
 
@@ -32,7 +28,6 @@ RUN npx prisma generate \
            node_modules/@prisma/engines/*prisma-fmt* \
  && find node_modules \( -name "*.d.ts" -o -name "*.d.ts.map" -o -name "*.js.map" -o -name "*.ts.map" \) -delete
 
-# Estágio 3: Runner de produção enxuto e não-root (< 220MB)
 FROM node:20-alpine AS runner
 WORKDIR /app
 

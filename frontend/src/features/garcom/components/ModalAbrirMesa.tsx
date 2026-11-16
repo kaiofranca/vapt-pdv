@@ -64,10 +64,8 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
       return;
     }
 
-    // Garante que o garçom seja válido do banco
     const idGarcomValido = garcomId || (garcons.length > 0 ? garcons[0].id : 1);
 
-    // O nome do cliente pode conter a contagem de pessoas se especificado
     let clienteDescricao = nomeCliente.trim();
     if (qtdPessoas > 1) {
       clienteDescricao = clienteDescricao
@@ -104,10 +102,8 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
         className="w-full sm:max-w-md bg-surface rounded-t-[28px] sm:rounded-[28px] p-6 shadow-modal border border-border space-y-6 animate-in slide-in-from-bottom duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle visual da gaveta móvel */}
         <div className="w-12 h-1.5 bg-border rounded-full mx-auto sm:hidden -mt-1 mb-2" />
 
-        {/* Topo: Título e Botão Fechar X */}
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black text-text tracking-tight">
             Abrir Mesa {mesa || '...'}
@@ -129,7 +125,6 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Campo de Número da Mesa (se abriu pelo FAB flutuante) */}
           {!mesaPredefinida && (
             <div>
               <label className="block text-xs font-bold text-text mb-1.5">Número da Mesa</label>
@@ -144,7 +139,6 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
             </div>
           )}
 
-          {/* Stepper de Quantas Pessoas (Fiel a G02) */}
           <div>
             <label className="block text-xs font-bold text-text mb-1.5">Quantas pessoas?</label>
             <div className="flex items-center justify-between p-3 rounded-[20px] border border-border bg-surface">
@@ -178,7 +172,6 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
             </div>
           </div>
 
-          {/* Nome na Comanda (Opcional - Fiel a G02) */}
           <div>
             <label className="block text-xs font-bold text-text mb-1.5">
               Nome na comanda <span className="text-text-2 font-normal">(opcional)</span>
@@ -195,7 +188,6 @@ export const ModalAbrirMesa: React.FC<ModalAbrirMesaProps> = ({
             </div>
           </div>
 
-          {/* Botão Primário Largo "Abrir e lançar itens" (Fiel a G02) */}
           <button
             type="submit"
             disabled={abrirComandaMut.isPending}

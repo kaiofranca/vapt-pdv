@@ -46,12 +46,6 @@ export interface CotaCalculadaItens {
   status: 'pendente';
 }
 
-/**
- * Motor de Divisão de Conta por Pessoas (Split Payment - RN19).
- * Realiza divisão com precisão em centavos inteiros e garantia estrita
- * de conservação de 100% dos centavos (soma(cotas) === total).
- * Resíduos de arredondamento são alocados integralmente na última cota.
- */
 export function calcularDivisaoPorPessoas(
   valorTotal: Prisma.Decimal | string | number,
   pessoas: number,
@@ -73,7 +67,6 @@ export function calcularDivisaoPorPessoas(
     });
   }
 
-  // Converter para centavos exatos (inteiro) via Prisma.Decimal (ROUND_HALF_UP)
   const totalCentavos = totalDecimal
     .mul(100)
     .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP)
@@ -95,7 +88,6 @@ export function calcularDivisaoPorPessoas(
     });
   }
 
-  // A última cota absorve o resíduo exato de centavos garantindo conservação de 100% (RN19)
   const ultimaCotaCentavos = baseCentavos + residuoCentavos;
   const valorUltimaCota = new Prisma.Decimal(ultimaCotaCentavos).div(100).toFixed(2);
 
@@ -110,12 +102,6 @@ export function calcularDivisaoPorPessoas(
   return cotas;
 }
 
-/**
- * Motor de Divisão de Conta por Itens Selecionados (Split Payment - RN19).
- * Calcula subtotal, taxa de serviço proporcional opcional (10% com ROUND_HALF_UP)
- * e garante que, ao alocar todos os itens da comanda, a soma das cotas
- * seja exatamente igual ao total da comanda, ajustando resíduo na última cota.
- */
 export function calcularDivisaoPorItens(
   itensComanda: ItemComandaParaDivisao[],
   cotasConfig: ConfigCotaItens[],
@@ -215,8 +201,6 @@ export function calcularDivisaoPorItens(
     });
   }
 
-  // Conservação de 100% dos centavos quando o total esperado da comanda é conhecido
-  // e todos os itens foram inteiramente distribuídos (RN19)
   if (totalEsperado !== undefined && totalEsperado !== null) {
     const totalEsperadoDecimal =
       totalEsperado instanceof Prisma.Decimal

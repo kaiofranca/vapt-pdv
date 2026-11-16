@@ -1,4 +1,3 @@
--- CreateTable
 CREATE TABLE "produtos" (
     "id" SERIAL NOT NULL,
     "nome" TEXT NOT NULL,
@@ -13,7 +12,6 @@ CREATE TABLE "produtos" (
     CONSTRAINT "produtos_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "movimentos_estoque" (
     "id" SERIAL NOT NULL,
     "produto_id" INTEGER NOT NULL,
@@ -25,8 +23,6 @@ CREATE TABLE "movimentos_estoque" (
     CONSTRAINT "movimentos_estoque_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE INDEX "movimentos_estoque_comanda_id_idx" ON "movimentos_estoque"("comanda_id");
 
--- CreateIndex
 CREATE INDEX "movimentos_estoque_produto_id_idx" ON "movimentos_estoque"("produto_id");

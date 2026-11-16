@@ -3,7 +3,6 @@ import { Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '../../stores/useThemeStore';
 
 export interface ThemeToggleProps {
-  /** `pill` mostra ícone + rótulo; `icon` mostra somente o ícone. */
   variante?: 'pill' | 'icon';
   className?: string;
 }

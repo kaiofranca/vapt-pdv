@@ -205,7 +205,6 @@ describe('Story 2.5.1 — Core & Salão: Transferência de Mesa e Junção/Mescl
         expect(screen.getByText(/A mesa 12 já possui comanda aberta/i)).toBeDefined();
       });
 
-      // Botão para Mesclar Comandas deve estar visível
       const btnMesclar = screen.getByRole('button', { name: /Mesclar Comandas/i });
       expect(btnMesclar).toBeDefined();
 
@@ -223,13 +222,11 @@ describe('Story 2.5.1 — Core & Salão: Transferência de Mesa e Junção/Mescl
         />
       );
 
-      // Espera carregamento da query de comandas abertas
       await waitFor(() => {
         expect(comandasApi.listar).toHaveBeenCalled();
       });
 
       const input = screen.getByLabelText('Nova mesa');
-      // Mesa 5 já possui comanda aberta (#2)
       fireEvent.change(input, { target: { value: '5' } });
 
       await waitFor(() => {
@@ -293,17 +290,14 @@ describe('Story 2.5.1 — Core & Salão: Transferência de Mesa e Junção/Mescl
       expect(screen.getByText(/Destino:/i)).toBeDefined();
       expect(screen.getByText('Mesa 3')).toBeDefined();
 
-      // Aviso de cancelamento e auditoria (EARS-TRANSF-04)
       expect(screen.getByText(/Transferência Definitiva de Itens/i)).toBeDefined();
       expect(screen.getByText(/encerrada como cancelada por auditoria/i)).toBeDefined();
 
-      // Aguarda listar comandas e valida que comanda destino (#1) foi excluída (EARS-TRANSF-07)
       await waitFor(() => {
         expect(screen.getByText(/Mesa 5 · Família Souza/i)).toBeDefined();
         expect(screen.getByText(/Mesa 7 · Mesa Varanda/i)).toBeDefined();
       });
 
-      // Mesa 3 (destino) não deve aparecer na lista de seleção de origem
       expect(screen.queryByText(/Mesa 3 · Cliente Mesa 3/i)).toBeNull();
     });
 
@@ -363,11 +357,9 @@ describe('Story 2.5.1 — Core & Salão: Transferência de Mesa e Junção/Mescl
         expect(screen.getByText(/Mesa 5 · Família Souza/i)).toBeDefined();
       });
 
-      // Clica na comanda da Mesa 5 (ID 2)
       const btnMesa5 = screen.getByText(/Mesa 5 · Família Souza/i);
       fireEvent.click(btnMesa5);
 
-      // Resumo da mesclagem deve ser exibido
       expect(screen.getByText(/Origem selecionada:/i)).toBeDefined();
       expect(screen.getByText(/Mesa 5 \(Comanda #2\)/i)).toBeDefined();
 

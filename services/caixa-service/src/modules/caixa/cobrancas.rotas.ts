@@ -26,7 +26,6 @@ export interface OpcoesRotasCaixa {
 export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts) => {
   const { service } = opts;
 
-  // 1. GET /caixa/comandas — Fila de Contas no Caixa e Resumo do Turno (C01, C02, C15)
   app.get<{ Querystring: ListarComandasQuery }>(
     '/caixa/comandas',
     {
@@ -49,7 +48,6 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
     },
   );
 
-  // 2. GET /caixa/comandas/:comandaId — Detalhe da Cobrança, Parcelas e Saldo (C03, C05)
   app.get<{ Params: ComandaParams }>(
     '/caixa/comandas/:comandaId',
     {
@@ -73,7 +71,6 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
     },
   );
 
-  // 3. POST /caixa/comandas/:comandaId/fechar — Fechamento e Recálculo com Taxa de 10% (C05, C06, RN12)
   app.post<{ Params: ComandaParams; Body: FecharComandaBody }>(
     '/caixa/comandas/:comandaId/fechar',
     {
@@ -101,7 +98,6 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
     },
   );
 
-  // 4. POST /caixa/comandas/:comandaId/dividir — Divisão de Conta / Split Payment (C11, RN15, RN19)
   app.post<{ Params: ComandaParams; Body: DividirComandaBody }>(
     '/caixa/comandas/:comandaId/dividir',
     {
@@ -131,7 +127,6 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
     },
   );
 
-  // 5. POST /caixa/comandas/:comandaId/pagar — Quitação de Parcelas/Integral com Cálculo de Troco (Story 15.4, C04, C07, C10, C11, RN15, RN19, ADR-07)
   app.post<{ Params: ComandaParams; Body: PagarComandaBody }>(
     '/caixa/comandas/:comandaId/pagar',
     {
@@ -161,7 +156,6 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
     },
   );
 
-  // 6. GET /caixa/recibos/:comandaId — Emissão e Consulta do Recibo Operacional Térmico .paper (Story 15.5, C12, RN24)
   app.get<{ Params: ComandaParams }>(
     '/caixa/recibos/:comandaId',
     {

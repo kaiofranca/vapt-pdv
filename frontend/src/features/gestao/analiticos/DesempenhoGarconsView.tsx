@@ -40,7 +40,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
 
   const garcons = data?.garcons ?? [];
 
-  // Ordenação decrescente por total vendido
   const garconsOrdenados = useMemo(() => {
     return [...garcons].sort((a, b) => {
       const vA = parseFloat(a.total_vendido || '0');
@@ -49,7 +48,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
     });
   }, [garcons]);
 
-  // Cálculos de destaque no topo
   const metricasGerais = useMemo(() => {
     if (garcons.length === 0) {
       return {
@@ -92,7 +90,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
     };
   }, [garcons]);
 
-  // Filtro de busca local
   const garconsFiltrados = useMemo(() => {
     if (!buscaNome.trim()) return garconsOrdenados;
     const termo = buscaNome.toLowerCase();
@@ -112,7 +109,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -158,9 +154,7 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
         </div>
       </div>
 
-      {/* Cards de Destaque no Topo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card 1: Top Faturamento */}
         <div className="relative overflow-hidden rounded-card bg-surface border border-brand/40 shadow-soft p-5">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-brand" />
           <div className="flex items-center justify-between">
@@ -184,7 +178,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Maior Comissão Gerada */}
         <div className="relative overflow-hidden rounded-card bg-surface border border-success/40 shadow-soft p-5">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-success" />
           <div className="flex items-center justify-between">
@@ -208,7 +201,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Resumo Geral da Equipe */}
         <div className="relative overflow-hidden rounded-card bg-surface border border-border shadow-soft p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-text-2 uppercase tracking-wider flex items-center gap-1.5">
@@ -232,7 +224,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
         </div>
       </div>
 
-      {/* Barra de Filtro / Busca */}
       <div className="rounded-card bg-surface border border-border p-4 shadow-soft">
         <div className="relative max-w-md">
           <Search className="w-4 h-4 text-text-2 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
@@ -246,7 +237,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
         </div>
       </div>
 
-      {/* Tabela de Desempenho */}
       <div className="rounded-card bg-surface border border-border shadow-soft overflow-hidden">
         {isLoading ? (
           <div className="p-6 space-y-4">
@@ -297,7 +287,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
                       key={garcom.garcom_id}
                       className="hover:bg-surface-2/40 transition-colors duration-100"
                     >
-                      {/* Posição / Ranking */}
                       <td className="py-3.5 px-4 text-center">
                         {posicao <= 3 ? (
                           <span
@@ -317,7 +306,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
                         )}
                       </td>
 
-                      {/* Garçom com Avatar */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <span className="w-9 h-9 rounded-full bg-surface-2 text-text-2 border border-border flex items-center justify-center text-xs font-bold shrink-0">
@@ -330,24 +318,20 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Comandas Atendidas */}
                       <td className="py-3.5 px-4 text-center">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-2 text-text border border-border tabular-nums">
                           {garcom.comandas_atendidas} comandas
                         </span>
                       </td>
 
-                      {/* Faturamento Total */}
                       <td className="py-3.5 px-4 text-right font-black text-text tabular-nums text-base">
                         {formatCurrency(garcom.total_vendido)}
                       </td>
 
-                      {/* Ticket Médio */}
                       <td className="py-3.5 px-4 text-right font-semibold text-text-2 tabular-nums">
                         {formatCurrency(garcom.ticket_medio)}
                       </td>
 
-                      {/* Comissão 10% */}
                       <td className="py-3.5 px-4 text-right">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-success-soft text-success-text border border-success/30 tabular-nums">
                           {formatCurrency(garcom.comissao_gerada)}
@@ -361,7 +345,6 @@ export const DesempenhoGarconsView: React.FC<DesempenhoGarconsViewProps> = ({
           </div>
         )}
 
-        {/* Rodapé com totais consolidados */}
         {!isLoading && !isError && garconsFiltrados.length > 0 && (
           <div className="p-4 bg-surface-2/60 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-text-2 gap-2">
             <span>

@@ -40,7 +40,6 @@ export const KdsHeader: React.FC<KdsHeaderProps> = ({
 
   return (
     <header className="bg-[#231A14] border-b border-[#3D2D23] px-6 py-3.5 text-white flex flex-wrap items-center justify-between gap-4 select-none shrink-0">
-      {/* Esquerda: Identidade & Relógio */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-soft">
@@ -67,7 +66,6 @@ export const KdsHeader: React.FC<KdsHeaderProps> = ({
         </div>
       </div>
 
-      {/* Centro: Filtros de Estação */}
       <div className="flex items-center gap-1.5 bg-[#1B140F] p-1.5 rounded-2xl border border-[#3D2D23]">
         <button
           type="button"
@@ -106,7 +104,6 @@ export const KdsHeader: React.FC<KdsHeaderProps> = ({
         </button>
       </div>
 
-      {/* Direita: Contadores de SLA & Logout */}
       <div className="flex items-center gap-3">
         <div className="hidden lg:flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold">

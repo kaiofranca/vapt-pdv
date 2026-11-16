@@ -64,4 +64,3 @@ describe('GET /health (kds-service)', () => {
     await app.close();
   });
 });
-

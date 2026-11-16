@@ -5,7 +5,6 @@ afterEach(() => {
   cleanup();
 });
 
-// Polyfill básico para window.print se necessário
 if (!window.print) {
   window.print = () => {};
 }

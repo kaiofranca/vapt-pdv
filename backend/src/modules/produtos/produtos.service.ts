@@ -14,10 +14,6 @@ import {
 import { IProdutosRepository } from './produtos.repository';
 import { HttpGestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 
-/**
- * Normaliza e valida strings de preço para garantir conformidade contábil.
- * Converte number para string e valida formato estrito com até 2 casas decimais (RN03).
- */
 export function normalizarPreco(preco: string | number): string {
   if (typeof preco === 'number') {
     if (!Number.isFinite(preco) || preco < 0 || preco > 99999999.99) {
@@ -42,10 +38,6 @@ export function normalizarPreco(preco: string | number): string {
   return `${inteiro}.${decimalFormatado}`;
 }
 
-/**
- * Contrato público do serviço de produtos.
- * Outros módulos (ex: Comandas) só conhecem e dependem desta interface!
- */
 export interface ServicoProdutos {
   criar(dados: CriarProdutoDados): Promise<ProdutoEntidade>;
   listar(filtros?: FiltrosListagemProdutos): Promise<ProdutoEntidade[]>;
@@ -57,13 +49,9 @@ export interface ServicoProdutos {
   repor(id: number, quantidade: number, motivo?: string): Promise<ReposicaoEstoqueResultado>;
 }
 
-/**
- * Implementação das Regras de Negócio do Módulo de Produtos.
- */
 export class ProdutosService implements ServicoProdutos {
   private readonly gestaoGateway?: IGestaoGateway;
 
-  // Injeção de dependência: o Service recebe o Repository pronto!
   constructor(
     private readonly repository: IProdutosRepository,
     gestaoGateway?: IGestaoGateway,
@@ -98,7 +86,6 @@ export class ProdutosService implements ServicoProdutos {
 
     const precoFormatado = normalizarPreco(dados.preco);
 
-    // Validação de estoque não negativo (RN02)
     if (dados.estoque < 0 || dados.estoque > 2147483647) {
       throw ErroDominio.validacao('O estoque deve ser um número inteiro entre 0 e 2147483647.', {
         estoque: 'O campo deve ser entre 0 e 2147483647.',
@@ -112,7 +99,6 @@ export class ProdutosService implements ServicoProdutos {
       });
     }
 
-    // Regra validada com sucesso! Delega a gravação para o Repositório:
     return this.repository.criar({
       nome: nomeLimpo,
       categoria: categoriaLimpa,
@@ -129,7 +115,6 @@ export class ProdutosService implements ServicoProdutos {
   async buscarPorId(id: number): Promise<ProdutoEntidade> {
     const produto = await this.repository.buscarPorId(id);
 
-    // Se o repositório retornar null, aqui no Service disparamos o erro 404 de Domínio
     if (!produto) {
       throw ErroDominio.naoEncontrado(`Produto com ID ${id} não encontrado.`, {
         id: 'Produto não encontrado.',
@@ -140,7 +125,6 @@ export class ProdutosService implements ServicoProdutos {
   }
 
   async atualizar(id: number, dados: AtualizarProdutoDados): Promise<ProdutoEntidade> {
-    // Garante que o produto existe antes de tentar atualizar
     await this.buscarPorId(id);
 
     const dadosAtualizacao: {
@@ -216,7 +200,6 @@ export class ProdutosService implements ServicoProdutos {
   async inativar(id: number): Promise<ProdutoEntidade> {
     const produto = await this.buscarPorId(id);
 
-    // Idempotência: se já estiver inativo, não bate no banco para alterar
     if (!produto.ativo) {
       return produto;
     }
@@ -319,7 +302,6 @@ export class ProdutosService implements ServicoProdutos {
             });
           }
         } catch {
-          // Degradação graciosa pós-commit (ADR-07)
         }
       }
     }
@@ -356,7 +338,6 @@ export class ProdutosService implements ServicoProdutos {
           abaixo_do_minimo: prod.estoque <= prod.estoque_minimo,
         });
       } catch {
-        // Degradação graciosa pós-commit (ADR-07)
       }
     }
 

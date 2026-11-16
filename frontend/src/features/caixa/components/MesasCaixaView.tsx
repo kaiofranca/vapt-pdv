@@ -38,14 +38,12 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
 }) => {
   const [filtro, setFiltro] = useState<FiltroMesaCaixa>('todas');
 
-  // Mapeamento de id do garçom -> nome
   const garcomMap = useMemo(() => {
     const map = new Map<number, string>();
     garcons.forEach((g) => map.set(g.id, g.nome));
     return map;
   }, [garcons]);
 
-  // Lista com todas as mesas (1 a 12 ou mesas ativas no banco)
   const listaMesas = useMemo(() => {
     const mesasSet = new Set<string>();
     for (let i = 1; i <= totalMesasPadrao; i++) {
@@ -64,7 +62,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
     });
   }, [totalMesasPadrao, comandas]);
 
-  // Mapa de mesa -> comanda
   const comandaPorMesa = useMemo(() => {
     const map = new Map<string, Comanda>();
     comandas.forEach((c) => {
@@ -75,7 +72,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
     return map;
   }, [comandas]);
 
-  // Contadores de resumo
   const contadores = useMemo(() => {
     let livres = 0;
     let abertas = 0;
@@ -91,7 +87,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
     return { total: listaMesas.length, livres, abertas, contas };
   }, [listaMesas, comandaPorMesa]);
 
-  // Mesas filtradas
   const mesasExibidas = useMemo(() => {
     return listaMesas.filter((m) => {
       const cmd = comandaPorMesa.get(m);
@@ -104,7 +99,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-bg p-6 gap-6">
-      {/* Cabeçalho da Visão de Mesas */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <div className="flex items-center gap-3">
@@ -120,7 +114,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Filtros em Pílulas */}
           <div className="flex items-center gap-1.5 bg-surface-2 p-1 rounded-full border border-border text-xs">
             <button
               onClick={() => setFiltro('todas')}
@@ -164,7 +157,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
             </button>
           </div>
 
-          {/* Botão de Nova Mesa */}
           <Button
             variant="primary"
             size="md"
@@ -177,7 +169,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
         </div>
       </div>
 
-      {/* Grid de Mesas em 4 Colunas Desktop 1440px */}
       <div className="flex-1 overflow-y-auto pr-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {mesasExibidas.map((mesaNum) => {
@@ -271,7 +262,6 @@ export const MesasCaixaView: React.FC<MesasCaixaViewProps> = ({
               );
             }
 
-            // Aberta
             return (
               <div
                 key={mesaNum}

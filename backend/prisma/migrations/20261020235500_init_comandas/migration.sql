@@ -1,10 +1,7 @@
--- CreateEnum
 CREATE TYPE "StatusComanda" AS ENUM ('aberta', 'fechada', 'paga', 'cancelada');
 
--- CreateEnum
 CREATE TYPE "FormaPagamento" AS ENUM ('dinheiro', 'pix', 'cartao');
 
--- CreateTable
 CREATE TABLE "comandas" (
     "id" SERIAL NOT NULL,
     "mesa" TEXT NOT NULL,
@@ -22,7 +19,6 @@ CREATE TABLE "comandas" (
     CONSTRAINT "comandas_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "itens_comanda" (
     "id" SERIAL NOT NULL,
     "comanda_id" INTEGER NOT NULL,
@@ -34,23 +30,16 @@ CREATE TABLE "itens_comanda" (
     CONSTRAINT "itens_comanda_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE INDEX "comandas_status_idx" ON "comandas"("status");
 
--- CreateIndex
 CREATE INDEX "comandas_mesa_idx" ON "comandas"("mesa");
 
--- CreateIndex
 CREATE INDEX "comandas_aberta_em_idx" ON "comandas"("aberta_em");
 
--- CreateIndex
 CREATE UNIQUE INDEX "comandas_mesa_aberta_unique_idx" ON "comandas"("mesa") WHERE "status" = 'aberta';
 
--- CreateIndex
 CREATE INDEX "itens_comanda_comanda_id_idx" ON "itens_comanda"("comanda_id");
 
--- CreateIndex
 CREATE INDEX "itens_comanda_produto_id_idx" ON "itens_comanda"("produto_id");
 
--- AddForeignKey
 ALTER TABLE "itens_comanda" ADD CONSTRAINT "itens_comanda_comanda_id_fkey" FOREIGN KEY ("comanda_id") REFERENCES "comandas"("id") ON DELETE CASCADE ON UPDATE CASCADE;

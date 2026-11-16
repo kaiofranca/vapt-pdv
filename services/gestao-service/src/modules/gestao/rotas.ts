@@ -21,9 +21,7 @@ export interface OpcoesRotasGestao {
 export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, opts) => {
   const { controller } = opts;
 
-  // Função auxiliar para registrar endpoints tanto em /gestao quanto em /analytics
   const registrarRotasEmPrefixos = (prefixo: string) => {
-    // 1. Ingestão de Evento Operacional
     app.post(
       `${prefixo}/eventos`,
       {
@@ -43,7 +41,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
       (req, reply) => controller.ingerirEvento(req as any, reply),
     );
 
-    // 2. Resumo Diário
     app.get(
       `${prefixo}/resumo-diario`,
       {
@@ -62,7 +59,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
       (req, reply) => controller.obterResumoDiario(req as any, reply),
     );
 
-    // 3. Ranking de Produtos e Curva ABC
     app.get(
       `${prefixo}/ranking-produtos`,
       {
@@ -81,7 +77,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
       (req, reply) => controller.obterRankingProdutos(req as any, reply),
     );
 
-    // 4. Desempenho e Comissões de Garçons
     app.get(
       `${prefixo}/desempenho-garcons`,
       {
@@ -98,7 +93,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
       (req, reply) => controller.obterDesempenhoGarcons(req, reply),
     );
 
-    // 5. Alertas de Estoque Baixo
     app.get(
       `${prefixo}/alertas-estoque`,
       {
@@ -116,7 +110,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
       (req, reply) => controller.obterAlertasEstoque(req as any, reply),
     );
 
-    // 6. Exportação de Relatórios
     app.get(
       `${prefixo}/exportar`,
       {
@@ -132,8 +125,6 @@ export const rotasGestao: FastifyPluginAsync<OpcoesRotasGestao> = async (app, op
     );
   };
 
-  // Registra no caminho canônico /gestao
   registrarRotasEmPrefixos('/gestao');
-  // Registra no alias compatível /analytics
   registrarRotasEmPrefixos('/analytics');
 };

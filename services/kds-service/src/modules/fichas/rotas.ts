@@ -46,7 +46,6 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
   const repositorio = new FichasRepositorio(opcoes.prisma);
   const servico = new FichasServico(repositorio);
 
-  // POST /kds/fichas — Recebimento síncrono e idempotente (Story 14.2)
   servidor.post(
     '/kds/fichas',
     {
@@ -69,7 +68,6 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
     },
   );
 
-  // GET /kds/fichas e alias /kds/fila — Consulta FIFO com SLA (Story 14.3)
   const filaHandler = async (request: any, reply: any) => {
     const resultado = await servico.consultarFila(request.query);
     return reply.status(200).send(resultado);
@@ -105,7 +103,6 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
     filaHandler,
   );
 
-  // PATCH /kds/fichas/:id/status — Transição de estado de preparo (Story 14.4)
   servidor.patch(
     '/kds/fichas/:id/status',
     {
@@ -132,7 +129,6 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
     },
   );
 
-  // GET /kds/comandas/:comandaId/pendencias e alias /status-preparo — Consulta de pendências (Story 14.5)
   const pendenciasHandler = async (request: any, reply: any) => {
     const pendencias = await servico.consultarPendenciasComanda(request.params.comandaId);
     return reply.status(200).send(pendencias);
@@ -170,4 +166,3 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
     pendenciasHandler,
   );
 };
-

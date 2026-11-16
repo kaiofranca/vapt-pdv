@@ -23,7 +23,6 @@ export const DesempenhoGarconsView: React.FC = () => {
     return partes[0].slice(0, 2).toUpperCase();
   };
 
-  // Garçons ordenados por volume total vendido decrescente
   const garconsOrdenados = useMemo(() => {
     if (!garconsData?.garcons) return [];
     return [...garconsData.garcons].sort(
@@ -31,7 +30,6 @@ export const DesempenhoGarconsView: React.FC = () => {
     );
   }, [garconsData]);
 
-  // Totais consolidados da equipe
   const totaisEquipe = useMemo(() => {
     if (!garconsOrdenados.length) {
       return { comandas: 0, vendido: 0, comissao: 0 };
@@ -55,9 +53,6 @@ export const DesempenhoGarconsView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ─────────────────────────────────────────────────────────────
-          CABEÇALHO & ATUALIZAÇÃO
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <h2 className="text-2xl font-extrabold text-text tracking-tight flex items-center gap-2">
@@ -83,9 +78,6 @@ export const DesempenhoGarconsView: React.FC = () => {
         </Button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          CARDS DE RESUMO DA EQUIPE
-          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
           <div className="flex items-center justify-between text-text-2 mb-2">
@@ -127,9 +119,6 @@ export const DesempenhoGarconsView: React.FC = () => {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          DESTAQUE TOP 3 GARÇONS
-          ───────────────────────────────────────────────────────────── */}
       {garconsOrdenados.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {garconsOrdenados.slice(0, 3).map((garcom, idx) => (
@@ -170,9 +159,6 @@ export const DesempenhoGarconsView: React.FC = () => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          TABELA DETALHADA DE PRODUTIVIDADE
-          ───────────────────────────────────────────────────────────── */}
       <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-text tracking-tight">

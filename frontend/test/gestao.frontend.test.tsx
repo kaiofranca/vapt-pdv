@@ -38,9 +38,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
     vi.restoreAllMocks();
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // 1. Testes de Contratos de Rotas e Tipos (services/gestao.ts)
-  // ─────────────────────────────────────────────────────────────
   describe('1. Contratos de Rotas e Tipagem (API Client /gestao)', () => {
     it('obterResumoDiario deve invocar /gestao/resumo-diario com parâmetro de data', async () => {
       const mockResumo: ResumoDiarioGestao = {
@@ -192,9 +189,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
     });
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // 2. Acessibilidade (WCAG 2.2 AA) & Design System (docs/DESIGN.md)
-  // ─────────────────────────────────────────────────────────────
   describe('2. Auditoria de Acessibilidade e Design System', () => {
     it('SideNavGestao deve possuir aria-labels descritivos em todas as abas e botões', () => {
       const onAbaChange = vi.fn();
@@ -209,11 +203,9 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
         />,
       );
 
-      // 1. Aba Visão Geral com aria-current="page"
       const abaVisaoGeral = screen.getByRole('button', { name: /Visão Geral/i });
       expect(abaVisaoGeral.getAttribute('aria-current')).toBe('page');
 
-      // 2. Demais abas com labels acessíveis
       const abaCurvaAbc = screen.getByRole('button', { name: /Curva ABC/i });
       const abaGarcons = screen.getByRole('button', { name: /Garçons/i });
       const abaEstoque = screen.getByRole('button', { name: /Estoque/i });
@@ -222,10 +214,8 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
       expect(abaGarcons).toBeDefined();
       expect(abaEstoque).toBeDefined();
 
-      // Badge de alerta de estoque deve exibir a contagem
       expect(within(abaEstoque).getByText('3')).toBeDefined();
 
-      // 3. Botão de Exportar Relatórios com aria-label explícito
       const btnExportar = screen.getByRole('button', {
         name: /Exportar relatórios gerenciais em CSV ou JSON/i,
       });
@@ -234,7 +224,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
       fireEvent.click(btnExportar);
       expect(onAbrirExportacao).toHaveBeenCalledTimes(1);
 
-      // 4. Botão de Logout com aria-label explícito
       const btnLogout = screen.getByRole('button', { name: /Sair da sessão/i });
       expect(btnLogout).toBeDefined();
     });
@@ -253,7 +242,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
 
       botoes.forEach((btn) => {
         const className = btn.className;
-        // Valida que possui classes de dimensão mínima de toque (min-h-[44px], h-11, p-2 min-h ou py-3)
         const temAlturaAdequada =
           className.includes('min-h-[44px]') ||
           className.includes('py-3') ||
@@ -271,12 +259,10 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
         />,
       );
 
-      // Regex para detecção de emojis Unicode
       const emojiRegex = /[\uD83C-\uDBFF\uDC00-\uDFFF\u2600-\u26FF\u2700-\u27BF]/;
       const textoCompleto = container.textContent || '';
       expect(emojiRegex.test(textoCompleto)).toBe(false);
 
-      // Garantir que ícones são SVGs (Lucide)
       const svgs = container.querySelectorAll('svg');
       expect(svgs.length).toBeGreaterThan(0);
     });
@@ -299,7 +285,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
       expect(btnCsv.className).toContain('min-h-[44px]');
       expect(btnJson.className).toContain('min-h-[44px]');
 
-      // Botão primário "Gerar e Baixar Arquivo" deve ser do Design System com tamanho >= 44px
       const btnConfirmar = screen.getByRole('button', {
         name: /Gerar e Baixar Arquivo/i,
       });
@@ -308,7 +293,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
     });
 
     it('Valores numéricos e contábeis devem utilizar tipografia com números tabulares (tabular-nums)', () => {
-      // Mock de dados para renderizar a página principal de gestão
       vi.spyOn(apiClient, 'request').mockImplementation(async (url: string) => {
         if (url === '/gestao/resumo-diario') {
           return {
@@ -339,7 +323,6 @@ describe('Story 16/16.1/16.2 — Frontend Gestão Executiva & BI (TEA Quality Ga
 
       const { container } = renderWithQueryClient(<ModoGestaoPage />);
 
-      // Verifica presença de classes tabular-nums ou font-mono no documento
       const elementosTabulares = container.querySelectorAll(
         '.tabular-nums, .font-mono',
       );

@@ -8,10 +8,6 @@ import {
   ReposicaoEstoqueResultado,
 } from './produtos.entity';
 
-/**
- * Função utilitária para garantir que o Decimal retornado pelo Prisma
- * seja convertido para string de 2 casas decimais no domínio (ex: "10.50").
- */
 function formatarPrecoParaString(preco: unknown): string {
   if (preco !== null && typeof preco === 'object' && 'toFixed' in (preco as Record<string, unknown>)) {
     return (preco as { toFixed: (casas: number) => string }).toFixed(2);
@@ -26,11 +22,6 @@ function formatarPrecoParaString(preco: unknown): string {
   return String(preco);
 }
 
-/**
- * 1. O CONTRATO (Interface)
- * O Service só vai enxergar esta interface. 
- * Isso permite que em testes você simule o banco criando um repositório falso (Mock)!
- */
 export interface IProdutosRepository {
   criar(dados: {
     nome: string;
@@ -56,16 +47,8 @@ export interface IProdutosRepository {
     },
   ): Promise<ProdutoEntidade>;
 
-  /**
-   * Baixa de estoque transacional e idempotente (RN10 / RN18).
-   * Decrementa produtos e grava movimentos contábeis na mesma transação.
-   */
   baixarEstoque(dados: BaixaEstoqueDados, tx?: ClienteBanco): Promise<void>;
 
-  /**
-   * Reposição manual de estoque transacional (M05 / M06 / RF33 / RN10).
-   * Incrementa o saldo do produto e gera o registro em movimentos_estoque com tipo ENTRADA_REPOSICAO.
-   */
   reporEstoque(
     id: number,
     quantidade: number,
@@ -74,10 +57,6 @@ export interface IProdutosRepository {
   ): Promise<ReposicaoEstoqueResultado>;
 }
 
-/**
- * 2. A IMPLEMENTAÇÃO (Prisma ORM)
- * Esta classe sabe conversar com o Prisma e o PostgreSQL.
- */
 export class ProdutosRepositoryPrisma implements IProdutosRepository {
   constructor(private readonly prisma: ClienteBanco) {}
 
@@ -219,7 +198,6 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           continue;
         }
 
-        // Idempotência estrita por (comanda_id, produto_id) - RN10 / RN18
         const movimentoExistente = await repoMovimentos.findFirst({
           where: {
             comanda_id: dados.comanda_id,
@@ -231,7 +209,6 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           continue;
         }
 
-        // Verifica existência do produto antes de efetuar a baixa
         const produto = await repoProdutos.findUnique({
           where: { id: item.produto_id },
         });
@@ -243,7 +220,6 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           );
         }
 
-        // Deduz estoque atomicamente
         await repoProdutos.update({
           where: { id: item.produto_id },
           data: {
@@ -255,7 +231,6 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
 
         const motivo = dados.motivo ?? `VENDA_COMANDA #${dados.comanda_id}`;
 
-        // Grava movimento de estoque com tipo 'saida' e motivo padronizado
         await repoMovimentos.create({
           data: {
             produto_id: item.produto_id,
@@ -267,7 +242,6 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
         });
       }
 
-      // Sincroniza status da comanda no Core para 'paga' quando liquidada pelo caixa-service
       const repoComandas = (contexto as any).comanda;
       if (repoComandas && typeof repoComandas.findUnique === 'function') {
         const comandaExistente = await repoComandas.findUnique({

@@ -1,8 +1,6 @@
-# Dependências
 node_modules/
 .pnpm-store/
 
-# Build e cache
 dist/
 build/
 coverage/
@@ -10,23 +8,19 @@ coverage/
 *.tsbuildinfo
 .cache/
 
-# Segredos e configuração local (NUNCA versionar senhas ou variáveis reais)
 .env
 .env.*
 !.env.example
 !.env.docker.example
 
-# Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 
-# Dados locais de containers
 postgres-data/
 rabbitmq-data/
 pgdata/
 
-# Arquivos e ferramentas de desenvolvimento/BMad/Agentes
 .bmad-loop/
 *.agent/
 .agents/
@@ -37,11 +31,9 @@ skills-lock.json
 *skill
 *.hermes
 
-# Temporários do Sistema Operacional
 *.tmp
 .DS_Store
 Thumbs.db
 
-# Configurações locais de IDE
 .vscode/
 .idea/

@@ -52,7 +52,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
 
   const totalAlertas = alertasData?.alertas?.length ?? 0;
 
-  // Breakdown de pagamento com porcentagem e valores
   const breakdownPagamentos = useMemo(() => {
     if (!resumo) return { pix: 0, cartao: 0, dinheiro: 0, total: 0, pctPix: 0, pctCartao: 0, pctDinheiro: 0 };
     const pPix = parseFloat(resumo.por_forma_pagamento.pix || '0');
@@ -71,10 +70,8 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
     };
   }, [resumo]);
 
-  // Simulação de distribuição horária do faturamento diário baseada no total real (gráfico de barras mostarda)
   const barrasHorarias = useMemo(() => {
     const totalVendasNum = resumo ? parseFloat(resumo.total_vendas) : 0;
-    // Pesos realistas de fluxo de restaurante (almoço e jantar)
     const faixas = [
       { hora: '11:00', peso: 0.08 },
       { hora: '12:00', peso: 0.18 },
@@ -102,9 +99,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ─────────────────────────────────────────────────────────────
-          CABEÇALHO DA TELA & CONTROLES DE DATA
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <h2 className="text-2xl font-extrabold text-text tracking-tight flex items-center gap-2">
@@ -118,7 +112,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
           </p>
         </div>
 
-        {/* Barra de Filtro de Data e Ações */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <div className="flex items-center gap-2 bg-surface border border-border rounded-[14px] px-3 py-1.5 shadow-soft">
             <Calendar className="w-4 h-4 text-text-2" />
@@ -157,9 +150,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          CARDS DE KPI PRINCIPAIS
-          ───────────────────────────────────────────────────────────── */}
       {isLoadingResumo ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-pulse">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -187,7 +177,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Card 1: Faturamento Líquido (Subtotal) */}
           <div className="bg-surface border border-border rounded-[18px] p-4 shadow-soft flex flex-col justify-between">
             <div className="flex items-center justify-between text-text-2 mb-2">
               <span className="text-xs font-bold tracking-tight">Líquido (Subtotal)</span>
@@ -201,7 +190,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Taxa de Serviço / Gorjeta (10%) */}
           <div className="bg-surface border border-border rounded-[18px] p-4 shadow-soft flex flex-col justify-between">
             <div className="flex items-center justify-between text-text-2 mb-2">
               <span className="text-xs font-bold tracking-tight">Gorjetas (10%)</span>
@@ -215,7 +203,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </div>
           </div>
 
-          {/* Card 3: Total Bruto Faturado (HERO - Borda Mostarda #F2A81D) */}
           <div className="bg-surface border-2 border-brand rounded-[18px] p-4 shadow-soft flex flex-col justify-between relative overflow-hidden">
             <div className="flex items-center justify-between text-brand-text mb-2">
               <span className="text-xs font-extrabold uppercase tracking-wider">
@@ -235,7 +222,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </div>
           </div>
 
-          {/* Card 4: Ticket Médio */}
           <div className="bg-surface border border-border rounded-[18px] p-4 shadow-soft flex flex-col justify-between">
             <div className="flex items-center justify-between text-text-2 mb-2">
               <span className="text-xs font-bold tracking-tight">Ticket Médio</span>
@@ -249,7 +235,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </div>
           </div>
 
-          {/* Card 5: Alertas de Estoque */}
           <div
             onClick={() => onNavegarAba('estoque')}
             className={`border rounded-[18px] p-4 shadow-soft flex flex-col justify-between cursor-pointer transition-all active:scale-[0.99] ${
@@ -293,11 +278,7 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          SEGUNDA LINHA: GRÁFICO DIÁRIO & BREAKDOWN DE PAGAMENTOS
-          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico de Barras Mostarda (Faturamento por Horário) */}
         <div className="lg:col-span-2 bg-surface border border-border rounded-[20px] p-5 shadow-soft flex flex-col justify-between">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -313,19 +294,16 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </span>
           </div>
 
-          {/* Gráfico de Barras em SVG / Flexbox */}
           <div className="h-56 w-full flex items-end gap-2 sm:gap-4 pt-4 px-2 pb-2 border-b border-border">
             {barrasHorarias.map((barra, idx) => (
               <div
                 key={idx}
                 className="flex-1 flex flex-col items-center justify-end h-full group relative"
               >
-                {/* Tooltip com valor em R$ em hover */}
                 <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-nav text-white text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none whitespace-nowrap z-10">
                   {formatCurrency(barra.valor)}
                 </div>
 
-                {/* Barra Mostarda */}
                 <div
                   style={{ height: `${barra.alturaPct}%` }}
                   className="w-full max-w-[40px] bg-brand hover:bg-brand-hover rounded-t-[6px] transition-all border-t-2 border-brand-edge shadow-sm"
@@ -334,7 +312,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             ))}
           </div>
 
-          {/* Rótulos Horários no Eixo X */}
           <div className="flex items-center justify-between gap-2 sm:gap-4 px-2 pt-2 text-[11px] font-semibold text-text-2 font-mono">
             {barrasHorarias.map((barra, idx) => (
               <div key={idx} className="flex-1 text-center">
@@ -344,7 +321,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
           </div>
         </div>
 
-        {/* Breakdown de Formas de Pagamento (Pix, Cartão, Dinheiro) */}
         <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -359,7 +335,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
             </p>
 
             <div className="space-y-4">
-              {/* PIX */}
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-text flex items-center gap-1.5">
@@ -377,7 +352,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
                 </div>
               </div>
 
-              {/* CARTÃO */}
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-text flex items-center gap-1.5">
@@ -395,7 +369,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
                 </div>
               </div>
 
-              {/* DINHEIRO */}
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="font-bold text-text flex items-center gap-1.5">
@@ -429,9 +402,6 @@ export const VisaoGeralView: React.FC<VisaoGeralViewProps> = ({
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          TERCEIRA LINHA: TOP 5 PRODUTOS MAIS VENDIDOS (PREVIEW CURVA ABC)
-          ───────────────────────────────────────────────────────────── */}
       <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
         <div className="flex items-center justify-between mb-4">
           <div>

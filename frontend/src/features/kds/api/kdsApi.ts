@@ -65,7 +65,6 @@ export const kdsApi = {
       }
       return res.json();
     } catch {
-      // Degradação suave em caso de timeout ou KDS offline (ADR-07)
       return { comanda_id: comandaId, possui_pendencias: false, total_pendencias: 0, itens: [] };
     }
   },

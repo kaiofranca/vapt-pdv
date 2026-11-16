@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# VaptPDV — Prova Automatizada de Persistência em Volumes Docker (Story 3-3-1)
-# Exercita o fluxo completo nos 4 serviços (:3000, :3001, :3002, :3003),
-# executa `docker compose down` -> `docker compose up -d` e comprova que 100%
-# dos dados permanecem íntegros nos 4 bancos PostgreSQL isolados.
-# ==============================================================================
 
 set -euo pipefail
 
@@ -174,10 +168,8 @@ http_patch_json() {
     -d "$body"
 }
 
-# 1. Aguarda os 4 serviços ficarem saudáveis
 aguardar_todos_health
 
-# 2. Cria garçom e produto no Core (:3000)
 log "Criando garçom e produto de teste no Core (${CORE_URL})..."
 SUFIXO="$(date +%s)"
 GARCOM_JSON="$(http_post_json "${CORE_URL}/usuarios" "{\"nome\":\"Garcom Docker ${SUFIXO}\",\"perfil\":\"garcom\"}")"
@@ -192,7 +184,6 @@ PRODUTO_JSON="$(http_post_json "${CORE_URL}/produtos" "{\"nome\":\"Burger Docker
 PRODUTO_ID="$(printf '%s' "$PRODUTO_JSON" | json_field id)"
 [ -n "$PRODUTO_ID" ] || fail "Falha ao extrair produto_id."
 
-# 3. Escolhe mesa livre > 0 e abre comanda no Core (:3000)
 ABERTAS_JSON="$(curl -fsS "${CORE_URL}/comandas?status=aberta")"
 MESA="$(escolher_mesa_livre "$ABERTAS_JSON")"
 log "Abrindo comanda na mesa ${MESA} (garcom_id=${GARCOM_ID}, produto_id=${PRODUTO_ID})..."
@@ -201,13 +192,11 @@ COMANDA_JSON="$(http_post_json "${CORE_URL}/comandas" "{\"mesa\":${MESA},\"garco
 COMANDA_ID="$(printf '%s' "$COMANDA_JSON" | json_field id)"
 [ -n "$COMANDA_ID" ] || fail "Falha ao extrair comanda_id."
 
-# 4. Lança item na comanda (despacha ficha síncrona para KDS :3001)
 log "Lançando ${QTD_LANCADA}x produto #${PRODUTO_ID} na comanda #${COMANDA_ID}..."
 ITEM_JSON="$(http_post_json "${CORE_URL}/comandas/${COMANDA_ID}/itens" "{\"produto_id\":${PRODUTO_ID},\"quantidade\":${QTD_LANCADA},\"observacao\":\"Teste persistencia\"}")"
 ITEM_ID="$(printf '%s' "$ITEM_JSON" | json_field id)"
 [ -n "$ITEM_ID" ] || fail "Falha ao extrair item_id."
 
-# 5. Verifica ficha no KDS (:3001) e avança status até 'entregue'
 log "Consultando ficha no KDS (${KDS_URL}/kds/fichas?mesa=${MESA})..."
 FICHAS_JSON="$(curl -fsS "${KDS_URL}/kds/fichas?mesa=${MESA}")"
 FICHA_INFO="$(extrair_ficha_comanda "$FICHAS_JSON" "$COMANDA_ID" "$ITEM_ID")" || fail "Ficha não encontrada no KDS para comanda=${COMANDA_ID}, item=${ITEM_ID}."
@@ -222,13 +211,11 @@ for PROXIMO_STATUS in em_preparo pronto entregue; do
 done
 log "  Ficha KDS #${FICHA_ID} avançada até status 'entregue'."
 
-# 6. Fecha comanda no Core (:3000) -> sincroniza com Caixa (:3002)
 log "Fechando comanda #${COMANDA_ID} no Core..."
 FECHAR_JSON="$(http_post_json "${CORE_URL}/comandas/${COMANDA_ID}/fechar" "{\"aplicar_taxa_servico\":true}")"
 STATUS_FECHADA="$(printf '%s' "$FECHAR_JSON" | json_field status)"
 [ "$STATUS_FECHADA" = "fechada" ] || fail "Esperado status 'fechada' após fechamento, obtido '${STATUS_FECHADA}'."
 
-# 7. Quita comanda no Caixa (:3002) com PIX -> baixa estoque no Core, gera recibo .paper e envia evento ao Gestão (:3003)
 log "Quitando comanda #${COMANDA_ID} no Caixa (${CAIXA_URL}) via PIX..."
 PAGAR_CAIXA_JSON="$(http_post_json "${CAIXA_URL}/caixa/comandas/${COMANDA_ID}/pagar" "{\"forma_pagamento\":\"pix\",\"operador_nome\":\"Operador Docker\"}")"
 STATUS_CAIXA="$(printf '%s' "$PAGAR_CAIXA_JSON" | json_field status)"
@@ -240,12 +227,10 @@ case "$CODIGO_RECIBO" in
 esac
 log "  Recibo emitido no Caixa: ${CODIGO_RECIBO}."
 
-# Sincroniza status 'paga' no Core (testando também idempotência RN10 da baixa de estoque)
 PAGAR_CORE_JSON="$(http_post_json "${CORE_URL}/comandas/${COMANDA_ID}/pagar" "{\"forma_pagamento\":\"pix\"}")"
 STATUS_CORE_PRE="$(printf '%s' "$PAGAR_CORE_JSON" | json_field status)"
 [ "$STATUS_CORE_PRE" = "paga" ] || fail "Esperado status 'paga' no Core, obtido '${STATUS_CORE_PRE}'."
 
-# Captura baseline pré-restart nos 4 serviços
 PROD_PRE_JSON="$(curl -fsS "${CORE_URL}/produtos/${PRODUTO_ID}")"
 ESTOQUE_PRE="$(printf '%s' "$PROD_PRE_JSON" | json_field estoque)"
 [ "$ESTOQUE_PRE" = "$ESTOQUE_ESPERADO" ] || fail "Estoque pré-restart esperado=${ESTOQUE_ESPERADO}, obtido=${ESTOQUE_PRE}."
@@ -262,17 +247,14 @@ log "  KDS    -> ficha #${FICHA_ID} status=entregue"
 log "  Caixa  -> recibo=${CODIGO_RECIBO}"
 log "  Gestão -> data=${DATA_RESUMO}, pedidos=${QTD_PEDIDOS_PRE}, total_vendas=${TOTAL_VENDAS_PRE}"
 
-# 8. Ciclo destrutivo de containers mantendo volumes: docker compose down -> docker compose up -d
 log "Executando 'docker compose down' (preservando volumes nomeados)..."
 docker compose down
 
 log "Executando 'docker compose up -d'..."
 docker compose up -d
 
-# 9. Aguarda os 4 /health voltarem a responder 200
 aguardar_todos_health
 
-# 10. Reconsulta os 4 serviços e valida 100% de persistência pós-restart
 log "Reconsultando os 4 serviços para comprovar persistência após down -> up..."
 
 COMANDA_POS_JSON="$(curl -fsS "${CORE_URL}/comandas/${COMANDA_ID}")"

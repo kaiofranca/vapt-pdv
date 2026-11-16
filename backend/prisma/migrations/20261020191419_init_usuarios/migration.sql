@@ -1,7 +1,5 @@
--- CreateEnum
 CREATE TYPE "PerfilUsuario" AS ENUM ('garcom', 'caixa', 'gerente');
 
--- CreateTable
 CREATE TABLE "usuarios" (
     "id" SERIAL NOT NULL,
     "nome" TEXT NOT NULL,

@@ -100,8 +100,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     routePrefix: '/docs',
   });
 
-  // Servir arquivos estáticos do Frontend Web/PWA do PDV Core
-  // Dá prioridade aos artefatos de produção compilados do React 19 (frontend/dist/)
   const caminhoDistFrontend = path.resolve(__dirname, '..', '..', 'frontend', 'dist');
   const pastaPublica = fs.existsSync(caminhoDistFrontend)
     ? caminhoDistFrontend
@@ -127,8 +125,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     }
   }
 
-  // Encaminhamento HTTP transparente para o gestao-service (:3003)
-  // Mantém GET /gestao (rota exata da SPA) retornando index.html intacta.
   const encaminharGestao = async (request: FastifyRequest, reply: FastifyReply) => {
     const baseUrl = (
       process.env.GESTAO_SERVICE_URL ||
@@ -307,7 +303,6 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   const prisma = opcoes.prisma ?? obterPrisma();
 
-  // Reverse Proxy Interno / API Gateway para os microsserviços satélites (:3001, :3002, :3003)
   const encaminharParaSatelite = async (
     request: any,
     reply: any,

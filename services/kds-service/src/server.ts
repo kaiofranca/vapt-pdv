@@ -56,4 +56,3 @@ export async function iniciarServidor(): Promise<void> {
 if (require.main === module) {
   void iniciarServidor();
 }
-

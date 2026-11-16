@@ -126,7 +126,6 @@ export class ComandasService implements ServicoComandas {
       );
     }
 
-    // Valida o garçom exclusivamente via contrato de serviço de Usuários
     await this.servicoUsuarios.validarGarcom(dados.garcom_id);
 
     try {
@@ -374,7 +373,6 @@ export class ComandasService implements ServicoComandas {
       return this.formatarItemComanda(itemCriado);
     });
 
-    // Story 2.1.5: Despacho ao KdsGateway
     if (this.kdsGateway) {
       try {
         const comanda = await this.repository.buscarPorId(comandaId);
@@ -619,7 +617,6 @@ export class ComandasService implements ServicoComandas {
       return this.formatarComanda(comandaFechada);
     });
 
-    // Notificação síncrona pós-commit ao caixa-service via CaixaGateway (ADR-07, RN17)
     if (this.caixaGateway) {
       try {
         const payloadCaixa = {
@@ -843,7 +840,6 @@ export class ComandasService implements ServicoComandas {
       return this.formatarComanda(comandaPaga);
     });
 
-    // Notificação síncrona/assíncrona pós-commit ao gestao-service via GestaoGateway (ADR-01, ADR-07)
     if (this.gestaoGateway) {
       try {
         const payloadGestao = {

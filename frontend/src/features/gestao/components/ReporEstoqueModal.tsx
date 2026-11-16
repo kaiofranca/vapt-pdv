@@ -39,12 +39,10 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
   const [motivo, setMotivo] = useState<string>('ENTRADA_REPOSICAO_MANUAL');
   const [erroApi, setErroApi] = useState<string | null>(null);
 
-  // Calcula a sugestão inicial ao abrir o modal (EARS-REP-04)
   useEffect(() => {
     if (isOpen && produto) {
       const min = produto.estoque_minimo ?? 5;
       const atual = produto.estoque ?? 0;
-      // Diferença entre estoque_minimo * 2 e estoque_atual, no mínimo 10 unidades
       const sugerida = Math.max(10, min * 2 - atual);
       setQuantidade(sugerida);
       setMotivo('ENTRADA_REPOSICAO_MANUAL');
@@ -52,7 +50,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
     }
   }, [isOpen, produto]);
 
-  // Previsão do novo saldo resultante em tempo real (EARS-REP-02, EARS-REP-05)
   const novoSaldoPrevisto = useMemo(() => {
     if (!produto) return 0;
     const qtdNum = Number.isInteger(quantidade) && quantidade > 0 ? quantidade : 0;
@@ -126,7 +123,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
           </div>
         )}
 
-        {/* Identificação do Produto */}
         <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-2 border border-border">
           <div className="p-2.5 rounded-lg bg-brand/10 text-brand-coffee dark:text-amber-300 shrink-0">
             <Boxes className="w-6 h-6" />
@@ -141,7 +137,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
           </div>
         </div>
 
-        {/* Quadro Comparativo de Saldo */}
         <div className="grid grid-cols-3 gap-2.5 text-center">
           <div className="p-3 rounded-xl bg-surface border border-border shadow-sm flex flex-col justify-between">
             <span className="text-[11px] font-semibold text-text-2 uppercase tracking-wide">
@@ -193,7 +188,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
           </div>
         </div>
 
-        {/* Seletor Stepper de Quantidade (EARS-REP-02) */}
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold text-text block">
             Quantidade a Adicionar *
@@ -237,7 +231,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
             </button>
           </div>
 
-          {/* Atalhos Rápidos de Incremento */}
           <div className="flex items-center gap-2 pt-1">
             <span className="text-xs text-text-2 font-medium">Atalhos rápidos:</span>
             {[5, 10, 20, 50].map((inc) => (
@@ -260,7 +253,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
           )}
         </div>
 
-        {/* Motivo / Observação */}
         <div>
           <label className="text-sm font-semibold text-text block mb-1">
             Motivo / Documento (Opcional)
@@ -276,7 +268,6 @@ export const ReporEstoqueModal: React.FC<ReporEstoqueModalProps> = ({
           />
         </div>
 
-        {/* Rodapé com Ações */}
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-1">
           <Button
             type="button"

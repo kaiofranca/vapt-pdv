@@ -25,14 +25,6 @@ export interface ModalPendenciasKdsProps {
   onClose?: () => void;
 }
 
-/**
- * Modal C04 — Conflito de Encerramento de Comanda com Itens em Preparo no KDS.
- * (Story 2.2.9, RF23, C04, DESIGN.md)
- * 
- * Exibe alerta âmbar e lista detalhada de pedidos ainda não entregues, oferecendo:
- * - "Aguardar Entrega": Aborta o encerramento e mantém a comanda aberta no salão.
- * - "Fechar Mesmo Assim": Prossegue com o fechamento sob consentimento explícito do operador.
- */
 export const ModalPendenciasKds: React.FC<ModalPendenciasKdsProps> = ({
   isOpen,
   mesa,
@@ -86,7 +78,6 @@ export const ModalPendenciasKds: React.FC<ModalPendenciasKdsProps> = ({
       maxWidth="md"
     >
       <div className="space-y-4 py-1" data-testid="modal-pendencias-kds">
-        {/* Banner de Alerta Âmbar (Aviso de Conflito de Encerramento) */}
         <div className="flex items-start gap-3 p-3.5 rounded-card bg-amber-500/15 border border-amber-500/40 text-brand-coffee dark:text-amber-200 shadow-soft">
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
@@ -99,7 +90,6 @@ export const ModalPendenciasKds: React.FC<ModalPendenciasKdsProps> = ({
           </div>
         </div>
 
-        {/* Lista Detalhada de Cada Item Pendente */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-bold uppercase text-text-2 tracking-wider">
@@ -169,7 +159,6 @@ export const ModalPendenciasKds: React.FC<ModalPendenciasKdsProps> = ({
           </div>
         </div>
 
-        {/* Checkbox de Consentimento do Operador (EARS-PEND-08) */}
         <label className="flex items-center gap-2.5 p-2 rounded-input bg-surface-2/40 border border-border cursor-pointer select-none">
           <input
             type="checkbox"
@@ -184,7 +173,6 @@ export const ModalPendenciasKds: React.FC<ModalPendenciasKdsProps> = ({
           </span>
         </label>
 
-        {/* Duas ações claras: "Aguardar Entrega" e "Fechar Mesmo Assim" */}
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-border">
           <Button
             type="button"

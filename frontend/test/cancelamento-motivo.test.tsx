@@ -82,20 +82,16 @@ describe('Story 2.4.4 — Frontend: Seleção de Motivo e Cancelamento de Comand
     const btnConfirmar = screen.getByTestId('btn-confirmar-cancelamento');
     expect(btnConfirmar.hasAttribute('disabled')).toBe(true);
 
-    // Seleciona motivo "Erro de digitação do garçom"
     const radioErro = screen.getByRole('radio', { name: /Erro de digitação do garçom/i });
     fireEvent.click(radioErro);
 
-    // Digita frase incompleta
     const inputFrase = screen.getByPlaceholderText(FRASE_CANCELAMENTO);
     fireEvent.change(inputFrase, { target: { value: 'cancelar' } });
     expect(btnConfirmar.hasAttribute('disabled')).toBe(true);
 
-    // Digita frase completa
     fireEvent.change(inputFrase, { target: { value: 'cancelar comanda' } });
     expect(btnConfirmar.hasAttribute('disabled')).toBe(false);
 
-    // Submete
     fireEvent.click(btnConfirmar);
     expect(onConfirmar).toHaveBeenCalledWith('Erro de digitação do garçom');
   });

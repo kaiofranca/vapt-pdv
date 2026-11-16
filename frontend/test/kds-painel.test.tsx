@@ -19,7 +19,7 @@ const mockFichas: FichaKds[] = [
     status: 'recebido',
     garcom_nome: 'Lucas',
     observacao: 'Sem pimenta / Alergico',
-    recebido_em: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 min atrás (normal)
+    recebido_em: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
   },
   {
     id: 102,
@@ -32,7 +32,7 @@ const mockFichas: FichaKds[] = [
     status: 'em_preparo',
     garcom_nome: 'Ana',
     observacao: null,
-    recebido_em: new Date(Date.now() - 11 * 60 * 1000).toISOString(), // 11 min atrás (atencao)
+    recebido_em: new Date(Date.now() - 11 * 60 * 1000).toISOString(),
   },
   {
     id: 103,
@@ -45,7 +45,7 @@ const mockFichas: FichaKds[] = [
     status: 'recebido',
     garcom_nome: 'Lucas',
     observacao: 'Pouco acucar',
-    recebido_em: new Date(Date.now() - 16 * 60 * 1000).toISOString(), // 16 min atrás (atrasado)
+    recebido_em: new Date(Date.now() - 16 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -113,7 +113,6 @@ describe('Story 2.1.7 — KDS Frontend: Painel TV da Cozinha e Gestão de Fichas
   it('AC-KDSUI-02: deve chamar PATCH /kds/fichas/:id/status ao acionar o botão de transição de estado', async () => {
     const onAtualizarStatus = vi.fn();
 
-    // Ficha recebido -> Botão "INICIAR PREPARO"
     const { rerender } = render(
       <FichaCard ficha={mockFichas[0]} onAtualizarStatus={onAtualizarStatus} />
     );
@@ -122,7 +121,6 @@ describe('Story 2.1.7 — KDS Frontend: Painel TV da Cozinha e Gestão de Fichas
     fireEvent.click(btnIniciar);
     expect(onAtualizarStatus).toHaveBeenCalledWith(101, 'em_preparo');
 
-    // Ficha em preparo -> Botão "MARCAR PRONTO"
     rerender(
       <FichaCard ficha={mockFichas[1]} onAtualizarStatus={onAtualizarStatus} />
     );
@@ -130,7 +128,6 @@ describe('Story 2.1.7 — KDS Frontend: Painel TV da Cozinha e Gestão de Fichas
     fireEvent.click(btnPronto);
     expect(onAtualizarStatus).toHaveBeenCalledWith(102, 'pronto');
 
-    // Ficha pronto -> Botão "ENTREGUE AO SALÃO"
     const fichaPronta: FichaKds = { ...mockFichas[0], id: 104, status: 'pronto' };
     rerender(
       <FichaCard ficha={fichaPronta} onAtualizarStatus={onAtualizarStatus} />
@@ -156,7 +153,6 @@ describe('Story 2.1.7 — KDS Frontend: Painel TV da Cozinha e Gestão de Fichas
 
     await screen.findByText('MESA 05');
 
-    // Clica no filtro "Bar"
     const btnBar = screen.getByRole('button', { name: /Bar/i });
     fireEvent.click(btnBar);
 

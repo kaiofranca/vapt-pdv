@@ -266,7 +266,6 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
       expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
 
-      // Comanda devidamente fechada no Core
       expect(corpo.id).toBe(1);
       expect(corpo.status).toBe('fechada');
       expect(corpo.subtotal).toBe('29.80');
@@ -275,11 +274,9 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
       expect(corpo.integracao_caixa_pendente).toBe(false);
       expect(corpo.avisos).toBeUndefined();
 
-      // Estado persistido no banco local
       expect(comandas[0].status).toBe('fechada');
       expect(comandas[0].total?.toFixed(2)).toBe('32.78');
 
-      // CaixaGateway chamado com payload completo e snapshot dos itens
       expect(caixaGatewayMock.notificarFechamento).toHaveBeenCalledTimes(1);
       expect(caixaGatewayMock.notificarFechamento).toHaveBeenCalledWith(
         1,
@@ -331,7 +328,6 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
         payload: { aplicar_taxa_servico: false },
       });
 
-      // Retorna 200 OK (não reverte nem falha a transação do salão)
       expect(resposta.statusCode).toBe(200);
       const corpo = resposta.json();
 
@@ -341,11 +337,9 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
       expect(corpo.taxa_servico).toBe('0.00');
       expect(corpo.total).toBe('29.80');
 
-      // Degradação graciosa sinalizada na resposta
       expect(corpo.integracao_caixa_pendente).toBe(true);
       expect(corpo.avisos).toEqual(['integracao_caixa_pendente: true']);
 
-      // Comanda permaneceu persistida como fechada no banco local
       expect(comandas[0].status).toBe('fechada');
       expect(comandas[0].total?.toFixed(2)).toBe('29.80');
 
@@ -429,7 +423,6 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
         comandasIniciais: [comandaAbertaComItens],
       });
 
-      // Instância nativa apontando para uma porta inacessível (ex: 39999)
       const realGateway = new CaixaGateway('http://127.0.0.1:39999');
 
       const app = await buildApp({

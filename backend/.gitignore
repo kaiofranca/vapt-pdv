@@ -1,8 +1,6 @@
-# Dependências
 node_modules/
 .pnpm-store/
 
-# Build e cache
 dist/
 build/
 coverage/
@@ -10,22 +8,18 @@ coverage/
 *.tsbuildinfo
 .cache/
 
-# Segredos e configuração local (NUNCA versionar senhas ou variáveis reais)
 .env
 .env.*
 !.env.example
 
-# Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 
-# Dados locais de containers
 postgres-data/
 rabbitmq-data/
 pgdata/
 
-# Caches locais e arquivos de usuário do BMad
 _bmad/render/
 _bmad/config.user.toml
 _bmad/custom/*.user.toml
@@ -34,11 +28,9 @@ _bmad/custom/*.user.toml
 _bmad/
 _bmad-output/
 
-# Temporários do Sistema Operacional
 *.tmp
 .DS_Store
 Thumbs.db
 
-# Configurações locais de IDE
 .vscode/
 .idea/

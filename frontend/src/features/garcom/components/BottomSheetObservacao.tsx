@@ -37,7 +37,6 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTexto(observacaoInicial || '');
-      // Se a observação já mencionar alergia, ativa o estado de alergia
       const temAlergia = /alérgico|alergia/i.test(observacaoInicial || '');
       setIsAlergia(temAlergia);
     }
@@ -97,10 +96,8 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
         className="w-full sm:max-w-md bg-surface rounded-t-[28px] sm:rounded-[28px] p-5 sm:p-6 shadow-modal border border-border space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle visual no celular */}
         <div className="w-12 h-1.5 bg-border rounded-full mx-auto sm:hidden -mt-1 mb-2" />
 
-        {/* Topo: Título e Botão Fechar X */}
         <div className="flex items-start justify-between gap-3">
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-brand-text bg-brand-soft px-2.5 py-1 rounded-full inline-block mb-1">
@@ -124,7 +121,6 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
           </button>
         </div>
 
-        {/* Switch de Alergia Alimentar (DESIGN.md G04) */}
         <div
           onClick={handleToggleAlergia}
           className={cn(
@@ -166,7 +162,6 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
           </div>
         </div>
 
-        {/* Tags / Chips Rápidos de Sugestão (EARS-OBS-04) */}
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-brand" />
@@ -196,7 +191,6 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
           </div>
         </div>
 
-        {/* Textarea com Contador Regressivo (EARS-OBS-07, EARS-OBS-09) */}
         <div className="space-y-1.5">
           <label htmlFor="input-observacao" className="block text-xs font-bold text-text">
             Observações de Preparo
@@ -238,7 +232,6 @@ export const BottomSheetObservacao: React.FC<BottomSheetObservacaoProps> = ({
           </div>
         </div>
 
-        {/* Botões de Ação (Confirmar Item e Cancelar / Voltar) */}
         <div className="pt-2 space-y-2">
           <button
             type="button"

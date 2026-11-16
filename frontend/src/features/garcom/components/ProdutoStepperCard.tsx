@@ -22,7 +22,6 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
 }) => {
   const isEsgotado = !produto.ativo || produto.estoque <= 0;
 
-  // Cor do tile tintado e ícone de acordo com a categoria
   const obterEstiloTile = (cat: string) => {
     const c = cat.toLowerCase();
     if (c.includes('bebida') || c.includes('chopp') || c.includes('cerveja')) {
@@ -37,7 +36,6 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
     if (c.includes('cafe') || c.includes('café')) {
       return { bg: 'bg-tint-drink', icon: Coffee };
     }
-    // Padrão / Lanches
     return { bg: 'bg-tint-beer', icon: Utensils };
   };
 
@@ -52,7 +50,6 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
         isEsgotado && 'opacity-50 pointer-events-none bg-surface-2',
       )}
     >
-      {/* Lado Esquerdo: Tile Tintado + Informações (Fiel a G03) */}
       <div className="flex items-center gap-3.5 min-w-0">
         <div
           className={cn(
@@ -82,7 +79,6 @@ export const ProdutoStepperCard: React.FC<ProdutoStepperCardProps> = ({
         </div>
       </div>
 
-      {/* Lado Direito: Ações (Observação + Stepper Âmbar ou Botão [+] Redondo) */}
       <div className="shrink-0 flex items-center gap-2">
         {!isEsgotado && onAbrirObservacao && (
           <button

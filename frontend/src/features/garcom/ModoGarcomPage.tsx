@@ -22,20 +22,15 @@ export const ModoGarcomPage: React.FC = () => {
   const { usuarioAtivoId, nomeOperador, setUsuarioAtivo, logout, setModo } = useSessionStore();
   const { comandaAtivaId, setComandaAtivaId, setMesaAtiva } = useComandaStore();
 
-  // Abas da barra inferior: 'salao' | 'comandas' | 'perfil'
   const [abaInferior, setAbaInferior] = useState<'salao' | 'comandas' | 'perfil'>('salao');
 
-  // Controle de exibição da comanda ativa detalhada
   const [visualizandoComanda, setVisualizandoComanda] = useState<boolean>(false);
 
-  // Modal para abrir mesa
   const [isModalAbrirOpen, setIsModalAbrirOpen] = useState(false);
   const [mesaParaAbrir, setMesaParaAbrir] = useState<string>('');
 
-  // Filtro na aba Comandas (G07): 'minhas' | 'todas'
   const [filtroComandas, setFiltroComandas] = useState<'minhas' | 'todas'>('minhas');
 
-  // Feedback Toast
   const [toast, setToast] = useState<{
     tipo: 'sucesso' | 'erro';
     mensagem: string;
@@ -46,24 +41,20 @@ export const ModoGarcomPage: React.FC = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Queries TanStack Query reais
   const { data: comandas = [], refetch: refetchComandas } = useComandasSalao();
   const { data: garcons = [] } = useGarconsAtivos();
 
-  // Seleciona automaticamente o garçom logado se necessário
   useEffect(() => {
     if (!usuarioAtivoId && garcons.length > 0) {
       setUsuarioAtivo(garcons[0].id, garcons[0].nome, 'garcom');
     }
   }, [usuarioAtivoId, garcons, setUsuarioAtivo]);
 
-  // Abertura de Mesa
   const handleAbrirMesa = (numeroMesa: string) => {
     setMesaParaAbrir(numeroMesa);
     setIsModalAbrirOpen(true);
   };
 
-  // Ao abrir mesa com sucesso na API Fastify
   const handleMesaAbertaComSucesso = (novaComanda: Comanda) => {
     setIsModalAbrirOpen(false);
     setMesaAtiva(String(novaComanda.mesa));
@@ -73,14 +64,12 @@ export const ModoGarcomPage: React.FC = () => {
     showToast('sucesso', `Mesa ${novaComanda.mesa} aberta com sucesso!`);
   };
 
-  // Ao clicar em uma mesa com comanda aberta
   const handleVerComanda = (comanda: Comanda) => {
     setMesaAtiva(String(comanda.mesa));
     setComandaAtivaId(comanda.id);
     setVisualizandoComanda(true);
   };
 
-  // Comandas ativas filtradas para a aba "Comandas" (G07)
   const comandasAtivas = comandas.filter(
     (c) => c.status === 'aberta' || c.status === 'fechada',
   );
@@ -93,7 +82,6 @@ export const ModoGarcomPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg text-text flex flex-col font-sans selection:bg-brand selection:text-on-brand pb-16">
-      {/* Toast Flutuante de Feedback */}
       {toast && (
         <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 animate-bounce max-w-sm">
           <div
@@ -113,9 +101,7 @@ export const ModoGarcomPage: React.FC = () => {
         </div>
       )}
 
-      {/* Conteúdo Principal (Container Mobile 390-440px centralizado em telas maiores) */}
       <main className="flex-1 w-full max-w-md mx-auto p-4 sm:p-5">
-        {/* Caso 1: Comanda Aberta Específica (Cardápio / Itens Enviados / Pedir a Conta) */}
         {visualizandoComanda && comandaAtivaId ? (
           <ComandaMesaView
             comandaId={comandaAtivaId}
@@ -128,7 +114,6 @@ export const ModoGarcomPage: React.FC = () => {
           />
         ) : (
           <>
-            {/* Caso 2A: Aba Salão (Grade de Mesas - Fiel a G01) */}
             {abaInferior === 'salao' && (
               <MesasGrid
                 comandas={comandas}
@@ -140,7 +125,6 @@ export const ModoGarcomPage: React.FC = () => {
               />
             )}
 
-            {/* Caso 2B: Aba Comandas (Fiel a G07 Comandas.png) */}
             {abaInferior === 'comandas' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -150,7 +134,6 @@ export const ModoGarcomPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Pill Switcher "Minhas" vs "Todas" */}
                 <div className="flex p-1 bg-surface-2 border border-border rounded-full select-none">
                   <button
                     type="button"
@@ -176,7 +159,6 @@ export const ModoGarcomPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Lista de Comandas Ativas */}
                 {comandasExibidas.length === 0 ? (
                   <div className="py-12 text-center bg-surface border border-border rounded-[20px] p-6 shadow-soft">
                     <Receipt className="w-8 h-8 text-border mx-auto mb-2" />
@@ -233,12 +215,10 @@ export const ModoGarcomPage: React.FC = () => {
               </div>
             )}
 
-            {/* Caso 2C: Aba Perfil (Fiel a G09 Perfil.png) */}
             {abaInferior === 'perfil' && (
               <div className="space-y-4">
                 <h1 className="text-2xl font-black text-text tracking-tight">Perfil</h1>
 
-                {/* Card do Operador */}
                 <div className="bg-surface border border-border rounded-[24px] p-5 flex items-center gap-4 shadow-soft">
                   <div className="w-14 h-14 rounded-full bg-brand-soft text-brand-text font-black text-lg flex items-center justify-center shrink-0 shadow-soft">
                     {nomeOperador.slice(0, 2).toUpperCase()}
@@ -249,7 +229,6 @@ export const ModoGarcomPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Botão Trocar Operador */}
                 <button
                   type="button"
                   onClick={() => setModo('login')}
@@ -259,7 +238,6 @@ export const ModoGarcomPage: React.FC = () => {
                   <span>Trocar operador</span>
                 </button>
 
-                {/* Botão Sair do Turno (Logout) */}
                 <button
                   type="button"
                   onClick={logout}
@@ -274,7 +252,6 @@ export const ModoGarcomPage: React.FC = () => {
         )}
       </main>
 
-      {/* Modal Deslizante "Abrir Mesa" (Fiel a G02) */}
       <ModalAbrirMesa
         isOpen={isModalAbrirOpen}
         mesaPredefinida={mesaParaAbrir}
@@ -284,16 +261,12 @@ export const ModoGarcomPage: React.FC = () => {
         onErrorToast={(msg) => showToast('erro', msg)}
       />
 
-      {/* ─────────────────────────────────────────────────────────────
-          BARRA DE NAVEGAÇÃO INFERIOR FIXA (Fiel a G01, G07, G09)
-          ───────────────────────────────────────────────────────────── */}
       {!visualizandoComanda && (
         <nav
           className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-md border-t border-border z-40 select-none shadow-modal"
           aria-label="Navegação do Garçom"
         >
           <div className="max-w-md mx-auto grid grid-cols-3 h-16">
-            {/* 1. Salão */}
             <button
               type="button"
               onClick={() => setAbaInferior('salao')}
@@ -307,7 +280,6 @@ export const ModoGarcomPage: React.FC = () => {
               <span>Salão</span>
             </button>
 
-            {/* 2. Comandas */}
             <button
               type="button"
               onClick={() => setAbaInferior('comandas')}
@@ -321,7 +293,6 @@ export const ModoGarcomPage: React.FC = () => {
               <span>Comandas</span>
             </button>
 
-            {/* 3. Perfil */}
             <button
               type="button"
               onClick={() => setAbaInferior('perfil')}

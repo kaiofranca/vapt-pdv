@@ -1,7 +1,5 @@
--- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateTable
 CREATE TABLE "eventos_processados" (
     "evento_id" UUID NOT NULL,
     "evento" VARCHAR(60) NOT NULL,
@@ -10,7 +8,6 @@ CREATE TABLE "eventos_processados" (
     CONSTRAINT "eventos_processados_pkey" PRIMARY KEY ("evento_id")
 );
 
--- CreateTable
 CREATE TABLE "faturamento_diario" (
     "data_referencia" DATE NOT NULL,
     "comandas_pagas" INTEGER NOT NULL DEFAULT 0,
@@ -25,7 +22,6 @@ CREATE TABLE "faturamento_diario" (
     CONSTRAINT "faturamento_diario_pkey" PRIMARY KEY ("data_referencia")
 );
 
--- CreateTable
 CREATE TABLE "vendas_produto_abc" (
     "produto_id" INTEGER NOT NULL,
     "nome_produto" VARCHAR(140) NOT NULL,
@@ -38,7 +34,6 @@ CREATE TABLE "vendas_produto_abc" (
     CONSTRAINT "vendas_produto_abc_pkey" PRIMARY KEY ("produto_id")
 );
 
--- CreateTable
 CREATE TABLE "desempenho_garcom" (
     "garcom_id" INTEGER NOT NULL,
     "nome_garcom" VARCHAR(120) NOT NULL,
@@ -51,7 +46,6 @@ CREATE TABLE "desempenho_garcom" (
     CONSTRAINT "desempenho_garcom_pkey" PRIMARY KEY ("garcom_id")
 );
 
--- CreateTable
 CREATE TABLE "alertas_estoque" (
     "produto_id" INTEGER NOT NULL,
     "nome" VARCHAR(140) NOT NULL,

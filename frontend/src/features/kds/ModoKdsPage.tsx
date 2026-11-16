@@ -10,11 +10,9 @@ export const ModoKdsPage: React.FC = () => {
   const { data, isLoading, isError, isFetching, refetch } = useKdsFichas(estacaoAtiva);
   const atualizarStatusMut = useAtualizarStatusFicha();
 
-  // Fichas ativas filtradas
   const fichas = data?.fichas || [];
   const resumo = data?.resumo || {};
 
-  // Contadores para o cabeçalho
   const contadoresResumo = useMemo(() => {
     let recebido = 0;
     let em_preparo = 0;
@@ -45,14 +43,12 @@ export const ModoKdsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#1B140F] text-[#FAF3EB] flex flex-col font-sans selection:bg-amber-500 selection:text-[#1B140F]">
-      {/* Cabeçalho da TV KDS */}
       <KdsHeader
         estacaoAtiva={estacaoAtiva}
         onSelecionarEstacao={setEstacaoAtiva}
         resumo={contadoresResumo}
       />
 
-      {/* Banner de Reconexão se o satélite estiver temporariamente inacessível (EARS-KDSUI-11) */}
       {isError && (
         <div className="bg-rose-500/20 border-b border-rose-500/40 px-6 py-2.5 flex items-center justify-between text-xs font-bold text-rose-200">
           <div className="flex items-center gap-2">
@@ -70,7 +66,6 @@ export const ModoKdsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Grid Principal de Fichas (Visualização Otimizada para TV 1920x1080) */}
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         {isLoading && fichas.length === 0 ? (
           <div className="h-[60vh] flex flex-col items-center justify-center space-y-4">

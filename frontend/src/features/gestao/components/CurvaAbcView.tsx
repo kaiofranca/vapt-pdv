@@ -16,7 +16,6 @@ export const CurvaAbcView: React.FC = () => {
     isFetching,
   } = useRankingProdutos({ limite: 100 });
 
-  // Lista única de categorias encontradas nos produtos
   const categoriasDisponiveis = useMemo(() => {
     if (!rankingData?.produtos) return [];
     const cats = new Set<string>();
@@ -26,14 +25,12 @@ export const CurvaAbcView: React.FC = () => {
     return Array.from(cats);
   }, [rankingData]);
 
-  // Produtos filtrados por categoria se selecionado
   const produtosFiltrados = useMemo(() => {
     if (!rankingData?.produtos) return [];
     if (categoriaFiltro === 'todas') return rankingData.produtos;
     return rankingData.produtos.filter((p) => p.categoria.toLowerCase() === categoriaFiltro.toLowerCase());
   }, [rankingData, categoriaFiltro]);
 
-  // Agregações por Classe A, B e C
   const metricasClasses = useMemo(() => {
     const defaultStats = {
       A: { count: 0, receita: 0 },
@@ -66,9 +63,6 @@ export const CurvaAbcView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ─────────────────────────────────────────────────────────────
-          CABEÇALHO & VISÃO GERAL DE PARETO
-          ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <h2 className="text-2xl font-extrabold text-text tracking-tight flex items-center gap-2">
@@ -94,11 +88,7 @@ export const CurvaAbcView: React.FC = () => {
         </Button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          CARDS DE RESUMO DAS CLASSES A, B E C
-          ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card Classe A (até 80% da receita) */}
         <div className="bg-surface border-2 border-success/40 rounded-[20px] p-5 shadow-soft relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold uppercase tracking-wider text-success">
@@ -123,7 +113,6 @@ export const CurvaAbcView: React.FC = () => {
           </div>
         </div>
 
-        {/* Card Classe B (80% a 95% da receita) */}
         <div className="bg-surface border-2 border-brand/50 rounded-[20px] p-5 shadow-soft relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold uppercase tracking-wider text-brand-text">
@@ -148,7 +137,6 @@ export const CurvaAbcView: React.FC = () => {
           </div>
         </div>
 
-        {/* Card Classe C (últimos 5% da receita) */}
         <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold uppercase tracking-wider text-text-2">
@@ -174,9 +162,6 @@ export const CurvaAbcView: React.FC = () => {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          FILTRO DE CATEGORIA POR CHIPS
-          ───────────────────────────────────────────────────────────── */}
       {categoriasDisponiveis.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-2">
           <span className="text-xs font-bold text-text-2 shrink-0 flex items-center gap-1">
@@ -210,9 +195,6 @@ export const CurvaAbcView: React.FC = () => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          TABELA DETALHADA DA CURVA ABC
-          ───────────────────────────────────────────────────────────── */}
       <div className="bg-surface border border-border rounded-[20px] p-5 shadow-soft">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-text tracking-tight">

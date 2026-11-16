@@ -28,9 +28,6 @@ function resolverGestaoBaseUrl(): string {
 
 export const GESTAO_BASE_URL = resolverGestaoBaseUrl();
 
-/**
- * Consulta o resumo diário e faturamento (M01 / M09)
- */
 export async function obterResumoDiario(
   filtros?: ResumoDiarioFiltros,
 ): Promise<ResumoDiarioGestao> {
@@ -41,9 +38,6 @@ export async function obterResumoDiario(
   });
 }
 
-/**
- * Consulta o ranking de produtos com Curva ABC 80/15/5 (M10)
- */
 export async function obterRankingProdutos(
   filtros?: RankingProdutosFiltros,
 ): Promise<RankingProdutosResposta> {
@@ -55,16 +49,10 @@ export async function obterRankingProdutos(
   });
 }
 
-/**
- * Consulta o desempenho e comissões da equipe de garçons (M11)
- */
 export async function obterDesempenhoGarcons(): Promise<DesempenhoGarconsResposta> {
   return request<DesempenhoGarconsResposta>(`${GESTAO_BASE_URL}/gestao/desempenho-garcons`);
 }
 
-/**
- * Consulta a lista de produtos com estoque em nível de alerta ou crítico (M05)
- */
 export async function obterAlertasEstoque(
   filtros?: AlertasEstoqueFiltros,
 ): Promise<AlertasEstoqueResposta> {
@@ -75,9 +63,6 @@ export async function obterAlertasEstoque(
   });
 }
 
-/**
- * Realiza download direto do relatório exportado em CSV ou JSON (M15)
- */
 export async function exportarRelatorio(
   filtros: ExportarRelatorioFiltros = {},
 ): Promise<{ blob: Blob; filename: string }> {
@@ -104,12 +89,10 @@ export async function exportarRelatorio(
         mensagemErro = errJson.erro.mensagem;
       }
     } catch {
-      // Ignora erro de JSON e mantém mensagem padrão
     }
     throw new Error(mensagemErro);
   }
 
-  // Tenta extrair filename do Content-Disposition se fornecido pelo backend
   const contentDisposition = response.headers.get('content-disposition');
   let filename = `relatorio-${filtros.tipo || 'faturamento'}.${filtros.formato || 'csv'}`;
 
@@ -124,9 +107,6 @@ export async function exportarRelatorio(
   return { blob, filename };
 }
 
-/**
- * Helper utilitário que engatilha o download do Blob no navegador do usuário
- */
 export function acionarDownloadNavegador(blob: Blob, filename: string): void {
   const urlBlob = window.URL.createObjectURL(blob);
   const link = document.createElement('a');

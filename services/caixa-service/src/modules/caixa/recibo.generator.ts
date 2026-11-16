@@ -31,10 +31,6 @@ export interface DadosReciboPaper {
   pagamentos: PagamentoReciboPaper[];
 }
 
-/**
- * Gera código de autenticação único no formato VAPT-YYYYMMDD-MESA-XXXX
- * Exemplo: VAPT-20261104-M04-98F2 ou VAPT-20261104-M12-A3D8
- */
 export function gerarCodigoAutenticacao(mesa: number, data: Date = new Date()): string {
   const ano = data.getUTCFullYear();
   const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
@@ -46,9 +42,6 @@ export function gerarCodigoAutenticacao(mesa: number, data: Date = new Date()): 
   return `VAPT-${yyyymmdd}-${mesaFormatada}-${sufixoHex}`;
 }
 
-/**
- * Gera o texto do recibo térmico operacional (.paper) em largura fixa de 40 colunas
- */
 export function gerarTextoReciboPaper(dados: DadosReciboPaper): string {
   const LARGURA = 40;
   const linhaDupla = '='.repeat(LARGURA);

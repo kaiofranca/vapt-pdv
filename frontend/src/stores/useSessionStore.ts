@@ -29,7 +29,6 @@ export const useSessionStore = create<SessionState>((set) => ({
       perfilAtivo: perfil || state.perfilAtivo,
     })),
   login: (usuario) => {
-    // Mapeamento exclusivo para os módulos operacionais com suporte ativo no frontend
     const modoPorPerfil: Partial<Record<PerfilUsuario, ModoOperacao>> = {
       garcom: 'garcom',
       caixa: 'caixa',

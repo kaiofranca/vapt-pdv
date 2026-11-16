@@ -24,7 +24,6 @@ export function App() {
     return <ModoKdsPage />;
   }
 
-  // Padrão: tela de seleção de operador / login
   return <LoginPage />;
 }
 

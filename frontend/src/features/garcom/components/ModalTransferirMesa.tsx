@@ -28,7 +28,6 @@ export const ModalTransferirMesa: React.FC<ModalTransferirMesaProps> = ({
   const transferirMesaMut = useTransferirMesa();
   const { data: comandasAbertas = [] } = useComandasAbertas();
 
-  // Reset estado ao abrir
   useEffect(() => {
     if (isOpen) {
       setNovaMesa('');
@@ -37,7 +36,6 @@ export const ModalTransferirMesa: React.FC<ModalTransferirMesaProps> = ({
     }
   }, [isOpen]);
 
-  // Fechar com tecla Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -50,7 +48,6 @@ export const ModalTransferirMesa: React.FC<ModalTransferirMesaProps> = ({
 
   if (!isOpen) return null;
 
-  // Validação em tempo real se a mesa já está ocupada por outra comanda aberta (EARS-TRANSF-06)
   const mesaNum = parseInt(novaMesa.trim(), 10);
   const mesaJaOcupada =
     !isNaN(mesaNum) &&
@@ -114,17 +111,14 @@ export const ModalTransferirMesa: React.FC<ModalTransferirMesaProps> = ({
       aria-modal="true"
       aria-labelledby="transferir-mesa-titulo"
     >
-      {/* Backdrop click handler */}
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
 
       <div
         className="relative w-full sm:max-w-md bg-surface rounded-t-[28px] sm:rounded-[28px] p-6 shadow-modal border border-border space-y-5 animate-in slide-in-from-bottom duration-200 z-10"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Handle visual da gaveta móvel */}
         <div className="w-12 h-1.5 bg-border rounded-full mx-auto sm:hidden -mt-1 mb-2" />
 
-        {/* Topo: Título e Botão Fechar X */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-full bg-brand-soft text-brand-text flex items-center justify-center">
@@ -153,7 +147,6 @@ export const ModalTransferirMesa: React.FC<ModalTransferirMesaProps> = ({
           </button>
         </div>
 
-        {/* Aviso de erro / Mesa Ocupada (EARS-TRANSF-08) */}
         {(erroLocal || (mesaJaOcupada && !erroLocal)) && (
           <div
             role="alert"

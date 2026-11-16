@@ -28,19 +28,16 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
   onReceberPagamento,
   onVerComprovante,
 }) => {
-  // Mapeamento de id do garçom -> nome
   const garcomMap = useMemo(() => {
     const map = new Map<number, string>();
     garcons.forEach((g) => map.set(g.id, g.nome));
     return map;
   }, [garcons]);
 
-  // Contas que foram fechadas (pediram a conta) e aguardam pagamento
   const contasPedidas = useMemo(() => {
     return comandas.filter((c) => c.status === 'fechada');
   }, [comandas]);
 
-  // Contas pagas hoje
   const contasPagasHoje = useMemo(() => {
     return comandas
       .filter((c) => c.status === 'paga')
@@ -51,7 +48,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
       });
   }, [comandas]);
 
-  // Mesa com maior tempo de espera para o banner de alerta
   const comandaMaisAntiga = useMemo(() => {
     if (contasPedidas.length === 0) return null;
     return [...contasPedidas].sort((a, b) => {
@@ -76,7 +72,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-bg p-6 gap-6">
-      {/* Topo do Módulo de Recebimento */}
       <div className="flex items-center justify-between shrink-0">
         <div>
           <div className="flex items-center gap-3">
@@ -99,7 +94,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
         </div>
       </div>
 
-      {/* Banner de Alerta em Destaque (C04 Receber.png) */}
       {comandaMaisAntiga && (
         <div className="bg-brand-soft border-2 border-brand/40 rounded-card p-4 flex items-center justify-between shadow-soft shrink-0 animate-fadeIn">
           <div className="flex items-center gap-3">
@@ -136,9 +130,7 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
         </div>
       )}
 
-      {/* Área com Scroll: Seção 1 (Contas Pedidas) + Seção 2 (Recebidos Hoje) */}
       <div className="flex-1 overflow-y-auto space-y-8 pr-1">
-        {/* Seção 1: Contas Pedidas Aguardando Caixa */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold uppercase tracking-wider text-text-2 flex items-center gap-2">
@@ -198,7 +190,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
                         </span>
                       </div>
 
-                      {/* Resumo de Itens */}
                       <div className="mt-4 pt-3 border-t border-border">
                         <div className="text-[11px] font-bold uppercase tracking-wider text-text-2 mb-1.5">
                           Itens Consumidos ({itens.length})
@@ -217,7 +208,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Totais com Subtotal + 10% */}
                       <div className="mt-4 pt-3 border-t border-dashed border-border space-y-1 text-xs">
                         <div className="flex justify-between text-text-2">
                           <span>Subtotal</span>
@@ -258,7 +248,6 @@ export const ReceberCaixaView: React.FC<ReceberCaixaViewProps> = ({
           )}
         </div>
 
-        {/* Seção 2: Recebidos Hoje (Histórico de Vendas Quitadas) */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold uppercase tracking-wider text-text-2 flex items-center gap-2">

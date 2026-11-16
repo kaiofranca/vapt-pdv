@@ -1,10 +1,3 @@
-/**
- * Gateway de Integração com o microsserviço satélite kds-service (:3001).
- * Responsável pelo despacho HTTP síncrono de fichas de preparo e checagem de pendências ativas
- * com timeout estrito de 2000ms.
- * (ADR-01, ADR-07, RN17, RN22, Story 2.2.9, RF23, C04)
- */
-
 export interface DespacharFichaInput {
   comanda_id: number;
   item_comanda_id: number;

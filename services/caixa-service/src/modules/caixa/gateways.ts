@@ -64,5 +64,3 @@ export class HttpEstoqueCoreGateway implements EstoqueCoreGateway {
     }
   }
 }
-
-

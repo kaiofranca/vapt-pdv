@@ -244,7 +244,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service a partir 
       expect(res.statusCode).toBe(202);
       expect(mockWarn).not.toHaveBeenCalled();
 
-      // Checa contrato HTTP
       expect(globalThis.fetch).toHaveBeenCalledTimes(1);
       const [url, init] = (globalThis.fetch as any).mock.calls[0];
       expect(url).toBe('http://localhost:3003/gestao/eventos');
@@ -411,12 +410,10 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service a partir 
       expect(corpo.paga_em).toBeDefined();
       expect(corpo.integracao_gestao_pendente).toBeUndefined();
 
-      // Estoque baixado e movimento contábil registrado
       const produto = produtos.find((p) => p.id === 30);
       expect(produto?.estoque).toBe(8);
       expect(movimentosEstoque).toHaveLength(1);
 
-      // Notificação ao gestao-service ocorreu com payload correto
       expect(gestaoGatewayMock.notificarComandaPaga).toHaveBeenCalledTimes(1);
       expect(gestaoGatewayMock.notificarComandaPaga).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -472,7 +469,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service a partir 
         payload: { forma_pagamento: 'dinheiro' },
       });
 
-      // Venda NÃO é abortada (SM-C2, ADR-07)
       expect(res.statusCode).toBe(200);
       const corpo = res.json();
 
@@ -482,7 +478,6 @@ describe('HttpGestaoGateway — Ingestão de Eventos no gestao-service a partir 
       expect(corpo.integracao_gestao_pendente).toBe(true);
       expect(corpo.avisos).toContain('integracao_gestao_pendente: true');
 
-      // Estoque é baixado normalmente
       const produto = produtos.find((p) => p.id === 30);
       expect(produto?.estoque).toBe(8);
 

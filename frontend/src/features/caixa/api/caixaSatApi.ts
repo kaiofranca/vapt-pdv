@@ -1,14 +1,3 @@
-/**
-/**
- * Cliente HTTP para o Microsserviço Satélite Caixa-Service (:3002)
- *
- * Responsável por:
- * 1. Split payment igualitário e por itens com conservação de 100% dos centavos (RN19).
- * 2. Quitação de comanda em dinheiro, pix e cartão com cálculo de troco oficial pelo satélite.
- * 3. Consulta de recibo térmico operacional canônico (.paper) de 48 colunas (RN24).
- * 4. Tratamento robusto de erros e degradação graciosa em caso de indisponibilidade (ADR-07, EARS-CXSAT-10).
- */
-
 function resolverCaixaBaseUrl(): string {
   const envUrl = (import.meta.env.VITE_CAIXA_API_URL as string | undefined)?.trim();
   if (envUrl && !envUrl.includes('seu_ip_publico_ec2')) {
@@ -44,7 +33,7 @@ export class CaixaSatError extends Error {
 export interface CotaSat {
   numero_cota: number;
   rotulo: string;
-  valor: string; // Ex: "33.34"
+  valor: string;
   saldo?: string;
   status?: string;
   subtotal?: string;
@@ -182,9 +171,6 @@ export interface CobrancaDetalheResposta {
   paga_em: string | null;
 }
 
-/**
- * Realiza requisições HTTP para o satélite caixa-service com timeout e formatação de erros padronizada.
- */
 async function requestCaixa<T>(
   caminho: string,
   opcoes: RequestInit = {},
@@ -251,7 +237,6 @@ async function requestCaixa<T>(
       throw erro;
     }
 
-    // Se for abortado por timeout ou falha de conexão (CORS/offline)
     const isTimeout = erro?.name === 'AbortError' || erro?.code === 20;
     const msgAmigavel = isTimeout
       ? 'Tempo limite de resposta do caixa-service (:3002) esgotado.'
@@ -263,10 +248,6 @@ async function requestCaixa<T>(
   }
 }
 
-/**
- * Calcula divisão local preservando 100% dos centavos (resíduo alocado no último participante).
- * Utilizado como fallback gracioso em contingência quando o satélite está offline (RN19).
- */
 export function calcularDivisaoLocal(total: string | number, pessoas: number): CotaSat[] {
   const qtdPessoas = Math.max(2, pessoas);
   const totalNum = typeof total === 'string' ? parseFloat(total.replace(',', '.')) : total;
@@ -288,9 +269,6 @@ export function calcularDivisaoLocal(total: string | number, pessoas: number): C
   return cotas;
 }
 
-/**
- * Formata texto do recibo operacional térmico em padrão de 48 colunas (.paper)
- */
 export function formatarRecibo48Colunas(dados: {
   comanda_id: number;
   mesa: number | string;
@@ -399,13 +377,7 @@ export function formatarRecibo48Colunas(dados: {
   return linhas.join('\n');
 }
 
-/**
- * Cliente HTTP unificado do Caixa Satélite (:3002)
- */
 export const caixaSatApi = {
-  /**
-   * Sincroniza / Abre fechamento de comanda no satélite
-   */
   async sincronizarComanda(comandaId: number, body: any): Promise<CobrancaDetalheResposta> {
     return requestCaixa<CobrancaDetalheResposta>(`/caixa/comandas/${comandaId}/fechar`, {
       method: 'POST',
@@ -413,18 +385,12 @@ export const caixaSatApi = {
     });
   },
 
-  /**
-   * Consulta os dados de cobrança e saldo da comanda no satélite (:3002)
-   */
   async obterComandaCaixa(comandaId: number): Promise<CobrancaDetalheResposta> {
     return requestCaixa<CobrancaDetalheResposta>(`/caixa/comandas/${comandaId}`, {
       method: 'GET',
     });
   },
 
-  /**
-   * Divide a comanda igualmente por pessoas ou por itens no satélite (:3002)
-   */
   async dividirComanda(
     comandaId: number,
     body: DividirComandaParams,
@@ -451,9 +417,6 @@ export const caixaSatApi = {
     });
   },
 
-  /**
-   * Liquida parcela ou comanda integral com cálculo oficial de troco em dinheiro (:3002)
-   */
   async pagarComanda(
     comandaId: number,
     body: PagarComandaParams,
@@ -480,9 +443,6 @@ export const caixaSatApi = {
     });
   },
 
-  /**
-   * Obtém o recibo oficial autenticado de 48 colunas (.paper) emitido pelo satélite (:3002)
-   */
   async obterRecibo(comandaId: number): Promise<ReciboCompletoResposta> {
     return requestCaixa<ReciboCompletoResposta>(`/caixa/recibos/${comandaId}`, {
       method: 'GET',

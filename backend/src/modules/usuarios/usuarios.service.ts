@@ -8,9 +8,6 @@ import {
 } from './usuario.entity';
 import { IUsuariosRepository } from './usuarios.repository';
 
-/**
- * Interface do Serviço de Usuários (Regras de Negócio).
- */
 export interface ServicoUsuarios {
   criar(dados: CriarUsuarioDados): Promise<UsuarioEntidade>;
   listar(filtros?: FiltrosListagemUsuarios): Promise<UsuarioEntidade[]>;
@@ -20,11 +17,6 @@ export interface ServicoUsuarios {
   validarGarcom(id: number): Promise<GarcomValido>;
 }
 
-/**
- * Camada de Regras de Negócio (Service).
- * Não conhece detalhes de protocolo HTTP (Fastify) nem detalhes de banco (SQL/Prisma).
- * Recebe o repositório através de injeção de dependência.
- */
 export class UsuariosService implements ServicoUsuarios {
   constructor(private readonly repo: IUsuariosRepository) {}
 
@@ -60,7 +52,6 @@ export class UsuariosService implements ServicoUsuarios {
   }
 
   async atualizar(id: number, dados: AtualizarUsuarioDados): Promise<UsuarioEntidade> {
-    // Garante que o usuário existe antes de tentar atualizar
     await this.buscarPorId(id);
 
     const dadosAtualizacao: AtualizarUsuarioDados = {};
@@ -85,7 +76,6 @@ export class UsuariosService implements ServicoUsuarios {
   async inativar(id: number): Promise<UsuarioEntidade> {
     const usuario = await this.buscarPorId(id);
 
-    // Inativação lógica idempotente: se já estiver inativo, não refaz query de update
     if (!usuario.ativo) {
       return usuario;
     }

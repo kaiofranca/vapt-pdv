@@ -4,30 +4,15 @@ import { formatCurrency } from '../../../lib/utils';
 import { Button } from '../../../components/ui/Button';
 
 export interface ModoDinheiroTecladoProps {
-  /** Valor total da comanda em centavos */
   totalCentavos: number;
-  /** Valor já pago acumulado em centavos */
   jaPagoCentavos: number;
-  /** Valor da parcela a quitar nesta operação em centavos */
   valorParcelaCentavos: number;
-  /** String digitada pelo operador para o valor entregue pelo cliente */
   valorRecebidoInput: string;
-  /** Callback para atualizar o valor entregue */
   onValorRecebidoChange: (novoValor: string) => void;
-  /** Callback para confirmar a parcela em dinheiro */
   onConfirmar: () => void;
-  /** Se a confirmação está desabilitada */
   disabled?: boolean;
 }
 
-/**
- * Componente C07 - Pagamento em Dinheiro com Teclado Touch e Troco em Tempo Real
- * Atende às diretrizes do DESIGN.md:
- * - Cores semânticas: Café, Mostarda, Manjericão (success), Creme
- * - Sem emojis
- * - font-variant-numeric: tabular-nums
- * - Alvos de toque >= 44x44px
- */
 export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
   totalCentavos,
   jaPagoCentavos,
@@ -39,23 +24,19 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
 }) => {
   const faltaPagarCentavos = Math.max(0, totalCentavos - jaPagoCentavos);
 
-  // Conversão segura para centavos inteiros (evita resíduos binários de ponto flutuante)
   const valorRecebidoNum = parseFloat(valorRecebidoInput.replace(',', '.'));
   const valorRecebidoCentavos = Number.isFinite(valorRecebidoNum)
     ? Math.round(valorRecebidoNum * 100)
     : 0;
 
-  // Troco instantâneo
   const trocoCentavos = Math.max(0, valorRecebidoCentavos - valorParcelaCentavos);
   const valorInsuficiente = valorRecebidoCentavos < valorParcelaCentavos;
 
-  // Percentual já quitado para a barra de progresso
   const percentualQuitado =
     totalCentavos > 0
       ? Math.min(100, Math.round((jaPagoCentavos / totalCentavos) * 100))
       : 0;
 
-  // Manipulação de teclas do teclado touch
   const handleKeyClick = (tecla: string) => {
     if (tecla === 'C') {
       onValorRecebidoChange('');
@@ -71,7 +52,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
       }
       return;
     }
-    // Limita a duas casas decimais
     const partes = valorRecebidoInput.split(/[,.]/);
     if (partes.length > 1 && partes[1].length >= 2) {
       return;
@@ -83,12 +63,10 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
     }
   };
 
-  // Botões rápidos de cédulas fixas
   const handleSetCedula = (valor: number) => {
     onValorRecebidoChange(valor.toFixed(2).replace('.', ','));
   };
 
-  // Botão Valor Exato
   const handleValorExato = () => {
     const exato = (valorParcelaCentavos / 100).toFixed(2).replace('.', ',');
     onValorRecebidoChange(exato);
@@ -96,7 +74,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
 
   return (
     <div className="flex flex-col gap-3 p-4 rounded-card bg-surface-2/60 border border-border">
-      {/* Barra de Progresso de Quitação: Já Pago vs Falta Pagar */}
       <div className="space-y-1.5">
         <div className="flex justify-between items-center text-xs font-bold">
           <span className="text-success-text tabular-nums">
@@ -126,7 +103,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
         </div>
       </div>
 
-      {/* Input de Valor Entregue */}
       <div>
         <label
           htmlFor="valor-recebido-dinheiro"
@@ -150,7 +126,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
         </div>
       </div>
 
-      {/* Botões Rápidos de Cédulas ("R$ 20", "R$ 50", "R$ 100", "Valor exato") */}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -182,7 +157,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
         </button>
       </div>
 
-      {/* Teclado Numérico Touch (0 a 9, backspace, limpar 'C', vírgula ',') */}
       <div className="grid grid-cols-3 gap-2 pt-1" aria-label="Teclado numérico">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
           <button
@@ -195,7 +169,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
           </button>
         ))}
 
-        {/* Linha inferior: Limpar (C), 0, Backspace */}
         <button
           type="button"
           onClick={() => handleKeyClick('C')}
@@ -225,7 +198,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
           <Delete className="w-5 h-5 text-text-2" />
         </button>
 
-        {/* Linha adicional para vírgula se necessário */}
         <div className="col-span-3 flex justify-center">
           <button
             type="button"
@@ -237,7 +209,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
         </div>
       </div>
 
-      {/* Destaque do Troco em Cor Manjericão (Success) */}
       <div
         className={`p-3.5 rounded-card border transition-all text-center ${
           trocoCentavos > 0
@@ -276,7 +247,6 @@ export const ModoDinheiroTeclado: React.FC<ModoDinheiroTecladoProps> = ({
         </span>
       </div>
 
-      {/* Ação de Confirmar Dinheiro */}
       <Button
         variant="primary"
         fullWidth

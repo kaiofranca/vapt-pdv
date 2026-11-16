@@ -75,7 +75,6 @@ describe('Rotas HTTP gestao-service (Testes de Integração)', () => {
     expect(body.processado).toBe(true);
     expect(body.duplicado).toBe(false);
 
-    // Reenvio com mesmo ID -> 200 OK (idempotente)
     const resDup = await app.inject({
       method: 'POST',
       url: '/gestao/eventos',
@@ -167,7 +166,6 @@ describe('Rotas HTTP gestao-service (Testes de Integração)', () => {
   });
 
   it('GET /gestao/exportar deve suportar CSV e JSON', async () => {
-    // CSV
     const resCsv = await app.inject({
       method: 'GET',
       url: '/gestao/exportar?tipo=faturamento&formato=csv',
@@ -176,7 +174,6 @@ describe('Rotas HTTP gestao-service (Testes de Integração)', () => {
     expect(resCsv.headers['content-type']).toContain('text/csv');
     expect(resCsv.headers['content-disposition']).toContain('attachment; filename="relatorio-faturamento.csv"');
 
-    // JSON
     const resJson = await app.inject({
       method: 'GET',
       url: '/gestao/exportar?tipo=faturamento&formato=json',
@@ -192,7 +189,6 @@ describe('Rotas HTTP gestao-service (Testes de Integração)', () => {
       method: 'POST',
       url: '/gestao/eventos',
       payload: {
-        // Falta evento_id e evento
         timestamp: 'invalido',
       },
     });
