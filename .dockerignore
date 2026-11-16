@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+.git
+.gitignore
+_bmad
+_bmad-output
+.agent
+.bmad-loop
+docs
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/coverage
+**/*.test.ts
+**/*.test.tsx

@@ -7,6 +7,7 @@
 
 [![Módulo 1: Cloud IaaS](https://img.shields.io/badge/Módulo%201-Cloud%20IaaS%20(AWS%20EC2)-success)](docs/engenharia/01-visao-e-escopo.md)
 [![Módulo 2: Microsserviços](https://img.shields.io/badge/Módulo%202-Microsserviços%20Satélites-success)](docs/engenharia/03-arquitetura-c4-model.md)
+[![Módulo 3: Containers](https://img.shields.io/badge/Módulo%203-Docker%20Compose%20(8%20Containers)-success)](docs/engenharia/03-arquitetura-c4-model.md)
 [![Bancos Isolados](https://img.shields.io/badge/Arquitetura-Database--per--Service-blue)](docs/engenharia/04-modelo-dados-e-dominio.md)
 ---
 
@@ -120,17 +121,17 @@ A interface do VaptPDV foi projetada como uma Single Page Application (SPA/PWA) 
 - Login otimizado sem fricção de senhas para agilidade em turnos movimentados, mantendo a rastreabilidade por ID de operador em todas as ações.
 
 ### 2. Modo Garçom Mobile-First (`/garcom`)
-- **Mapa Visual de Mesas:** Exibição da ocupação do salão em tempo real (mesas livres, ocupadas, reservadas ou em fechamento).
-- **Lançamento Ágil de Pedidos:** Abertura de comandas com validação de mesa livre (`RN07`) e adição de itens com congelamento imediato de preço (`RN04`).
+- **Mapa Visual de Mesas:** Exibição da ocupação do salão em tempo real (mesas livres, abertas/ocupadas ou com conta pedida/aguardando pagamento).
+- **Lançamento Ágil de Pedidos:** Abertura de comandas com validação de mesa livre (`RN07`), adição de itens com congelamento imediato de preço (`RN04`), transferência de mesa (`PATCH /comandas/:id/transferir-mesa`) e mesclagem de comandas (`POST /comandas/:id/mesclar`).
 - **Observações e Alergias (`G04`):** Bottom sheet mobile com seleção rápida de modificadores (ex.: *"Sem cebola"*, *"Ponto da carne: bem passada"*, *"Alérgico a glúten"*).
 
 ### 3. Painel TV da Cozinha / KDS (`/kds`)
 - **Layout Kanban Widescreen:** Desenvolvido especificamente para monitores industriais ou smart TVs fixadas na cozinha/bar.
 - **SLA de Preparo Dinâmico:** Fichas de produção com cronômetro em tempo real e sinalização semafórica de urgência:
-  - **Verde:** Tempo decorrido de 0 a 10 minutos (dentro do prazo regular).
-  - **Amarelo:** Tempo decorrido de 11 a 20 minutos (alerta de atenção).
-  - **Vermelho:** Tempo decorrido superior a 20 minutos (urgência crítica).
-- **Ciclo de Preparo em 1 Toque:** Botões táteis largos (>= 44x44px) para avançar pedidos de `pendente` ➔ `preparando` ➔ `pronto`.
+  - **Verde:** Tempo decorrido `< 10 min` (dentro do prazo regular).
+  - **Amarelo:** Tempo decorrido de `10 a 15 min` (alerta de atenção).
+  - **Vermelho:** Tempo decorrido `> 15 min` com badge `ATRASADO` (urgência crítica).
+- **Ciclo de Preparo em 1 Toque:** Botões táteis largos (>= 44x44px) para avançar pedidos de `recebido` ➔ `em_preparo` ➔ `pronto` ➔ `entregue`.
 
 ### 4. Modo Frente de Caixa Desktop (`/caixa`)
 - **Visão Geral do Salão:** Painel desktop (1440x900) para visualização rápida das comandas prontas para fechamento.
@@ -142,7 +143,8 @@ A interface do VaptPDV foi projetada como uma Single Page Application (SPA/PWA) 
 ### 5. Portal Gerencial e Analytics (`/gestao`)
 - **Resumo Executivo Diário:** Faturamento bruto, ticket médio e volume de comandas atendidas no dia.
 - **Curva ABC de Vendas (Pareto):** Classificação automática dos produtos mais rentáveis em Classe A (80% da receita), Classe B (15%) e Classe C (5%).
-- **Controle de Ruptura de Estoque (`M05`):** Painel de alertas para produtos esgotados (venda bloqueada) ou abaixo da margem de segurança, com modal de entrada de mercadorias (`M06`).
+- **Controle de Ruptura e Reposição de Estoque (`M05/M06`):** Painel de alertas para produtos esgotados (venda bloqueada) ou abaixo da margem de segurança, com modal de reposição de estoque (`M06` via `POST /produtos/:id/repor`).
+- **Cardápio/Produtos (`M02/M03`) e Equipe/Usuários (`M12/M13`):** Gerenciamento completo do catálogo de produtos (criação, edição e ativação/inativação lógica) e cadastro de colaboradores por perfil.
 - **Produtividade da Equipe:** Relatório consolidado com total vendido e rateio da taxa de serviço de 10% acumulada por garçom.
 
 ---
@@ -153,85 +155,90 @@ A interface do VaptPDV foi projetada como uma Single Page Application (SPA/PWA) 
 * **Framework Web:** [Fastify 5](https://fastify.dev/) 
 * **ORM e Persistência:** [Prisma ORM 6](https://www.prisma.io/) com [PostgreSQL 16](https://www.postgresql.org/) 
 * **Frontend Web/PWA:** [React 19](https://react.dev/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/), [TanStack Query v5](https://tanstack.com/query), [Zustand](https://zustand-demo.pmnd.rs/) e [Lucide React](https://lucide.dev/).
-* **Infraestrutura:** AWS EC2 e PM2.
+* **Containers & Orquestração:** [Docker](https://www.docker.com/) (`node:20-alpine` multi-stage, `USER node`, `postgres:16-alpine`) e [Docker Compose](https://docs.docker.com/compose/) (rede `vaptpdv-net` e volumes nomeados `pgdata_*`).
+* **Infraestrutura:** AWS EC2, Docker Compose e PM2.
 
 ---
 
-## 7. Guia passo a passo de execução local
+## 7. Guia Passo a Passo de Execução (Containers & Desenvolvimento Local)
 
-Siga os passos abaixo para inicializar o ecossistema completo em ambiente de desenvolvimento local.
+### Modo A: Orquestração Completa em Containers (Docker Compose — Módulo 3)
 
-### Pré-requisitos
+Este modo sobe todos os **8 containers** do ecossistema (`4` microsserviços Node.js + `4` instâncias PostgreSQL 16 isoladas na rede `vaptpdv-net` com volumes persistentes nomeados e migrações Prisma aplicadas automaticamente):
+
+#### Pré-requisitos
+* **Docker Engine** e **Docker Compose v2** (`docker compose`).
+* **Git** e **Bash** (Linux, macOS, WSL ou Git Bash no Windows) para executar o script de persistência.
+
+#### Passo 1: Configurar Variáveis de Ambiente
+Copie o template seguro da raiz (nenhum segredo real é versionado):
+```bash
+cp .env.docker.example .env
+```
+
+#### Passo 2: Construir as Imagens Multi-Stage e Subir os 8 Containers
+```bash
+docker compose up -d --build
+docker compose ps
+```
+> Todos os 8 serviços (`postgres-core`, `postgres-kds`, `postgres-caixa`, `postgres-gestao`, `vapt-pdv-core`, `kds-service`, `caixa-service`, `gestao-service`) utilizam `healthcheck` e `depends_on: condition: service_healthy`, subindo em estado `healthy` com usuário não-root (`USER node`) e imagens enxutas (`117MB` no Core e `76–77.6MB` nos satélites).
+
+#### Passo 3: Validar Persistência de Dados Pós-Ciclo `down` -> `up`
+O script automatizado abaixo cria um garçom e produto no Core, abre comanda, lança item (gerando ficha no KDS), avança até `entregue`, fecha a comanda, quita via PIX no Caixa (baixando estoque no Core, emitindo recibo `.paper` e registrando no Gestão), executa `docker compose down` seguido de `docker compose up -d` e comprova que 100% dos registros foram preservados nos 4 volumes (`pgdata_core`, `pgdata_kds`, `pgdata_caixa`, `pgdata_gestao`):
+```bash
+bash scripts/testar-persistencia-docker.sh
+```
+
+*(Opcional — carregar catálogo demonstrativo no Core em container: `docker compose exec -T postgres-core psql -U vaptpdv -d vaptpdv_db < backend/prisma/seed-produtos.sql`)*
+
+---
+
+### Modo B: Execução Manual em Desenvolvimento Local (Node.js + TSX Watch)
+
+#### Pré-requisitos
 * **Node.js:** versão 20 LTS ou superior.
-* **Docker e Docker Compose:** para inicialização dos bancos de dados relacionais.
-* **Git:** para clonagem do repositório.
+* **Docker e Docker Compose** (para subir apenas os bancos PostgreSQL 16).
+
+1. **Subir apenas os bancos de dados:**
+   ```bash
+   docker compose up -d postgres-core postgres-kds postgres-caixa postgres-gestao
+   ```
+2. **Aplicar migrações Prisma nos 4 serviços** (apontando `DATABASE_URL` no `.env` de cada serviço) e iniciar em terminais separados:
+   ```bash
+   # Terminal 1: PDV Core Salão (:3000) e Frontend Integrado
+   cd backend && npm run dev
+
+   # Terminal 2: KDS Cozinha e Bar (:3001)
+   cd services/kds-service && npm run dev
+
+   # Terminal 3: Caixa Service (:3002)
+   cd services/caixa-service && npm run dev
+
+   # Terminal 4: Gestão e Analytics (:3003)
+   cd services/gestao-service && npm run dev
+
+   # Terminal 5 (Opcional): Frontend Vite Dev Server (:5173 com proxies)
+   cd frontend && npm run dev
+   ```
 
 ---
 
-### Passo 1: Subir os Bancos de Dados com Docker Compose
-O projeto conta com provisionamento multi-banco automático através do script [`docker/init-multi-db.sql`](docker/init-multi-db.sql). Execute na raiz do repositório:
-
-```bash
-docker compose up -d
-```
-*(O container `vapt-postgres` subirá na porta `:5432`, criando automaticamente os bancos `vapt_pdv`, `kds_db`, `caixa_db` e `gestao_db`).*
-
----
-
-### Passo 2: Aplicar Migrações e Seeds nos 4 Bancos
-Para estruturar as tabelas e carregar o catálogo de 24 produtos reais, utilize o script automatizado:
-
-**Via terminal (Linux / macOS / Bash):**
-  ```bash
-  # Core Salão (vapt_pdv)
-  npm run prisma:generate --prefix backend
-  npm run prisma:deploy --prefix backend
-
-  # KDS Cozinha (kds_db)
-  npm run prisma:generate --prefix services/kds-service
-  npm run prisma:deploy --prefix services/kds-service
-
-  # Caixa Service (caixa_db)
-  npm run prisma:generate --prefix services/caixa-service
-  npm run prisma:deploy --prefix services/caixa-service
-
-  # Gestão Service (gestao_db)
-  npm run prisma:generate --prefix services/gestao-service
-  npm run prisma:deploy --prefix services/gestao-service
-
-  # Inserção do catálogo de produtos reais no Core
-  docker exec -i vapt-postgres psql -U postgres -d vapt_pdv < backend/prisma/seed-produtos.sql
-  ```
-
----
-
-### Passo 3: Iniciar os serviços da aplicação
-
-#### Inicialização Manual em Terminais Separados
-
-```bash
-# Terminal 1: PDV Core Salão (:3000) e Frontend Integrado
-cd backend && npm run dev
-
-# Terminal 2: KDS Cozinha e Bar (:3001)
-cd services/kds-service && npm run dev
-
-# Terminal 3: Caixa Service (:3002)
-cd services/caixa-service && npm run dev
-
-# Terminal 4: Gestão e Analytics (:3003)
-cd services/gestao-service && npm run dev
-
-# Terminal 5 (Opcional): Frontend Vite Dev Server (:5173 com proxies)
-cd frontend && npm run dev
-```
-
----
-
-### Passo 4: Acessar as Interfaces e Documentações
+### Interfaces e Documentações (Local ou Container)
 
 * **Frontend Web/PWA Integrado:** [http://localhost:3000](http://localhost:3000) *(ou [http://localhost:5173](http://localhost:5173) no modo Vite dev)*
 * **Swagger Core Salão:** [http://localhost:3000/docs](http://localhost:3000/docs)
 * **Swagger KDS Cozinha:** [http://localhost:3001/docs](http://localhost:3001/docs)
 * **Swagger Caixa Service:** [http://localhost:3002/docs](http://localhost:3002/docs)
 * **Swagger Gestão Service:** [http://localhost:3003/docs](http://localhost:3003/docs)
+
+---
+
+## 8. Comparativo Técnico: Deploy Direto na VM EC2 (Módulos 1–2) vs. Containers Docker Compose (Módulo 3)
+
+| Dimensão | Deploy Direto na VM EC2 (PM2 + PostgreSQL Nativo) | Orquestração em Containers (Docker Compose Multi-Stage) |
+| :--- | :--- | :--- |
+| **Reprodutibilidade de Ambiente** | Dependente de pacotes instalados no SO da VM (versão global de Node.js, PostgreSQL, OpenSSL e PATH). | Imutável e idêntica entre máquina local e AWS EC2 via imagens `node:20-alpine` e `postgres:16-alpine`. |
+| **Isolamento de Bancos (`ADR-01`)** | 4 databases lógicos compartilhando o mesmo processo e porta `5432` do PostgreSQL da VM. | **4 containers PostgreSQL independentes** (`postgres-core`, `postgres-kds`, `postgres-caixa`, `postgres-gestao`), sem compartilhamento de memória/locks e com portas internas isoladas na rede `vaptpdv-net`. |
+| **Segurança e Privilégios** | Processos gerenciados pelo usuário de deploy do SO e arquivos-fonte presentes no diretório de execução. | Execução estrita sem privilégios de root (`USER node`), builds multi-stage sem `devDependencies`/testes/código `.ts` na imagem final (`117MB` no Core e `76–77.6MB` nos satélites). |
+| **Inicialização e Migrações** | Ordem de subida controlada manualmente no PM2; risco de corrida se o serviço iniciar antes do banco. | Subida determinística via `depends_on: condition: service_healthy` (`pg_isready`) e execução automática de `npx prisma migrate deploy` antes do servidor HTTP. |
+| **Persistência e Orçamento de RAM** | Dados em diretório padrão do SO sem cota individual por serviço/banco. | Persistência garantida por 4 volumes nomeados (`pgdata_*`) sobrevivendo a `docker compose down`/`up` e limites explícitos de CPU/RAM compatíveis com EC2 `t3.small`/`t3.medium`. |

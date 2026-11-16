@@ -74,6 +74,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
+  // Headers de CORS para permitir integração com frontend e outros serviços
   app.addHook('onRequest', async (request, reply) => {
     reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
