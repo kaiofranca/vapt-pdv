@@ -35,6 +35,7 @@ _bmad/
 _bmad-output/
 skills-lock.json
 *skill
+*.hermes
 
 # Temporários do Sistema Operacional
 *.tmp

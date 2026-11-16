@@ -222,6 +222,8 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
       urlLimpa.startsWith('/produtos') ||
       urlLimpa.startsWith('/usuarios') ||
       urlLimpa.startsWith('/comandas') ||
+      urlLimpa.startsWith('/kds/') ||
+      urlLimpa.startsWith('/caixa/') ||
       urlLimpa.startsWith('/gestao/') ||
       urlLimpa.startsWith('/analytics/') ||
       urlLimpa.startsWith('/health') ||
@@ -375,12 +377,9 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   const kdsUrl = process.env.KDS_SERVICE_URL || process.env.KDS_API_URL || 'http://localhost:3001';
   const caixaUrl = process.env.CAIXA_SERVICE_URL || process.env.CAIXA_API_URL || 'http://localhost:3002';
-  const gestaoUrl = process.env.GESTAO_SERVICE_URL || process.env.GESTAO_API_URL || 'http://localhost:3003';
 
   app.all('/kds/*', async (request, reply) => encaminharParaSatelite(request, reply, kdsUrl));
   app.all('/caixa/*', async (request, reply) => encaminharParaSatelite(request, reply, caixaUrl));
-  app.all('/gestao/*', async (request, reply) => encaminharParaSatelite(request, reply, gestaoUrl));
-  app.all('/analytics/*', async (request, reply) => encaminharParaSatelite(request, reply, gestaoUrl));
 
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
