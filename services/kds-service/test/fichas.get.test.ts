@@ -130,6 +130,8 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
     expect(corpo.fichas[0].sla_status).toBe('atrasado');
     expect(corpo.fichas[1].sla_status).toBe('atencao');
     expect(corpo.fichas[2].sla_status).toBe('normal');
+    expect(corpo.fichas[0].setor).toBe('bar');
+    expect(corpo.fichas[2].setor).toBe('cozinha');
 
     expect(corpo.resumo).toEqual({
       recebido: 1,
@@ -220,6 +222,46 @@ describe('GET /kds/fichas e GET /kds/fila (Story 14.3)', () => {
     const corpo = JSON.parse(resposta.body);
     expect(corpo.fichas).toBeDefined();
     expect(corpo.resumo).toBeDefined();
+
+    await app.close();
+  });
+
+  it('deve considerar SLA normal até 9m59s (< 600s), conforme documentado no README e FichaCard', async () => {
+    const agora = Date.now();
+    const mockPrisma = criarMockPrisma([
+      {
+        id: 10,
+        comandaId: 77,
+        itemComandaId: 771,
+        mesa: 4,
+        garcomId: 1,
+        nomeGarcom: 'Garçom A',
+        setor: 'cozinha',
+        produtoId: 1,
+        nomeProduto: 'Porção',
+        quantidade: 1,
+        observacao: null,
+        status: 'recebido',
+        recebidoEm: new Date(agora - 540 * 1000),
+        iniciadoEm: null,
+        prontoEm: null,
+        entregueEm: null,
+      },
+    ]);
+    const app = await buildApp({
+      prisma: mockPrisma,
+      nodeEnv: 'test',
+      logLevel: 'silent',
+    });
+
+    const resposta = await app.inject({
+      method: 'GET',
+      url: '/kds/fichas',
+    });
+
+    expect(resposta.statusCode).toBe(200);
+    const corpo = JSON.parse(resposta.body);
+    expect(corpo.fichas[0].sla_status).toBe('normal');
 
     await app.close();
   });

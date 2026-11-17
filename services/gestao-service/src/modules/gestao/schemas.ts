@@ -23,6 +23,14 @@ export const EnvelopeEventoOperacionalSchema = Type.Object(
     troco_total: Type.Optional(Type.String()),
     paga_em: Type.Optional(Type.String()),
     fechada_em: Type.Optional(Type.String()),
+    parcelas: Type.Optional(
+      Type.Array(
+        Type.Object({
+          forma_pagamento: Type.String(),
+          valor_aplicado: Type.String(),
+        }),
+      ),
+    ),
     itens: Type.Optional(
       Type.Array(
         Type.Object({

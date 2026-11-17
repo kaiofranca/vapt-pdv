@@ -5,6 +5,8 @@ import {
   ListarComandasQuery,
   ComandaParamsSchema,
   ComandaParams,
+  ParcelaParamsSchema,
+  ParcelaParams,
   FecharComandaBodySchema,
   FecharComandaBody,
   DividirComandaBodySchema,
@@ -151,6 +153,33 @@ export const rotasCaixa: FastifyPluginAsync<OpcoesRotasCaixa> = async (app, opts
       const resultado = await service.pagarComanda(
         request.params.comandaId,
         request.body,
+      );
+      return reply.status(200).send(resultado);
+    },
+  );
+
+  app.delete<{ Params: ParcelaParams }>(
+    '/caixa/comandas/:comandaId/parcelas/:parcelaId',
+    {
+      schema: {
+        summary: 'Estorno de Parcela de Pagamento Parcial',
+        description:
+          'Remove uma parcela parcial ainda não quitada da comanda e recalcula valor_pago, saldo_restante e troco_total.',
+        tags: ['Caixa & Pagamentos'],
+        params: ParcelaParamsSchema,
+        response: {
+          200: CobrancaDetalheRespostaSchema,
+          400: RespostaErroSchema,
+          404: RespostaErroSchema,
+          409: RespostaErroSchema,
+          500: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const resultado = await service.estornarParcela(
+        request.params.comandaId,
+        request.params.parcelaId,
       );
       return reply.status(200).send(resultado);
     },

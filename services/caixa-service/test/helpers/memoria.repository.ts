@@ -216,6 +216,22 @@ export class MemoriaCobrancasRepository implements CobrancasRepository {
     return { ...registro };
   }
 
+  async removerPagamento(
+    comandaId: number,
+    parcelaId: number,
+  ): Promise<PagamentoParcelaRegistro | null> {
+    const cobranca = this.cobrancasPorComandaId.get(comandaId);
+    if (!cobranca || !Array.isArray(cobranca.pagamentos)) {
+      return null;
+    }
+    const idx = cobranca.pagamentos.findIndex((p) => p.id === parcelaId);
+    if (idx === -1) {
+      return null;
+    }
+    const [removida] = cobranca.pagamentos.splice(idx, 1);
+    return { ...removida };
+  }
+
   async salvarRecibo(dados: SalvarReciboDados): Promise<ReciboVendaRegistro> {
     const registro: ReciboVendaRegistro = {
       id: this.proximoReciboId++,

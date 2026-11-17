@@ -289,13 +289,14 @@ describe('Integração com CaixaGateway e Resiliência (Story 15.6 - ADR-07, RN1
           taxa_servico: '2.98',
           total: '32.78',
           itens: [
-            {
+            expect.objectContaining({
               item_comanda_id: 501,
               produto_id: 10,
               nome: 'Cerveja IPA',
+              categoria: expect.any(String),
               preco_unitario: '14.90',
               quantidade: 2,
-            },
+            }),
           ],
         }),
       );

@@ -35,9 +35,22 @@ export interface RespostaConsultaPendenciasKds {
   offline?: boolean;
 }
 
+export interface CancelarFichasKdsInput {
+  comanda_id?: number;
+  item_comanda_id?: number;
+  motivo?: string;
+}
+
+export interface RespostaCancelamentoKds {
+  sucesso: boolean;
+  canceladas?: number;
+  erro?: string;
+}
+
 export interface IKdsGateway {
   despacharFicha(dados: DespacharFichaInput): Promise<RespostaDespachoKds>;
   consultarPendencias(comandaId: number): Promise<RespostaConsultaPendenciasKds>;
+  cancelarFichas?(dados: CancelarFichasKdsInput): Promise<RespostaCancelamentoKds>;
 }
 
 export class HttpKdsGateway implements IKdsGateway {
@@ -157,10 +170,49 @@ export class HttpKdsGateway implements IKdsGateway {
       return { possui_pendencias: false, pendencias: [], offline: true };
     }
   }
+
+  async cancelarFichas(dados: CancelarFichasKdsInput): Promise<RespostaCancelamentoKds> {
+    if (process.env.KDS_SERVICE_URL === 'disabled') {
+      return { sucesso: true, canceladas: 0 };
+    }
+
+    const url = `${this.baseUrl}/kds/fichas/cancelar`;
+    try {
+      const resposta = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(dados),
+        signal: AbortSignal.timeout(2000),
+      });
+
+      if (!resposta.ok) {
+        const bodyErro = await resposta.text().catch(() => '');
+        return {
+          sucesso: false,
+          erro: `HTTP ${resposta.status}: ${bodyErro || resposta.statusText}`,
+        };
+      }
+
+      const corpo = (await resposta.json().catch(() => ({}))) as any;
+      return {
+        sucesso: true,
+        canceladas: corpo?.canceladas ?? 0,
+      };
+    } catch (erro: any) {
+      return {
+        sucesso: false,
+        erro: erro?.message ?? 'Erro desconhecido ao cancelar fichas no KDS',
+      };
+    }
+  }
 }
 
 export class FakeKdsGateway implements IKdsGateway {
   public fichasDespachadas: DespacharFichaInput[] = [];
+  public fichasCanceladas: CancelarFichasKdsInput[] = [];
   public simularTimeout = false;
   public simularErroConexao = false;
   public proximoStatusRetorno = 201;
@@ -201,5 +253,13 @@ export class FakeKdsGateway implements IKdsGateway {
         offline: false,
       }
     );
+  }
+
+  async cancelarFichas(dados: CancelarFichasKdsInput): Promise<RespostaCancelamentoKds> {
+    if (this.simularTimeout || this.simularErroConexao) {
+      return { sucesso: false, erro: 'KDS indisponível' };
+    }
+    this.fichasCanceladas.push(dados);
+    return { sucesso: true, canceladas: 1 };
   }
 }

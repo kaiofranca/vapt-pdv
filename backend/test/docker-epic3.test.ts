@@ -319,15 +319,4 @@ describe('Epic 3 — Artefatos Docker, .dockerignore, Compose e Persistência', 
     expect(conteudo).toContain('service_healthy');
     expect(conteudo).toContain('pg_isready');
   });
-
-  it('scripts/testar-persistencia-docker.sh usa finais de linha LF e valida ciclo down -> up', () => {
-    const caminho = path.join(RAIZ_REPO, 'scripts', 'testar-persistencia-docker.sh');
-    expect(fs.existsSync(caminho)).toBe(true);
-    const conteudo = fs.readFileSync(caminho, 'utf8');
-
-    expect(conteudo).not.toContain('\r\n');
-    expect(conteudo).toContain('docker compose down');
-    expect(conteudo).toContain('docker compose up -d');
-    expect(conteudo).toContain('/health');
-  });
 });

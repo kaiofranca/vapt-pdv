@@ -13,7 +13,7 @@ export interface RespostaFila {
 }
 
 export function calcularSlaStatus(tempoSegundos: number): 'normal' | 'atencao' | 'atrasado' {
-  if (tempoSegundos < 480) {
+  if (tempoSegundos < 600) {
     return 'normal';
   }
   if (tempoSegundos <= 900) {
@@ -32,6 +32,7 @@ export function serializarFicha(ficha: FichaRegistro): FichaResposta {
     garcom_nome: ficha.nomeGarcom,
     nome_produto: ficha.nomeProduto,
     estacao: ficha.setor,
+    setor: ficha.setor,
     quantidade: ficha.quantidade,
     observacao: ficha.observacao,
     status: ficha.status,
@@ -166,6 +167,7 @@ export class FichasServico {
         possui_pendencias: false,
         totais,
         itens: [],
+        pendencias: [],
       };
     }
 
@@ -187,6 +189,9 @@ export class FichasServico {
       };
     });
 
+    const pendencias = itens.filter(
+      (it) => it.status === 'recebido' || it.status === 'em_preparo',
+    );
     const possui_pendencias = totais.recebido > 0 || totais.em_preparo > 0;
 
     return {
@@ -195,6 +200,27 @@ export class FichasServico {
       possui_pendencias,
       totais,
       itens,
+      pendencias,
     };
+  }
+
+  async cancelarFichas(dados: {
+    comanda_id?: number;
+    item_comanda_id?: number;
+  }): Promise<{ canceladas: number }> {
+    if (!dados.comanda_id && !dados.item_comanda_id) {
+      throw ErroDominio.validacao([
+        {
+          campo: 'comanda_id',
+          mensagem: 'Informe comanda_id ou item_comanda_id para cancelar fichas no KDS.',
+        },
+      ]);
+    }
+
+    const canceladas = await this.repositorio.cancelarFichasAtivas({
+      comandaId: dados.comanda_id,
+      itemComandaId: dados.item_comanda_id,
+    });
+    return { canceladas };
   }
 }

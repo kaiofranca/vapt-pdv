@@ -66,6 +66,7 @@ export class GestaoService {
         taxaServico: evento.taxa_servico || '0.00',
         total: evento.total || evento.valor_total || '0.00',
         formaPagamento: evento.forma_pagamento || 'dinheiro',
+        parcelas: evento.parcelas,
         garcomId: evento.garcom_id,
         garcomNome: evento.garcom_nome,
         itens: itensFormatados,

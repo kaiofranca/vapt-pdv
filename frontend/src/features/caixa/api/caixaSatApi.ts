@@ -3,15 +3,7 @@ function resolverCaixaBaseUrl(): string {
   if (envUrl && !envUrl.includes('seu_ip_publico_ec2')) {
     return envUrl.replace(/\/+$/, '');
   }
-  if (
-    typeof window !== 'undefined' &&
-    window.location?.hostname &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1'
-  ) {
-    return `http://${window.location.hostname}:3002`;
-  }
-  return 'http://localhost:3002';
+  return '';
 }
 
 export const CAIXA_API_URL = resolverCaixaBaseUrl();
@@ -447,5 +439,17 @@ export const caixaSatApi = {
     return requestCaixa<ReciboCompletoResposta>(`/caixa/recibos/${comandaId}`, {
       method: 'GET',
     });
+  },
+
+  async estornarParcela(
+    comandaId: number,
+    parcelaId: number,
+  ): Promise<CobrancaDetalheResposta> {
+    return requestCaixa<CobrancaDetalheResposta>(
+      `/caixa/comandas/${comandaId}/parcelas/${parcelaId}`,
+      {
+        method: 'DELETE',
+      },
+    );
   },
 };

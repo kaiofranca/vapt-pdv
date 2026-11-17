@@ -213,6 +213,12 @@ export const BaixaEstoqueBodySchema = Type.Object(
       minItems: 1,
       description: 'Lista de itens a baixar do estoque',
     }),
+    forma_pagamento: Type.Optional(
+      Type.String({
+        maxLength: 30,
+        description: 'Forma de pagamento utilizada na quitação da comanda',
+      }),
+    ),
   },
   { additionalProperties: false, description: 'Payload para baixa de estoque de comanda' },
 );

@@ -24,6 +24,7 @@ import { moduloProdutos } from './modules/produtos';
 import { moduloComandas } from './modules/comandas';
 import type { ICaixaGateway } from './shared/gateways/caixa.gateway';
 import type { IGestaoGateway } from './shared/gateways/gestao.gateway';
+import type { IKdsGateway } from './shared/gateways/kds.gateway';
 
 export interface OpcoesApp {
   prisma?: ClienteBanco;
@@ -32,6 +33,7 @@ export interface OpcoesApp {
   logger?: boolean | FastifyLoggerOptions;
   caixaGateway?: ICaixaGateway;
   gestaoGateway?: IGestaoGateway;
+  kdsGateway?: IKdsGateway;
 }
 
 export function criarOpcoesLogger(
@@ -308,8 +310,18 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     reply: any,
     baseUrl: string,
   ) => {
+    const urlLimpa = String(request.url || '').split('?')[0];
+    const ehEndpointSateliteApi =
+      urlLimpa.startsWith('/kds/fichas') ||
+      urlLimpa.startsWith('/kds/fila') ||
+      urlLimpa.startsWith('/kds/comandas') ||
+      urlLimpa === '/kds/health' ||
+      urlLimpa.startsWith('/caixa/comandas') ||
+      urlLimpa.startsWith('/caixa/recibos') ||
+      urlLimpa === '/caixa/health';
+
     const aceitaHtml = (request.headers.accept || '').includes('text/html');
-    if (request.method === 'GET' && aceitaHtml && temIndexHtml) {
+    if (request.method === 'GET' && !ehEndpointSateliteApi && aceitaHtml && temIndexHtml) {
       return reply.sendFile('index.html');
     }
 
@@ -373,8 +385,12 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   const kdsUrl = process.env.KDS_SERVICE_URL || process.env.KDS_API_URL || 'http://localhost:3001';
   const caixaUrl = process.env.CAIXA_SERVICE_URL || process.env.CAIXA_API_URL || 'http://localhost:3002';
 
-  app.all('/kds/*', async (request, reply) => encaminharParaSatelite(request, reply, kdsUrl));
-  app.all('/caixa/*', async (request, reply) => encaminharParaSatelite(request, reply, caixaUrl));
+  app.all('/kds/*', { schema: { hide: true } }, async (request, reply) =>
+    encaminharParaSatelite(request, reply, kdsUrl),
+  );
+  app.all('/caixa/*', { schema: { hide: true } }, async (request, reply) =>
+    encaminharParaSatelite(request, reply, caixaUrl),
+  );
 
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
@@ -383,6 +399,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     prisma,
     caixaGateway: opcoes.caixaGateway,
     gestaoGateway: opcoes.gestaoGateway,
+    kdsGateway: opcoes.kdsGateway,
   });
 
   return app;

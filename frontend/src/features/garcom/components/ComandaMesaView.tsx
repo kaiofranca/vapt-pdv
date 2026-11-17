@@ -11,11 +11,15 @@ import {
   CheckCircle2,
   Trash2,
   FileText,
+  ArrowRightLeft,
+  GitMerge,
 } from 'lucide-react';
 import { ProdutoStepperCard } from './ProdutoStepperCard';
 import { BottomSheetObservacao } from './BottomSheetObservacao';
 import { ModalCancelarComanda } from '../../../components/ui/ModalCancelarComanda';
 import { ModalPendenciasKds, type ItemPendenciaModal } from './ModalPendenciasKds';
+import { ModalTransferirMesa } from './ModalTransferirMesa';
+import { ModalMesclarComandas } from './ModalMesclarComandas';
 import { obterPendenciasComanda } from '../../../services/kds';
 import { useComanda, useFecharComanda, useLancarItem, useCancelarComanda } from '../../../hooks/useComandas';
 import { useProdutosDisponiveis } from '../../../hooks/useProdutos';
@@ -64,6 +68,9 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
 
   const [menuOpcoesAberto, setMenuOpcoesAberto] = useState(false);
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
+  const [modalTransferirAberto, setModalTransferirAberto] = useState(false);
+  const [modalMesclarAberto, setModalMesclarAberto] = useState(false);
+  const [mesaOrigemSugerida, setMesaOrigemSugerida] = useState<number | undefined>(undefined);
   const [isModalPendenciasOpen, setIsModalPendenciasOpen] = useState(false);
   const [pendenciasKds, setPendenciasKds] = useState<ItemPendenciaModal[]>([]);
   const [isChecandoPendenciasKds, setIsChecandoPendenciasKds] = useState(false);
@@ -235,9 +242,9 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
     await executarFechamento();
   };
 
-  const handleCancelarComanda = async () => {
+  const handleCancelarComanda = async (motivo?: string) => {
     try {
-      await cancelarComandaMut.mutateAsync(comandaId);
+      await cancelarComandaMut.mutateAsync({ comandaId, motivo });
       setModalCancelarAberto(false);
       onToast('sucesso', 'Comanda cancelada.');
       onVoltar();
@@ -504,6 +511,7 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
         <div className="relative">
           <button
             type="button"
+            aria-label="Opções da comanda"
             onClick={() => setMenuOpcoesAberto(!menuOpcoesAberto)}
             className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text hover:bg-surface-2 active:scale-95 transition-all shadow-soft"
           >
@@ -511,7 +519,7 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           </button>
 
           {menuOpcoesAberto && (
-            <div className="absolute right-0 top-12 w-48 bg-surface border border-border rounded-[16px] shadow-modal py-1.5 z-40">
+            <div className="absolute right-0 top-12 w-52 bg-surface border border-border rounded-[16px] shadow-modal py-1.5 z-40">
               <button
                 type="button"
                 onClick={() => {
@@ -522,6 +530,29 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
               >
                 <Receipt className="w-4 h-4 text-brand" />
                 <span>Pedir a conta</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpcoesAberto(false);
+                  setModalTransferirAberto(true);
+                }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold text-text hover:bg-surface-2 flex items-center gap-2"
+              >
+                <ArrowRightLeft className="w-4 h-4 text-brand" />
+                <span>Transferir mesa</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpcoesAberto(false);
+                  setMesaOrigemSugerida(undefined);
+                  setModalMesclarAberto(true);
+                }}
+                className="w-full px-4 py-2.5 text-left text-xs font-bold text-text hover:bg-surface-2 flex items-center gap-2"
+              >
+                <GitMerge className="w-4 h-4 text-brand" />
+                <span>Mesclar comandas</span>
               </button>
               <button
                 type="button"
@@ -750,6 +781,37 @@ export const ComandaMesaView: React.FC<ComandaMesaViewProps> = ({
           setIsModalPendenciasOpen(false);
           setPendenciasKds([]);
           await executarFechamento();
+        }}
+      />
+
+      <ModalTransferirMesa
+        isOpen={modalTransferirAberto}
+        comandaId={comanda.id}
+        mesaAtual={comanda.mesa}
+        onClose={() => setModalTransferirAberto(false)}
+        onSucesso={(atualizada) => {
+          onToast('sucesso', `Comanda transferida para a Mesa ${atualizada.mesa}.`);
+          refetchComanda();
+        }}
+        onAbrirMesclar={(mesaOcupada) => {
+          setModalTransferirAberto(false);
+          setMesaOrigemSugerida(mesaOcupada);
+          setModalMesclarAberto(true);
+        }}
+      />
+
+      <ModalMesclarComandas
+        isOpen={modalMesclarAberto}
+        comandaDestinoId={comanda.id}
+        mesaDestino={comanda.mesa}
+        mesaOrigemSugerida={mesaOrigemSugerida}
+        onClose={() => {
+          setModalMesclarAberto(false);
+          setMesaOrigemSugerida(undefined);
+        }}
+        onSucesso={() => {
+          onToast('sucesso', `Comandas mescladas na Mesa ${comanda.mesa}.`);
+          refetchComanda();
         }}
       />
     </div>

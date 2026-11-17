@@ -3,6 +3,7 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
 import {
   AtualizarStatusFichaSchema,
+  CancelarFichasSchema,
   CriarFichaSchema,
   FichaRespostaSchema,
   ParamsComandaIdSchema,
@@ -164,5 +165,24 @@ export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, op
       },
     },
     pendenciasHandler,
+  );
+
+  servidor.post(
+    '/kds/fichas/cancelar',
+    {
+      schema: {
+        tags: ['Fichas'],
+        summary: 'Cancelamento em lote de fichas ativas por comanda ou item_comanda_id',
+        body: CancelarFichasSchema,
+        response: {
+          200: Type.Object({ canceladas: Type.Integer() }),
+          400: RespostaErroSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const resultado = await servico.cancelarFichas(request.body);
+      return reply.status(200).send(resultado);
+    },
   );
 };

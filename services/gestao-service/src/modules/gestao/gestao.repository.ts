@@ -54,6 +54,7 @@ export interface GestaoRepository {
     taxaServico: string;
     total: string;
     formaPagamento: string;
+    parcelas?: Array<{ forma_pagamento: string; valor_aplicado: string }>;
     garcomId?: number;
     garcomNome?: string;
     itens: Array<{
@@ -106,6 +107,7 @@ export class PrismaGestaoRepository implements GestaoRepository {
     taxaServico: string;
     total: string;
     formaPagamento: string;
+    parcelas?: Array<{ forma_pagamento: string; valor_aplicado: string }>;
     garcomId?: number;
     garcomNome?: string;
     itens: Array<{
@@ -124,18 +126,30 @@ export class PrismaGestaoRepository implements GestaoRepository {
     const totalDec = new Prisma.Decimal(dados.total || '0.00');
     const formaPagto = (dados.formaPagamento || 'dinheiro').toLowerCase();
 
+    const acumularPorForma = (porForma: Record<string, string>) => {
+      if (Array.isArray(dados.parcelas) && dados.parcelas.length > 0) {
+        for (const p of dados.parcelas) {
+          const chave = (p.forma_pagamento || 'dinheiro').toLowerCase();
+          const destino = chave in porForma ? chave : 'dinheiro';
+          const atual = new Prisma.Decimal(porForma[destino] || '0.00');
+          porForma[destino] = atual.add(new Prisma.Decimal(p.valor_aplicado || '0.00')).toFixed(2);
+        }
+        return porForma;
+      }
+
+      const destino = formaPagto in porForma ? formaPagto : 'dinheiro';
+      const atual = new Prisma.Decimal(porForma[destino] || '0.00');
+      porForma[destino] = atual.add(totalDec).toFixed(2);
+      return porForma;
+    };
+
     await this.prisma.$transaction(async (tx) => {
       const faturamentoAtual = await tx.faturamentoDiario.findUnique({
         where: { dataReferencia: dataRef },
       });
 
       if (!faturamentoAtual) {
-        const porForma = { pix: '0.00', cartao: '0.00', dinheiro: '0.00' };
-        if (formaPagto in porForma) {
-          (porForma as any)[formaPagto] = totalDec.toFixed(2);
-        } else {
-          porForma.dinheiro = totalDec.toFixed(2);
-        }
+        const porForma = acumularPorForma({ pix: '0.00', cartao: '0.00', dinheiro: '0.00' });
 
         await tx.faturamentoDiario.create({
           data: {
@@ -156,12 +170,11 @@ export class PrismaGestaoRepository implements GestaoRepository {
         const totalNovo = faturamentoAtual.faturamentoTotal.add(totalDec);
         const ticketMedioNovo = totalNovo.dividedBy(comandasPagasNova);
 
-        const porForma = (typeof faturamentoAtual.porFormaPagamento === 'object' && faturamentoAtual.porFormaPagamento !== null
-          ? { ...(faturamentoAtual.porFormaPagamento as Record<string, string>) }
-          : { pix: '0.00', cartao: '0.00', dinheiro: '0.00' }) as Record<string, string>;
-
-        const valorFormaAtual = new Prisma.Decimal(porForma[formaPagto] || '0.00');
-        porForma[formaPagto] = valorFormaAtual.add(totalDec).toFixed(2);
+        const porForma = acumularPorForma(
+          (typeof faturamentoAtual.porFormaPagamento === 'object' && faturamentoAtual.porFormaPagamento !== null
+            ? { ...(faturamentoAtual.porFormaPagamento as Record<string, string>) }
+            : { pix: '0.00', cartao: '0.00', dinheiro: '0.00' }) as Record<string, string>,
+        );
 
         await tx.faturamentoDiario.update({
           where: { dataReferencia: dataRef },

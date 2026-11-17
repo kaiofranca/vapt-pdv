@@ -1,4 +1,6 @@
 import Fastify, { FastifyError, FastifyInstance, FastifyLoggerOptions } from 'fastify';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { AmbienteNode, NivelLog } from './config/env';
 import { ErroDominio } from './shared/erros';
@@ -63,6 +65,30 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
     if (request.method === 'OPTIONS') {
       return reply.status(204).send();
     }
+  });
+
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'VaptPDV KDS Service API',
+        description:
+          'Microsserviço de Cozinha e Bar (KDS), Fila de Preparo e SLA (:3001)',
+        version: '0.1.0',
+      },
+      tags: [
+        { name: 'Saúde', description: 'Verificação de conectividade e status' },
+        { name: 'Fichas', description: 'Recebimento e ciclo de preparo de fichas KDS' },
+        { name: 'Comandas', description: 'Consulta de pendências de preparo por comanda' },
+      ],
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      docExpansion: 'list',
+      deepLinking: false,
+    },
   });
 
   const prisma = opcoes.prisma ?? obterPrisma();

@@ -178,13 +178,40 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
         : valorAplicadoStr;
 
     try {
-      const res = await caixaSatApi.pagarComanda(comanda.id, {
+      const payloadPagamento = {
         forma_pagamento: forma,
         valor_aplicado: valorAplicadoStr,
         valor_recebido: valorRecebidoStr,
         numero_cota: parcelas.length + 1,
         operador_nome: nomeOperador,
-      });
+      };
+
+      let res;
+      try {
+        res = await caixaSatApi.pagarComanda(comanda.id, payloadPagamento);
+      } catch (errSat: any) {
+        if (errSat instanceof CaixaSatError && errSat.statusHttp === 404) {
+          await caixaSatApi.sincronizarComanda(comanda.id, {
+            mesa: Number(comanda.mesa),
+            garcom_id: comanda.garcom_id,
+            nome_cliente: comanda.nome_cliente ?? null,
+            aplicar_taxa_servico: parseFloat(comanda.taxa_servico || '0') > 0,
+            subtotal: comanda.subtotal || '0.00',
+            taxa_servico: comanda.taxa_servico || '0.00',
+            total: comanda.total || comanda.subtotal || '0.00',
+            itens: (comanda.itens || []).map((it) => ({
+              item_comanda_id: it.id,
+              produto_id: it.produto_id,
+              nome: it.nome_copiado,
+              preco_unitario: it.preco_copiado,
+              quantidade: it.quantidade,
+            })),
+          });
+          res = await caixaSatApi.pagarComanda(comanda.id, payloadPagamento);
+        } else {
+          throw errSat;
+        }
+      }
 
       const trocoSatStr = res.parcela_registrada?.troco || res.troco_total || '0.00';
       const trocoSatCentavos = Math.round(parseFloat(trocoSatStr) * 100);
@@ -244,7 +271,31 @@ export const ModalPagamento: React.FC<ModalPagamentoProps> = ({
     }
   };
 
-  const handleRemoverParcela = (id: string) => {
+  const handleRemoverParcela = async (id: string) => {
+    if (!comanda) return;
+    const parcelaIdNum = Number(id);
+
+    if (Number.isInteger(parcelaIdNum) && parcelaIdNum > 0) {
+      setIsProcessandoSat(true);
+      setErroSat(null);
+      try {
+        await caixaSatApi.estornarParcela(comanda.id, parcelaIdNum);
+      } catch (err: any) {
+        if (!(err instanceof CaixaSatError && err.statusHttp === 404)) {
+          const msg =
+            err instanceof CaixaSatError
+              ? err.message
+              : err?.message || 'Erro ao estornar parcela no caixa-service.';
+          setErroSat(msg);
+          onToast('erro', msg);
+          setIsProcessandoSat(false);
+          return;
+        }
+      } finally {
+        setIsProcessandoSat(false);
+      }
+    }
+
     setParcelas((prev) => prev.filter((p) => p.id !== id));
     onToast('sucesso', 'Parcela estornada do pagamento.');
   };

@@ -76,6 +76,8 @@ describe('GET /kds/comandas/:comandaId/pendencias e alias (Story 14.5)', () => {
       cancelado: 0,
     });
     expect(corpo.itens).toHaveLength(2);
+    expect(corpo.pendencias).toHaveLength(1);
+    expect(corpo.pendencias[0].status).toBe('em_preparo');
     expect(corpo.itens[0]).toEqual({
       ficha_id: 1,
       item_comanda_id: 101,

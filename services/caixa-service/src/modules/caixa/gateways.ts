@@ -13,13 +13,13 @@ export interface ItemBaixaEstoque {
 }
 
 export interface EstoqueCoreGateway {
-  baixarEstoque(comandaId: number, itens: ItemBaixaEstoque[]): Promise<void>;
+  baixarEstoque(comandaId: number, itens: ItemBaixaEstoque[], formaPagamento?: string): Promise<void>;
 }
 
 export class HttpEstoqueCoreGateway implements EstoqueCoreGateway {
   constructor(private readonly coreApiUrl: string) {}
 
-  async baixarEstoque(comandaId: number, itens: ItemBaixaEstoque[]): Promise<void> {
+  async baixarEstoque(comandaId: number, itens: ItemBaixaEstoque[], formaPagamento?: string): Promise<void> {
     const url = `${this.coreApiUrl.replace(/\/$/, '')}/produtos/baixa-estoque`;
     let res: Response;
 
@@ -32,6 +32,7 @@ export class HttpEstoqueCoreGateway implements EstoqueCoreGateway {
         body: JSON.stringify({
           comanda_id: comandaId,
           itens,
+          ...(formaPagamento ? { forma_pagamento: formaPagamento } : {}),
         }),
         signal: AbortSignal.timeout(2000),
       });

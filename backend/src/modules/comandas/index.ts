@@ -4,6 +4,7 @@ import { ServicoUsuarios, ServicoUsuariosPrisma } from '../usuarios/servico';
 import { ServicoProdutos, ServicoProdutosPrisma } from '../produtos/servico';
 import type { ICaixaGateway } from '../../shared/gateways/caixa.gateway';
 import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
+import type { IKdsGateway } from '../../shared/gateways/kds.gateway';
 import { rotasComandas } from './rotas';
 import { IComandasRepository, ComandasRepositoryPrisma } from './comandas.repository';
 import { ComandasService, ServicoComandas } from './comandas.service';
@@ -18,6 +19,7 @@ export interface OpcoesModuloComandas {
   servicoProdutos?: ServicoProdutos;
   caixaGateway?: ICaixaGateway;
   gestaoGateway?: IGestaoGateway;
+  kdsGateway?: IKdsGateway;
 }
 
 export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
@@ -39,6 +41,7 @@ export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
       servicoProdutos,
       opcoes.caixaGateway,
       opcoes.gestaoGateway,
+      opcoes.kdsGateway,
     );
   const controller =
     opcoes.controller ?? new ComandasController(servico);

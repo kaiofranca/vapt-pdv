@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ModalCancelarComanda, FRASE_CANCELAMENTO } from '../src/components/ui/ModalCancelarComanda';
+import { ComandaMesaView } from '../src/features/garcom/components/ComandaMesaView';
 import { comandasApi, cancelarComanda } from '../src/services/comandas';
 import { apiClient } from '../src/services/apiClient';
 import { useCancelarComanda } from '../src/hooks/useComandas';
@@ -121,5 +122,60 @@ describe('Story 2.4.4 — Frontend: Seleção de Motivo e Cancelamento de Comand
     fireEvent.click(btnConfirmar);
 
     expect(onConfirmar).toHaveBeenCalledWith('Cliente esqueceu carteira');
+  });
+
+  it('ComandaMesaView repassa o motivo do ModalCancelarComanda ao backend e expõe Transferir mesa e Mesclar comandas no menu', async () => {
+    vi.spyOn(apiClient, 'get').mockImplementation(async (endpoint: string) => {
+      if (endpoint.startsWith('/comandas/5')) {
+        return {
+          id: 5,
+          mesa: 7,
+          garcom_id: 1,
+          status: 'aberta',
+          aberta_em: new Date().toISOString(),
+          subtotal: '20.00',
+          taxa_servico: '0.00',
+          total: '20.00',
+          itens: [],
+        };
+      }
+      return [];
+    });
+
+    const onToast = vi.fn();
+    const onVoltar = vi.fn();
+
+    render(
+      <ComandaMesaView
+        comandaId={5}
+        garcomNome="Carlos"
+        onVoltar={onVoltar}
+        onToast={onToast}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    const btnOpcoes = await screen.findByRole('button', { name: /Opções da comanda/i });
+    fireEvent.click(btnOpcoes);
+
+    expect(screen.getByText('Transferir mesa')).toBeTruthy();
+    expect(screen.getByText('Mesclar comandas')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Cancelar comanda'));
+
+    const radioErro = screen.getByRole('radio', { name: /Erro de digitação do garçom/i });
+    fireEvent.click(radioErro);
+
+    const inputFrase = screen.getByPlaceholderText(FRASE_CANCELAMENTO);
+    fireEvent.change(inputFrase, { target: { value: 'cancelar comanda' } });
+
+    const btnConfirmar = screen.getByTestId('btn-confirmar-cancelamento');
+    fireEvent.click(btnConfirmar);
+
+    await vi.waitFor(() => {
+      expect(spyPost).toHaveBeenCalledWith('/comandas/5/cancelar', {
+        motivo: 'Erro de digitação do garçom',
+      });
+    });
   });
 });

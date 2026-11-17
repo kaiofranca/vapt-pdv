@@ -63,6 +63,7 @@ export class CobrancasService {
         item_comanda_id: itemComandaId,
         produto_id: produtoId,
         nome,
+        categoria: it.categoria || 'Geral',
         preco_unitario: precoUnitarioDecimal.toFixed(2),
         quantidade,
         subtotal: subtotalDecimal.toFixed(2),
@@ -529,7 +530,7 @@ export class CobrancasService {
         quantidade: it.quantidade,
       }));
 
-      await this.estoqueGateway.baixarEstoque(cobranca.comandaId, itensParaBaixa);
+      await this.estoqueGateway.baixarEstoque(cobranca.comandaId, itensParaBaixa, formaPagamento);
     }
 
     const parcelaCriada = await this.repository.registrarPagamento({
@@ -553,6 +554,7 @@ export class CobrancasService {
     });
 
     let reciboResposta: any = null;
+    const avisos: string[] = [];
 
     if (quitada) {
       const codigoAutenticacao = gerarCodigoAutenticacao(cobranca.mesa, agora);
@@ -633,6 +635,7 @@ export class CobrancasService {
           produto_id: it.produto_id,
           nome: it.nome,
           nome_copiado: it.nome,
+          categoria: it.categoria || 'Geral',
           preco_unitario: it.preco_unitario,
           preco_copiado: it.preco_unitario,
           quantidade: it.quantidade,
@@ -652,6 +655,7 @@ export class CobrancasService {
       }
 
       if (avisoGestao) {
+        avisos.push(avisoGestao);
       }
     }
 
@@ -682,8 +686,67 @@ export class CobrancasService {
         criado_em: parcelaCriada.registradoEm.toISOString(),
       },
       recibo: reciboResposta,
-      avisos: [],
+      avisos,
     };
+  }
+
+  async estornarParcela(comandaId: number, parcelaId: number) {
+    if (!Number.isInteger(comandaId) || comandaId < 1 || !Number.isInteger(parcelaId) || parcelaId < 1) {
+      throw ErroDominio.parametroInvalido('Identificadores de comanda e parcela devem ser inteiros positivos.');
+    }
+
+    const cobranca = await this.repository.buscarPorComandaId(comandaId);
+    if (!cobranca) {
+      throw ErroDominio.naoEncontrado(`Cobrança não encontrada para a comanda ${comandaId}.`, {
+        comanda_id: comandaId,
+      });
+    }
+
+    if (cobranca.status === 'paga' || cobranca.status === 'cancelada') {
+      throw ErroDominio.comandaImutavel('Não é possível estornar parcelas de comanda já quitada ou cancelada.', {
+        comanda_id: comandaId,
+        status: cobranca.status,
+      });
+    }
+
+    if (!this.repository.removerPagamento) {
+      throw new ErroDominio(
+        'ERRO_INTERNO',
+        'Estorno de parcela não suportado pelo repositório configurado.',
+        501,
+      );
+    }
+
+    const parcelaRemovida = await this.repository.removerPagamento(comandaId, parcelaId);
+    if (!parcelaRemovida) {
+      throw ErroDominio.naoEncontrado(`Parcela #${parcelaId} não encontrada para a comanda ${comandaId}.`, {
+        comanda_id: comandaId,
+        parcela_id: parcelaId,
+      });
+    }
+
+    let novoValorPago = cobranca.valorPago.sub(parcelaRemovida.valorAplicado);
+    if (novoValorPago.lt(0)) {
+      novoValorPago = new Prisma.Decimal('0.00');
+    }
+    let novoSaldoRestante = cobranca.total.sub(novoValorPago);
+    if (novoSaldoRestante.lt(0)) {
+      novoSaldoRestante = new Prisma.Decimal('0.00');
+    }
+    let novoTrocoTotal = cobranca.trocoTotal.sub(parcelaRemovida.troco);
+    if (novoTrocoTotal.lt(0)) {
+      novoTrocoTotal = new Prisma.Decimal('0.00');
+    }
+
+    const cobrancaAtualizada = await this.repository.atualizar(comandaId, {
+      valorPago: novoValorPago,
+      saldoRestante: novoSaldoRestante,
+      trocoTotal: novoTrocoTotal,
+      status: 'aguardando_pagamento',
+      pagaEm: null,
+    });
+
+    return this.formatarCobranca(cobrancaAtualizada);
   }
 
   async obterRecibo(comandaId: number) {

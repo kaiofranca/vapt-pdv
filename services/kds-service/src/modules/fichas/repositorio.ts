@@ -151,4 +151,32 @@ export class FichasRepositorio {
       orderBy: { recebidoEm: 'asc' },
     });
   }
+
+  async cancelarFichasAtivas(filtros: {
+    comandaId?: number;
+    itemComandaId?: number;
+  }): Promise<number> {
+    if (!filtros.comandaId && !filtros.itemComandaId) {
+      return 0;
+    }
+
+    const where: any = {
+      status: { in: ['recebido', 'em_preparo', 'pronto'] },
+    };
+    if (filtros.comandaId) {
+      where.comandaId = filtros.comandaId;
+    }
+    if (filtros.itemComandaId) {
+      where.itemComandaId = filtros.itemComandaId;
+    }
+
+    if (typeof this.prisma.fichaPreparo?.updateMany === 'function') {
+      const res = await this.prisma.fichaPreparo.updateMany({
+        where,
+        data: { status: 'cancelado' },
+      });
+      return res?.count ?? 0;
+    }
+    return 0;
+  }
 }

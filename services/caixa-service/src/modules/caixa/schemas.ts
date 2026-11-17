@@ -39,6 +39,21 @@ export const ComandaParamsSchema = Type.Object(
 );
 export type ComandaParams = Static<typeof ComandaParamsSchema>;
 
+export const ParcelaParamsSchema = Type.Object(
+  {
+    comandaId: Type.Integer({
+      minimum: 1,
+      description: 'Identificador único da comanda no salão',
+    }),
+    parcelaId: Type.Integer({
+      minimum: 1,
+      description: 'Identificador único da parcela registrada',
+    }),
+  },
+  { additionalProperties: false },
+);
+export type ParcelaParams = Static<typeof ParcelaParamsSchema>;
+
 export const ItemSnapshotInputSchema = Type.Object(
   {
     item_comanda_id: Type.Optional(Type.Integer({ minimum: 1 })),
@@ -46,6 +61,7 @@ export const ItemSnapshotInputSchema = Type.Object(
     produto_id: Type.Optional(Type.Integer({ minimum: 1 })),
     nome: Type.Optional(Type.String()),
     nome_copiado: Type.Optional(Type.String()),
+    categoria: Type.Optional(Type.String()),
     preco_unitario: Type.Optional(Type.String()),
     preco_copiado: Type.Optional(Type.String()),
     quantidade: Type.Integer({ minimum: 1 }),
@@ -99,6 +115,7 @@ export const ItemSnapshotRespostaSchema = Type.Object({
   item_comanda_id: Type.Integer(),
   produto_id: Type.Integer(),
   nome: Type.String(),
+  categoria: Type.Optional(Type.String()),
   preco_unitario: Type.String(),
   quantidade: Type.Integer(),
   subtotal: Type.String(),

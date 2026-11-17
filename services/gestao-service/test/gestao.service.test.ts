@@ -207,4 +207,28 @@ describe('GestaoService (Testes Unitários de Regra de Negócio e OLAP)', () => 
     expect(expJson.contentType).toContain('application/json');
     expect(Array.isArray(expJson.dados)).toBe(true);
   });
+
+  it('deve distribuir corretamente por_forma_pagamento quando comanda.paga possui múltiplas parcelas (Split Payment)', async () => {
+    await service.processarEvento({
+      evento_id: 'split-mix-1',
+      evento: 'comanda.paga',
+      timestamp: '2026-11-04T20:30:00.000Z',
+      paga_em: '2026-11-04T20:30:00.000Z',
+      subtotal: '100.00',
+      taxa_servico: '0.00',
+      total: '100.00',
+      forma_pagamento: 'cartao',
+      parcelas: [
+        { forma_pagamento: 'pix', valor_aplicado: '40.00' },
+        { forma_pagamento: 'cartao', valor_aplicado: '60.00' },
+      ],
+      itens: [],
+    });
+
+    const resumo = await service.obterResumoDiario('2026-11-04');
+    expect(resumo.total_vendas).toBe('100.00');
+    expect(resumo.por_forma_pagamento.pix).toBe('40.00');
+    expect(resumo.por_forma_pagamento.cartao).toBe('60.00');
+    expect(resumo.por_forma_pagamento.dinheiro).toBe('0.00');
+  });
 });

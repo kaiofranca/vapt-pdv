@@ -51,6 +51,7 @@ export interface BaixaEstoqueDados {
   comanda_id: number;
   itens: ItemBaixaEstoque[];
   motivo?: string;
+  forma_pagamento?: string;
 }
 
 export interface MovimentoEstoqueEntidade {

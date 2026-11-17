@@ -408,9 +408,36 @@ describe('Story 15.4 — Quitação de Parcelas/Integral, Cálculo de Troco em D
       const corpo = res.json();
       expect(corpo.status).toBe('paga');
       expect(corpo.recibo).toBeDefined();
+      expect(corpo.avisos).toHaveLength(1);
+      expect(corpo.avisos[0]).toContain('integracao_gestao_pendente');
 
       const comandaNoBanco = await repository.buscarPorComandaId(70);
       expect(comandaNoBanco?.status).toBe('paga');
+    });
+
+    it('deve estornar parcela parcial via DELETE /caixa/comandas/:comandaId/parcelas/:parcelaId e restaurar saldo restante', async () => {
+      await fecharComandaPadrao(71, 21);
+
+      const resParcial = await app.inject({
+        method: 'POST',
+        url: '/caixa/comandas/71/pagar',
+        payload: {
+          forma_pagamento: 'pix',
+          valor_aplicado: '25.00',
+        },
+      });
+      expect(resParcial.statusCode).toBe(200);
+      const parcelaId = resParcial.json().parcela_registrada.id;
+      expect(resParcial.json().saldo_restante).toBe('40.78');
+
+      const resEstorno = await app.inject({
+        method: 'DELETE',
+        url: `/caixa/comandas/71/parcelas/${parcelaId}`,
+      });
+      expect(resEstorno.statusCode).toBe(200);
+      expect(resEstorno.json().valor_pago).toBe('0.00');
+      expect(resEstorno.json().saldo_restante).toBe('65.78');
+      expect(resEstorno.json().parcelas).toHaveLength(0);
     });
   });
 });

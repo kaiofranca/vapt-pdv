@@ -5,6 +5,7 @@ export interface ItemSnapshot {
   item_comanda_id: number;
   produto_id: number;
   nome: string;
+  categoria?: string;
   preco_unitario: string;
   quantidade: number;
   subtotal: string;
@@ -138,6 +139,7 @@ export interface CobrancasRepository {
   atualizar(comandaId: number, dados: AtualizarCobrancaDados): Promise<CobrancaComandaRegistro>;
   obterResumoTurno(): Promise<ResumoTurnoDto>;
   registrarPagamento(dados: RegistrarPagamentoDados): Promise<PagamentoParcelaRegistro>;
+  removerPagamento?(comandaId: number, parcelaId: number): Promise<PagamentoParcelaRegistro | null>;
   salvarRecibo(dados: SalvarReciboDados): Promise<ReciboVendaRegistro>;
   buscarReciboPorComandaId(comandaId: number): Promise<ReciboVendaRegistro | null>;
 }
@@ -315,6 +317,28 @@ export class PrismaCobrancasRepository implements CobrancasRepository {
     });
 
     return criado as PagamentoParcelaRegistro;
+  }
+
+  async removerPagamento(
+    comandaId: number,
+    parcelaId: number,
+  ): Promise<PagamentoParcelaRegistro | null> {
+    const existente = await this.prisma.pagamentoParcela.findFirst({
+      where: {
+        id: parcelaId,
+        comandaId,
+      },
+    });
+
+    if (!existente) {
+      return null;
+    }
+
+    await this.prisma.pagamentoParcela.delete({
+      where: { id: existente.id },
+    });
+
+    return existente as PagamentoParcelaRegistro;
   }
 
   async salvarRecibo(dados: SalvarReciboDados): Promise<ReciboVendaRegistro> {

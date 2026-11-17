@@ -58,6 +58,7 @@ export class MemoriaGestaoRepository implements GestaoRepository {
     taxaServico: string;
     total: string;
     formaPagamento: string;
+    parcelas?: Array<{ forma_pagamento: string; valor_aplicado: string }>;
     garcomId?: number;
     garcomNome?: string;
     itens: Array<{
@@ -92,7 +93,15 @@ export class MemoriaGestaoRepository implements GestaoRepository {
     fatAtual.taxa = fatAtual.taxa.add(taxaDec);
     fatAtual.total = fatAtual.total.add(totalDec);
 
-    if (forma in fatAtual.porForma) {
+    if (Array.isArray(dados.parcelas) && dados.parcelas.length > 0) {
+      for (const p of dados.parcelas) {
+        const chave = (p.forma_pagamento || 'dinheiro').toLowerCase();
+        const destino = (chave in fatAtual.porForma ? chave : 'dinheiro') as keyof typeof fatAtual.porForma;
+        fatAtual.porForma[destino] = fatAtual.porForma[destino].add(
+          new Prisma.Decimal(p.valor_aplicado || '0.00'),
+        );
+      }
+    } else if (forma in fatAtual.porForma) {
       fatAtual.porForma[forma as keyof typeof fatAtual.porForma] =
         fatAtual.porForma[forma as keyof typeof fatAtual.porForma].add(totalDec);
     } else {

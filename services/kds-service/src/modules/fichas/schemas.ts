@@ -38,6 +38,7 @@ export const FichaRespostaSchema = Type.Object(
     garcom_nome: Type.Union([Type.String(), Type.Null()]),
     nome_produto: Type.String(),
     estacao: Type.String(),
+    setor: Type.Optional(Type.String()),
     quantidade: Type.Integer(),
     observacao: Type.Union([Type.String(), Type.Null()]),
     status: Type.String(),
@@ -103,6 +104,18 @@ export const RespostaPendenciasComandaSchema = Type.Object({
     cancelado: Type.Integer(),
   }),
   itens: Type.Array(ItemPendenciaSchema),
+  pendencias: Type.Optional(Type.Array(ItemPendenciaSchema)),
 });
 
 export type RespostaPendenciasComanda = Static<typeof RespostaPendenciasComandaSchema>;
+
+export const CancelarFichasSchema = Type.Object(
+  {
+    comanda_id: Type.Optional(Type.Integer({ minimum: 1 })),
+    item_comanda_id: Type.Optional(Type.Integer({ minimum: 1 })),
+    motivo: Type.Optional(Type.String({ maxLength: 200 })),
+  },
+  { description: 'Payload para cancelamento de fichas ativas no KDS' },
+);
+
+export type CancelarFichasInput = Static<typeof CancelarFichasSchema>;

@@ -50,6 +50,12 @@ export interface ServicoComandas {
   mesclarComandas(comandaDestinoId: number, comandaOrigemId: number): Promise<ComandaEntidade>;
 }
 
+function determinarSetorKds(categoria?: string | null): 'cozinha' | 'bar' {
+  return /bebida|bar|cerveja|drink|chopp|refrigerante|suco|agua|água/i.test(categoria ?? '')
+    ? 'bar'
+    : 'cozinha';
+}
+
 export class ComandasService implements ServicoComandas {
   private readonly caixaGateway?: ICaixaGateway;
   private readonly gestaoGateway?: IGestaoGateway;
@@ -66,6 +72,28 @@ export class ComandasService implements ServicoComandas {
     this.caixaGateway = caixaGateway ?? new CaixaGateway();
     this.gestaoGateway = gestaoGateway ?? new GestaoGateway();
     this.kdsGateway = kdsGateway ?? new HttpKdsGateway();
+  }
+
+  private async obterCategoriasPorProduto(produtoIds: number[]): Promise<Map<number, string>> {
+    const mapa = new Map<number, string>();
+    if (!this.servicoProdutos || typeof this.servicoProdutos.buscarPorId !== 'function') {
+      return mapa;
+    }
+
+    const idsUnicos = Array.from(new Set(produtoIds));
+    await Promise.all(
+      idsUnicos.map(async (produtoId) => {
+        try {
+          const prod = await this.servicoProdutos!.buscarPorId(produtoId);
+          if (prod?.categoria) {
+            mapa.set(produtoId, prod.categoria);
+          }
+        } catch {
+        }
+      }),
+    );
+
+    return mapa;
   }
 
   private formatarItemComanda(registro: RegistroItemComandaBanco): ItemComandaEntidade {
@@ -377,6 +405,8 @@ export class ComandasService implements ServicoComandas {
       try {
         const comanda = await this.repository.buscarPorId(comandaId);
         const garcom = comanda ? await this.servicoUsuarios.buscarPorId(comanda.garcom_id).catch(() => null) : null;
+        const categorias = await this.obterCategoriasPorProduto([dados.produto_id]);
+        const setor = determinarSetorKds(categorias.get(dados.produto_id));
         const resDespacho = await this.kdsGateway.despacharFicha({
           comanda_id: comandaId,
           item_comanda_id: itemFormatado.id,
@@ -385,7 +415,7 @@ export class ComandasService implements ServicoComandas {
           garcom_id: comanda?.garcom_id ?? 0,
           nome_garcom: garcom?.nome ?? null,
           nome_produto: itemFormatado.nome_copiado,
-          setor: 'cozinha',
+          setor,
           quantidade: dados.quantidade,
           observacao: itemFormatado.observacao ?? null,
         });
@@ -511,7 +541,7 @@ export class ComandasService implements ServicoComandas {
       });
     }
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(comandaId, tx);
 
       if (!comanda) {
@@ -540,6 +570,17 @@ export class ComandasService implements ServicoComandas {
 
       await this.repository.removerItem(itemId, tx);
     });
+
+    if (this.kdsGateway && typeof this.kdsGateway.cancelarFichas === 'function') {
+      try {
+        await this.kdsGateway.cancelarFichas({
+          item_comanda_id: itemId,
+          motivo: 'Item removido da comanda',
+        });
+      } catch (err: any) {
+        console.warn(`[KdsGateway] Falha ao cancelar ficha do item #${itemId}: ${err?.message}.`);
+      }
+    }
   }
 
   async fechar(id: number, dados: FecharComandaDados): Promise<ComandaEntidade> {
@@ -619,6 +660,9 @@ export class ComandasService implements ServicoComandas {
 
     if (this.caixaGateway) {
       try {
+        const categorias = await this.obterCategoriasPorProduto(
+          comandaFormatada.itens.map((it) => it.produto_id),
+        );
         const payloadCaixa = {
           mesa: Number(comandaFormatada.mesa),
           garcom_id: comandaFormatada.garcom_id,
@@ -631,6 +675,7 @@ export class ComandasService implements ServicoComandas {
             item_comanda_id: it.id,
             produto_id: it.produto_id,
             nome: it.nome_copiado,
+            categoria: categorias.get(it.produto_id) || 'Geral',
             preco_unitario: it.preco_copiado,
             quantidade: it.quantidade,
           })),
@@ -666,8 +711,9 @@ export class ComandasService implements ServicoComandas {
     }
 
     const motivoNormalizado = normalizarMotivoCancelamento(dados?.motivo);
+    let canceladaAgora = false;
 
-    return this.repository.executarEmTransacao(async (tx) => {
+    const comandaFormatada = await this.repository.executarEmTransacao(async (tx) => {
       const comanda = await this.repository.buscarPorId(id, tx);
 
       if (!comanda) {
@@ -688,6 +734,7 @@ export class ComandasService implements ServicoComandas {
         );
       }
 
+      canceladaAgora = true;
       const comandaCancelada = await this.repository.atualizar(
         id,
         {
@@ -700,6 +747,45 @@ export class ComandasService implements ServicoComandas {
 
       return this.formatarComanda(comandaCancelada);
     });
+
+    if (canceladaAgora) {
+      if (this.kdsGateway?.cancelarFichas) {
+        try {
+          await this.kdsGateway.cancelarFichas({
+            comanda_id: id,
+            motivo: motivoNormalizado ?? 'Comanda cancelada',
+          });
+        } catch (err: any) {
+          console.warn(`[KdsGateway] Falha ao cancelar fichas da comanda #${id}: ${err?.message}.`);
+        }
+      }
+
+      if (this.gestaoGateway) {
+        try {
+          const ocorridoEm =
+            comandaFormatada.cancelada_em instanceof Date
+              ? comandaFormatada.cancelada_em.toISOString()
+              : String(comandaFormatada.cancelada_em || new Date().toISOString());
+          await this.gestaoGateway.notificarEvento({
+            evento_id: crypto.randomUUID(),
+            evento: 'comanda.cancelada',
+            versao: 1,
+            ocorrido_em: ocorridoEm,
+            data_hora: ocorridoEm,
+            timestamp: new Date().toISOString(),
+            comanda_id: id,
+            mesa: Number(comandaFormatada.mesa),
+            motivo_cancelamento: comandaFormatada.motivo_cancelamento ?? null,
+          });
+        } catch (err: any) {
+          console.warn(
+            `[GestaoGateway] Falha ao notificar cancelamento da comanda #${id}: ${err?.message}.`,
+          );
+        }
+      }
+    }
+
+    return comandaFormatada;
   }
 
   async transferirMesa(comandaId: number, novaMesa: string | number): Promise<ComandaEntidade> {
@@ -842,6 +928,9 @@ export class ComandasService implements ServicoComandas {
 
     if (this.gestaoGateway) {
       try {
+        const categorias = await this.obterCategoriasPorProduto(
+          comandaFormatada.itens.map((item) => item.produto_id),
+        );
         const payloadGestao = {
           evento_id: crypto.randomUUID(),
           evento: 'comanda.paga',
@@ -868,6 +957,7 @@ export class ComandasService implements ServicoComandas {
             produto_id: item.produto_id,
             nome: item.nome_copiado,
             nome_copiado: item.nome_copiado,
+            categoria: categorias.get(item.produto_id) || 'Geral',
             preco_unitario: item.preco_copiado,
             preco_copiado: item.preco_copiado,
             quantidade: item.quantidade,

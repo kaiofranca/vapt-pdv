@@ -63,4 +63,29 @@ describe('GET /health (kds-service)', () => {
 
     await app.close();
   });
+
+  it('deve expor documentação interativa Swagger UI em GET /docs', async () => {
+    const mockPrisma: ClienteBanco = {
+      $queryRaw: async () => [{ '?column?': 1 }],
+      $disconnect: async () => {},
+    };
+
+    const app = await buildApp({
+      prisma: mockPrisma,
+      nodeEnv: 'test',
+      logLevel: 'silent',
+    });
+
+    const resposta = await app.inject({
+      method: 'GET',
+      url: '/docs/json',
+    });
+
+    expect(resposta.statusCode).toBe(200);
+    const spec = JSON.parse(resposta.body);
+    expect(spec.openapi).toBeDefined();
+    expect(spec.info.title).toContain('KDS Service');
+
+    await app.close();
+  });
 });

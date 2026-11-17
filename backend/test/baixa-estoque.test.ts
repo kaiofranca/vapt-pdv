@@ -295,6 +295,54 @@ describe('Baixa Atômica de Estoque (Story 15.6 - RN10, RN18)', () => {
       await app.close();
     });
 
+    it('Agrega múltiplos itens do mesmo produto_id na mesma chamada sem pular quantidades', async () => {
+      const { prisma, produtos, movimentosEstoque } = criarPrismaComEstoqueMock([
+        produtoA,
+      ]);
+      const app = await buildApp({ prisma, logger: false });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/produtos/baixa-estoque',
+        payload: {
+          comanda_id: 350,
+          forma_pagamento: 'pix',
+          itens: [
+            { produto_id: 1, quantidade: 2 },
+            { produto_id: 1, quantidade: 3 },
+          ],
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(produtos.find((p) => p.id === 1)?.estoque).toBe(15);
+      expect(movimentosEstoque).toHaveLength(1);
+      expect(movimentosEstoque[0].quantidade).toBe(-5);
+
+      await app.close();
+    });
+
+    it('Retorna 409 ESTOQUE_INSUFICIENTE quando a quantidade excede o saldo disponível', async () => {
+      const { prisma, produtos, movimentosEstoque } = criarPrismaComEstoqueMock([
+        produtoA,
+      ]);
+      const app = await buildApp({ prisma, logger: false });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/produtos/baixa-estoque',
+        payload: {
+          comanda_id: 351,
+          itens: [{ produto_id: 1, quantidade: 25 }],
+        },
+      });
+      expect(res.statusCode).toBe(409);
+      expect(res.json().erro.codigo).toBe('ESTOQUE_INSUFICIENTE');
+      expect(produtos.find((p) => p.id === 1)?.estoque).toBe(20);
+      expect(movimentosEstoque).toHaveLength(0);
+
+      await app.close();
+    });
+
     it('Retorna erro 404 NAO_ENCONTRADO caso o produto informado não exista', async () => {
       const { prisma, produtos, movimentosEstoque } = criarPrismaComEstoqueMock([
         produtoA,

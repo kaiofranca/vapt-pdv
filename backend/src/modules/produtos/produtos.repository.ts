@@ -193,15 +193,19 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
       const repoMovimentos = this.obterRepositorioMovimentos(contexto);
       const repoProdutos = this.obterRepositorio(contexto);
 
+      const mapaItens = new Map<number, number>();
       for (const item of dados.itens) {
         if (!Number.isFinite(item.quantidade) || item.quantidade <= 0) {
           continue;
         }
+        mapaItens.set(item.produto_id, (mapaItens.get(item.produto_id) ?? 0) + item.quantidade);
+      }
 
+      for (const [produtoId, quantidadeTotal] of mapaItens.entries()) {
         const movimentoExistente = await repoMovimentos.findFirst({
           where: {
             comanda_id: dados.comanda_id,
-            produto_id: item.produto_id,
+            produto_id: produtoId,
           },
         });
 
@@ -210,21 +214,33 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
         }
 
         const produto = await repoProdutos.findUnique({
-          where: { id: item.produto_id },
+          where: { id: produtoId },
         });
 
         if (!produto) {
           throw ErroDominio.naoEncontrado(
-            `Produto com ID ${item.produto_id} não encontrado.`,
-            { produto_id: item.produto_id },
+            `Produto com ID ${produtoId} não encontrado.`,
+            { produto_id: produtoId },
+          );
+        }
+
+        if (produto.estoque < quantidadeTotal) {
+          throw ErroDominio.conflito(
+            'ESTOQUE_INSUFICIENTE',
+            `Estoque insuficiente para o produto "${produto.nome}" (disponível: ${produto.estoque}, solicitado: ${quantidadeTotal}).`,
+            {
+              produto_id: produtoId,
+              estoque_disponivel: produto.estoque,
+              quantidade_solicitada: quantidadeTotal,
+            },
           );
         }
 
         await repoProdutos.update({
-          where: { id: item.produto_id },
+          where: { id: produtoId },
           data: {
             estoque: {
-              decrement: item.quantidade,
+              decrement: quantidadeTotal,
             },
           },
         });
@@ -233,8 +249,8 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
 
         await repoMovimentos.create({
           data: {
-            produto_id: item.produto_id,
-            quantidade: -item.quantidade,
+            produto_id: produtoId,
+            quantidade: -quantidadeTotal,
             tipo: 'saida',
             motivo,
             comanda_id: dados.comanda_id,
@@ -253,6 +269,7 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
             data: {
               status: 'paga',
               paga_em: new Date(),
+              forma_pagamento: dados.forma_pagamento ?? comandaExistente.forma_pagamento ?? undefined,
             },
           });
         }

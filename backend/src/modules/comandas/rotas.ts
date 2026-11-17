@@ -186,13 +186,18 @@ export const rotasComandas: FastifyPluginAsync<OpcoesRotasComandas> = async (
   app.post(
     '/comandas/:id/cancelar',
     {
+      preValidation: async (request) => {
+        if (request.body === undefined || request.body === null) {
+          (request as any).body = {};
+        }
+      },
       schema: {
         tags: ['Comandas'],
         summary: 'Cancelar comanda',
         description:
           'Cancela uma comanda aberta sem movimentar estoque e liberando a mesa.',
         params: ParametroIdComandaSchema,
-        
+        body: CancelarComandaBodySchema,
         response: {
           200: ComandaSchema,
           400: RespostaErroSchema,
