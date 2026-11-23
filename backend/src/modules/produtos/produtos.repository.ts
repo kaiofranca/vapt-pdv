@@ -1,6 +1,8 @@
+import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { ClienteBanco } from '../../shared/prisma';
 import { ErroDominio } from '../../shared/erros';
+import { gravarEventoOutbox } from '../../shared/messaging';
 import {
   BaixaEstoqueDados,
   FiltrosListagemProdutos,
@@ -236,7 +238,7 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           );
         }
 
-        await repoProdutos.update({
+        const produtoAtualizado = await repoProdutos.update({
           where: { id: produtoId },
           data: {
             estoque: {
@@ -254,6 +256,40 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
             tipo: 'saida',
             motivo,
             comanda_id: dados.comanda_id,
+          },
+        });
+
+        const estoqueAtual =
+          typeof (produtoAtualizado as any)?.estoque === 'number'
+            ? (produtoAtualizado as any).estoque
+            : Math.max(0, produto.estoque - quantidadeTotal);
+        const estoqueMinimo =
+          typeof (produtoAtualizado as any)?.estoque_minimo === 'number'
+            ? (produtoAtualizado as any).estoque_minimo
+            : (produto.estoque_minimo ?? 0);
+        const nomeProduto =
+          (produtoAtualizado as any)?.nome ?? produto.nome;
+        const categoriaProduto =
+          (produtoAtualizado as any)?.categoria ?? produto.categoria ?? 'Geral';
+        const eventoId = crypto.randomUUID();
+
+        await gravarEventoOutbox(contexto, {
+          id: eventoId,
+          tipoEvento: 'estoque.movimentado',
+          chaveAgregado: `produto:${produtoId}`,
+          payload: {
+            evento_id: eventoId,
+            evento: 'estoque.movimentado',
+            versao: 1,
+            ocorrido_em: new Date().toISOString(),
+            produto_id: produtoId,
+            nome_produto: nomeProduto,
+            categoria: categoriaProduto,
+            tipo: 'saida',
+            quantidade: -quantidadeTotal,
+            estoque_atual: estoqueAtual,
+            estoque_minimo: estoqueMinimo,
+            abaixo_do_minimo: estoqueAtual <= estoqueMinimo,
           },
         });
       }
@@ -320,6 +356,41 @@ export class ProdutosRepositoryPrisma implements IProdutosRepository {
           quantidade,
           tipo: 'ENTRADA_REPOSICAO',
           motivo: motivoFinal,
+        },
+      });
+
+      const estoqueAtual =
+        typeof (produtoAtualizado as any)?.estoque === 'number'
+          ? (produtoAtualizado as any).estoque
+          : produtoExistente.estoque + quantidade;
+      const estoqueMinimo =
+        typeof (produtoAtualizado as any)?.estoque_minimo === 'number'
+          ? (produtoAtualizado as any).estoque_minimo
+          : (produtoExistente.estoque_minimo ?? 0);
+      const nomeProduto =
+        (produtoAtualizado as any)?.nome ?? produtoExistente.nome;
+      const categoriaProduto =
+        (produtoAtualizado as any)?.categoria ?? produtoExistente.categoria ?? 'Geral';
+      const eventoId = crypto.randomUUID();
+
+      await gravarEventoOutbox(contexto, {
+        id: eventoId,
+        tipoEvento: 'estoque.movimentado',
+        chaveAgregado: `produto:${id}`,
+        payload: {
+          evento_id: eventoId,
+          evento: 'estoque.movimentado',
+          versao: 1,
+          ocorrido_em: new Date().toISOString(),
+          movimento_id: movimentoCriado.id,
+          produto_id: id,
+          nome_produto: nomeProduto,
+          categoria: categoriaProduto,
+          tipo: 'ENTRADA_REPOSICAO',
+          quantidade,
+          estoque_atual: estoqueAtual,
+          estoque_minimo: estoqueMinimo,
+          abaixo_do_minimo: estoqueAtual <= estoqueMinimo,
         },
       });
 

@@ -53,6 +53,7 @@ export function serializarComanda(comanda: ComandaEntidade) {
       preco_copiado: item.preco_copiado,
       quantidade: item.quantidade,
       observacao: item.observacao ?? null,
+      ...(item.status_preparo !== undefined ? { status_preparo: item.status_preparo } : {}),
     })),
     ...(comanda.integracao_caixa_pendente !== undefined
       ? { integracao_caixa_pendente: comanda.integracao_caixa_pendente }
@@ -72,6 +73,7 @@ export function serializarItem(item: ItemComandaEntidade) {
     preco_copiado: item.preco_copiado,
     quantidade: item.quantidade,
     observacao: item.observacao ?? null,
+    ...(item.status_preparo !== undefined ? { status_preparo: item.status_preparo } : {}),
   };
 }
 

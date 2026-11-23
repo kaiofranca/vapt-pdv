@@ -30,6 +30,11 @@ import { IComandasRepository } from './comandas.repository';
 import { CaixaGateway, ICaixaGateway } from '../../shared/gateways/caixa.gateway';
 import { GestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 import { HttpKdsGateway, IKdsGateway } from '../../shared/gateways/kds.gateway';
+import {
+  gravarEventoOutbox,
+  mensageriaHabilitada,
+  OutboxPublisher,
+} from '../../shared/messaging';
 
 export interface ServicoComandas {
   abrir(dados: CriarComandaDados): Promise<ComandaEntidade>;
@@ -60,6 +65,8 @@ export class ComandasService implements ServicoComandas {
   private readonly caixaGateway?: ICaixaGateway;
   private readonly gestaoGateway?: IGestaoGateway;
   private readonly kdsGateway?: IKdsGateway;
+  private readonly outboxPublisher?: OutboxPublisher;
+  private readonly usarMensageria: boolean;
 
   constructor(
     private readonly repository: IComandasRepository,
@@ -68,10 +75,14 @@ export class ComandasService implements ServicoComandas {
     caixaGateway?: ICaixaGateway,
     gestaoGateway?: IGestaoGateway,
     kdsGateway?: IKdsGateway,
+    outboxPublisher?: OutboxPublisher,
+    usarMensageria?: boolean,
   ) {
     this.caixaGateway = caixaGateway ?? new CaixaGateway();
     this.gestaoGateway = gestaoGateway ?? new GestaoGateway();
     this.kdsGateway = kdsGateway ?? new HttpKdsGateway();
+    this.outboxPublisher = outboxPublisher;
+    this.usarMensageria = usarMensageria ?? mensageriaHabilitada();
   }
 
   private async obterCategoriasPorProduto(produtoIds: number[]): Promise<Map<number, string>> {
@@ -104,6 +115,9 @@ export class ComandasService implements ServicoComandas {
       preco_copiado: formatarValorMonetario(registro.preco_copiado),
       quantidade: registro.quantidade,
       observacao: registro.observacao ?? null,
+      ...(registro.status_preparo !== undefined
+        ? { status_preparo: registro.status_preparo }
+        : {}),
     };
   }
 
@@ -115,6 +129,9 @@ export class ComandasService implements ServicoComandas {
       preco_copiado: formatarValorMonetario(item.preco_copiado),
       quantidade: item.quantidade,
       observacao: item.observacao ?? null,
+      ...(item.status_preparo !== undefined
+        ? { status_preparo: item.status_preparo }
+        : {}),
     }));
 
     return {
@@ -398,10 +415,54 @@ export class ComandasService implements ServicoComandas {
         tx,
       );
 
-      return this.formatarItemComanda(itemCriado);
+      const itemFormatado = this.formatarItemComanda(itemCriado);
+
+      if (this.usarMensageria || typeof tx?.outboxEvento?.create === 'function') {
+        let nomeGarcom: string | null = null;
+        try {
+          if (typeof this.servicoUsuarios?.buscarPorId === 'function') {
+            const garcom = await this.servicoUsuarios.buscarPorId(comanda.garcom_id);
+            nomeGarcom = garcom?.nome ?? null;
+          }
+        } catch {
+          nomeGarcom = null;
+        }
+        const categorias = await this.obterCategoriasPorProduto([dados.produto_id]);
+        const categoriaProduto = categorias.get(dados.produto_id) || 'Geral';
+        const setorProduto = determinarSetorKds(categoriaProduto);
+        const eventoId = crypto.randomUUID();
+
+        await gravarEventoOutbox(tx, {
+          id: eventoId,
+          tipoEvento: 'item.lancado',
+          chaveAgregado: `comanda:${comandaId}`,
+          payload: {
+            evento_id: eventoId,
+            evento: 'item.lancado',
+            versao: 1,
+            ocorrido_em: new Date().toISOString(),
+            comanda_id: comandaId,
+            item_comanda_id: itemFormatado.id,
+            produto_id: dados.produto_id,
+            mesa: Number(comanda.mesa),
+            garcom_id: comanda.garcom_id,
+            nome_garcom: nomeGarcom,
+            nome_produto: itemFormatado.nome_copiado,
+            categoria: categoriaProduto,
+            setor: setorProduto,
+            preco_copiado: itemFormatado.preco_copiado,
+            quantidade: dados.quantidade,
+            observacao: itemFormatado.observacao ?? null,
+          },
+        });
+      }
+
+      return itemFormatado;
     });
 
-    if (this.kdsGateway) {
+    if (this.usarMensageria) {
+      this.outboxPublisher?.notificarNovoEvento();
+    } else if (this.kdsGateway) {
       try {
         const comanda = await this.repository.buscarPorId(comandaId);
         const garcom = comanda ? await this.servicoUsuarios.buscarPorId(comanda.garcom_id).catch(() => null) : null;
@@ -655,10 +716,59 @@ export class ComandasService implements ServicoComandas {
         tx,
       );
 
-      return this.formatarComanda(comandaFechada);
+      const formatada = this.formatarComanda(comandaFechada);
+
+      if (this.usarMensageria || typeof tx?.outboxEvento?.create === 'function') {
+        const categorias = await this.obterCategoriasPorProduto(
+          formatada.itens.map((it) => it.produto_id),
+        );
+        const eventoId = crypto.randomUUID();
+        const fechadaEmIso =
+          formatada.fechada_em instanceof Date
+            ? formatada.fechada_em.toISOString()
+            : String(formatada.fechada_em || fechadaEm.toISOString());
+
+        await gravarEventoOutbox(tx, {
+          id: eventoId,
+          tipoEvento: 'comanda.fechada',
+          chaveAgregado: `comanda:${id}`,
+          payload: {
+            evento_id: eventoId,
+            evento: 'comanda.fechada',
+            versao: 1,
+            ocorrido_em: fechadaEmIso,
+            comanda_id: id,
+            mesa: Number(formatada.mesa),
+            garcom_id: formatada.garcom_id,
+            nome_cliente: formatada.nome_cliente,
+            aplicar_taxa_servico: dados.aplicar_taxa_servico,
+            subtotal: formatada.subtotal ?? '0.00',
+            taxa_servico: formatada.taxa_servico ?? '0.00',
+            total: formatada.total ?? '0.00',
+            fechada_em: fechadaEmIso,
+            itens: formatada.itens.map((it) => ({
+              item_comanda_id: it.id,
+              produto_id: it.produto_id,
+              nome: it.nome_copiado,
+              categoria: categorias.get(it.produto_id) || 'Geral',
+              preco_unitario: it.preco_copiado,
+              quantidade: it.quantidade,
+              subtotal: new Prisma.Decimal(it.preco_copiado)
+                .mul(it.quantidade)
+                .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+                .toFixed(2),
+            })),
+          },
+        });
+      }
+
+      return formatada;
     });
 
-    if (this.caixaGateway) {
+    if (this.usarMensageria) {
+      this.outboxPublisher?.notificarNovoEvento();
+      comandaFormatada.integracao_caixa_pendente = false;
+    } else if (this.caixaGateway) {
       try {
         const categorias = await this.obterCategoriasPorProduto(
           comandaFormatada.itens.map((it) => it.produto_id),
@@ -735,52 +845,79 @@ export class ComandasService implements ServicoComandas {
       }
 
       canceladaAgora = true;
+      const canceladaEm = new Date();
       const comandaCancelada = await this.repository.atualizar(
         id,
         {
           status: 'cancelada',
-          cancelada_em: new Date(),
+          cancelada_em: canceladaEm,
           motivo_cancelamento: motivoNormalizado,
         },
         tx,
       );
 
-      return this.formatarComanda(comandaCancelada);
+      const formatada = this.formatarComanda(comandaCancelada);
+      const eventoId = crypto.randomUUID();
+      const ocorridoEm =
+        formatada.cancelada_em instanceof Date
+          ? formatada.cancelada_em.toISOString()
+          : String(formatada.cancelada_em || canceladaEm.toISOString());
+
+      await gravarEventoOutbox(tx, {
+        id: eventoId,
+        tipoEvento: 'comanda.cancelada',
+        chaveAgregado: `comanda:${id}`,
+        payload: {
+          evento_id: eventoId,
+          evento: 'comanda.cancelada',
+          versao: 1,
+          ocorrido_em: ocorridoEm,
+          comanda_id: id,
+          mesa: Number(formatada.mesa),
+          motivo_cancelamento: formatada.motivo_cancelamento ?? null,
+        },
+      });
+
+      return formatada;
     });
 
     if (canceladaAgora) {
-      if (this.kdsGateway?.cancelarFichas) {
-        try {
-          await this.kdsGateway.cancelarFichas({
-            comanda_id: id,
-            motivo: motivoNormalizado ?? 'Comanda cancelada',
-          });
-        } catch (err: any) {
-          console.warn(`[KdsGateway] Falha ao cancelar fichas da comanda #${id}: ${err?.message}.`);
+      if (this.usarMensageria) {
+        this.outboxPublisher?.notificarNovoEvento();
+      } else {
+        if (this.kdsGateway?.cancelarFichas) {
+          try {
+            await this.kdsGateway.cancelarFichas({
+              comanda_id: id,
+              motivo: motivoNormalizado ?? 'Comanda cancelada',
+            });
+          } catch (err: any) {
+            console.warn(`[KdsGateway] Falha ao cancelar fichas da comanda #${id}: ${err?.message}.`);
+          }
         }
-      }
 
-      if (this.gestaoGateway) {
-        try {
-          const ocorridoEm =
-            comandaFormatada.cancelada_em instanceof Date
-              ? comandaFormatada.cancelada_em.toISOString()
-              : String(comandaFormatada.cancelada_em || new Date().toISOString());
-          await this.gestaoGateway.notificarEvento({
-            evento_id: crypto.randomUUID(),
-            evento: 'comanda.cancelada',
-            versao: 1,
-            ocorrido_em: ocorridoEm,
-            data_hora: ocorridoEm,
-            timestamp: new Date().toISOString(),
-            comanda_id: id,
-            mesa: Number(comandaFormatada.mesa),
-            motivo_cancelamento: comandaFormatada.motivo_cancelamento ?? null,
-          });
-        } catch (err: any) {
-          console.warn(
-            `[GestaoGateway] Falha ao notificar cancelamento da comanda #${id}: ${err?.message}.`,
-          );
+        if (this.gestaoGateway) {
+          try {
+            const ocorridoEm =
+              comandaFormatada.cancelada_em instanceof Date
+                ? comandaFormatada.cancelada_em.toISOString()
+                : String(comandaFormatada.cancelada_em || new Date().toISOString());
+            await this.gestaoGateway.notificarEvento({
+              evento_id: crypto.randomUUID(),
+              evento: 'comanda.cancelada',
+              versao: 1,
+              ocorrido_em: ocorridoEm,
+              data_hora: ocorridoEm,
+              timestamp: new Date().toISOString(),
+              comanda_id: id,
+              mesa: Number(comandaFormatada.mesa),
+              motivo_cancelamento: comandaFormatada.motivo_cancelamento ?? null,
+            });
+          } catch (err: any) {
+            console.warn(
+              `[GestaoGateway] Falha ao notificar cancelamento da comanda #${id}: ${err?.message}.`,
+            );
+          }
         }
       }
     }
@@ -923,10 +1060,87 @@ export class ComandasService implements ServicoComandas {
         tx,
       );
 
-      return this.formatarComanda(comandaPaga);
+      const formatada = this.formatarComanda(comandaPaga);
+
+      if (this.usarMensageria || typeof tx?.outboxEvento?.create === 'function') {
+        let garcomNome: string | null = null;
+        try {
+          if (typeof this.servicoUsuarios?.buscarPorId === 'function') {
+            const garcom = await this.servicoUsuarios.buscarPorId(formatada.garcom_id);
+            garcomNome = garcom?.nome ?? null;
+          }
+        } catch {
+          garcomNome = null;
+        }
+        const categorias = await this.obterCategoriasPorProduto(
+          formatada.itens.map((item) => item.produto_id),
+        );
+        const eventoId = crypto.randomUUID();
+        const pagaEmIso =
+          formatada.paga_em instanceof Date
+            ? formatada.paga_em.toISOString()
+            : String(formatada.paga_em || pagaEm.toISOString());
+        const subtotalStr = formatada.subtotal ?? '0.00';
+        const taxaStr = formatada.taxa_servico ?? '0.00';
+        const totalStr = formatada.total ?? '0.00';
+
+        await gravarEventoOutbox(tx, {
+          id: eventoId,
+          tipoEvento: 'comanda.paga',
+          chaveAgregado: `comanda:${id}`,
+          payload: {
+            evento_id: eventoId,
+            evento: 'comanda.paga',
+            versao: 1,
+            ocorrido_em: pagaEmIso,
+            comanda_id: formatada.id,
+            mesa: Number(formatada.mesa),
+            garcom_id: formatada.garcom_id,
+            garcom_nome: garcomNome,
+            forma_pagamento: formatada.forma_pagamento,
+            aplicar_taxa_servico: new Prisma.Decimal(taxaStr).gt(0),
+            subtotal: subtotalStr,
+            valor_subtotal: subtotalStr,
+            taxa_servico: taxaStr,
+            total: totalStr,
+            valor_total: totalStr,
+            troco: '0.00',
+            troco_total: '0.00',
+            paga_em: pagaEmIso,
+            itens: formatada.itens.map((item) => ({
+              item_comanda_id: item.id,
+              produto_id: item.produto_id,
+              nome: item.nome_copiado,
+              nome_copiado: item.nome_copiado,
+              categoria: categorias.get(item.produto_id) || 'Geral',
+              preco_unitario: item.preco_copiado,
+              preco_copiado: item.preco_copiado,
+              quantidade: item.quantidade,
+              subtotal: new Prisma.Decimal(item.preco_copiado)
+                .mul(item.quantidade)
+                .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+                .toFixed(2),
+            })),
+            parcelas: [
+              {
+                numero_parcela: 1,
+                pagador_rotulo: 'Integral',
+                forma_pagamento: formatada.forma_pagamento,
+                valor_aplicado: totalStr,
+                valor_recebido: totalStr,
+                troco: '0.00',
+              },
+            ],
+          },
+        });
+      }
+
+      return formatada;
     });
 
-    if (this.gestaoGateway) {
+    if (this.usarMensageria) {
+      this.outboxPublisher?.notificarNovoEvento();
+    } else if (this.gestaoGateway) {
       try {
         const categorias = await this.obterCategoriasPorProduto(
           comandaFormatada.itens.map((item) => item.produto_id),

@@ -5,6 +5,7 @@ import { IProdutosRepository, ProdutosRepositoryPrisma } from './produtos.reposi
 import { ProdutosService, ServicoProdutos } from './produtos.service';
 import { ProdutosController } from './produtos.controller';
 import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
+import type { OutboxPublisher } from '../../shared/messaging';
 
 export interface OpcoesModuloProdutos {
   prisma?: ClienteBanco;
@@ -12,6 +13,8 @@ export interface OpcoesModuloProdutos {
   servico?: ServicoProdutos;
   controller?: ProdutosController;
   gestaoGateway?: IGestaoGateway;
+  outboxPublisher?: OutboxPublisher;
+  usarMensageria?: boolean;
 }
 
 export const moduloProdutos: FastifyPluginAsync<OpcoesModuloProdutos> = async (
@@ -20,7 +23,14 @@ export const moduloProdutos: FastifyPluginAsync<OpcoesModuloProdutos> = async (
 ) => {
   const prisma = opcoes.prisma ?? obterPrisma();
   const repositorio = opcoes.repositorio ?? new ProdutosRepositoryPrisma(prisma);
-  const servico = opcoes.servico ?? new ProdutosService(repositorio, opcoes.gestaoGateway);
+  const servico =
+    opcoes.servico ??
+    new ProdutosService(
+      repositorio,
+      opcoes.gestaoGateway,
+      opcoes.outboxPublisher,
+      opcoes.usarMensageria,
+    );
   const controller = opcoes.controller ?? new ProdutosController(servico);
 
   await fastify.register(rotasProdutos, { servico, controller });

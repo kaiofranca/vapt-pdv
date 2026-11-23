@@ -39,6 +39,11 @@ export const ItemComandaSchema = Type.Object(
         description: 'Observações de preparo ou restrições alimentares/alergias (máx. 240 caracteres)',
       }),
     ),
+    status_preparo: Type.Optional(
+      Type.String({
+        description: 'Status atual do preparo do item no KDS (ex.: recebido, pronto)',
+      }),
+    ),
   },
   { description: 'Item pertencente a uma comanda' },
 );

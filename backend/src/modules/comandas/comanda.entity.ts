@@ -11,6 +11,7 @@ export interface ItemComandaEntidade {
   preco_copiado: string;
   quantidade: number;
   observacao?: string | null;
+  status_preparo?: string;
 }
 
 export interface ComandaEntidade {
@@ -80,6 +81,7 @@ export interface RegistroItemComandaBanco {
   preco_copiado: unknown;
   quantidade: number;
   observacao?: string | null;
+  status_preparo?: string;
 }
 
 export interface RegistroComandaBanco {

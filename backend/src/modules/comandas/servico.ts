@@ -4,6 +4,7 @@ import type { ServicoProdutos } from '../produtos/servico';
 import type { ICaixaGateway } from '../../shared/gateways/caixa.gateway';
 import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 import type { IKdsGateway } from '../../shared/gateways/kds.gateway';
+import type { OutboxPublisher } from '../../shared/messaging';
 import { ComandasRepositoryPrisma } from './comandas.repository';
 import { ComandasService } from './comandas.service';
 
@@ -20,6 +21,8 @@ export class ServicoComandasPrisma extends ComandasService {
     caixaGateway?: ICaixaGateway,
     gestaoGateway?: IGestaoGateway,
     kdsGateway?: IKdsGateway,
+    outboxPublisher?: OutboxPublisher,
+    usarMensageria?: boolean,
   ) {
     super(
       new ComandasRepositoryPrisma(prisma),
@@ -28,6 +31,8 @@ export class ServicoComandasPrisma extends ComandasService {
       caixaGateway,
       gestaoGateway,
       kdsGateway,
+      outboxPublisher,
+      usarMensageria,
     );
   }
 }

@@ -5,6 +5,7 @@ import { ServicoProdutos, ServicoProdutosPrisma } from '../produtos/servico';
 import type { ICaixaGateway } from '../../shared/gateways/caixa.gateway';
 import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 import type { IKdsGateway } from '../../shared/gateways/kds.gateway';
+import type { OutboxPublisher } from '../../shared/messaging';
 import { rotasComandas } from './rotas';
 import { IComandasRepository, ComandasRepositoryPrisma } from './comandas.repository';
 import { ComandasService, ServicoComandas } from './comandas.service';
@@ -20,6 +21,8 @@ export interface OpcoesModuloComandas {
   caixaGateway?: ICaixaGateway;
   gestaoGateway?: IGestaoGateway;
   kdsGateway?: IKdsGateway;
+  outboxPublisher?: OutboxPublisher;
+  usarMensageria?: boolean;
 }
 
 export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
@@ -30,7 +33,13 @@ export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
   const servicoUsuarios =
     opcoes.servicoUsuarios ?? new ServicoUsuariosPrisma(prisma);
   const servicoProdutos =
-    opcoes.servicoProdutos ?? new ServicoProdutosPrisma(prisma);
+    opcoes.servicoProdutos ??
+    new ServicoProdutosPrisma(
+      prisma,
+      opcoes.gestaoGateway,
+      opcoes.outboxPublisher,
+      opcoes.usarMensageria,
+    );
   const repositorio =
     opcoes.repositorio ?? new ComandasRepositoryPrisma(prisma);
   const servico =
@@ -42,6 +51,8 @@ export const moduloComandas: FastifyPluginAsync<OpcoesModuloComandas> = async (
       opcoes.caixaGateway,
       opcoes.gestaoGateway,
       opcoes.kdsGateway,
+      opcoes.outboxPublisher,
+      opcoes.usarMensageria,
     );
   const controller =
     opcoes.controller ?? new ComandasController(servico);

@@ -13,6 +13,7 @@ import {
 } from './produtos.entity';
 import { IProdutosRepository } from './produtos.repository';
 import { HttpGestaoGateway, IGestaoGateway } from '../../shared/gateways/gestao.gateway';
+import { mensageriaHabilitada, OutboxPublisher } from '../../shared/messaging';
 
 export function normalizarPreco(preco: string | number): string {
   if (typeof preco === 'number') {
@@ -51,12 +52,18 @@ export interface ServicoProdutos {
 
 export class ProdutosService implements ServicoProdutos {
   private readonly gestaoGateway?: IGestaoGateway;
+  private readonly outboxPublisher?: OutboxPublisher;
+  private readonly usarMensageria: boolean;
 
   constructor(
     private readonly repository: IProdutosRepository,
     gestaoGateway?: IGestaoGateway,
+    outboxPublisher?: OutboxPublisher,
+    usarMensageria?: boolean,
   ) {
     this.gestaoGateway = gestaoGateway ?? new HttpGestaoGateway();
+    this.outboxPublisher = outboxPublisher;
+    this.usarMensageria = usarMensageria ?? mensageriaHabilitada();
   }
 
   async criar(dados: CriarProdutoDados): Promise<ProdutoEntidade> {
@@ -281,7 +288,11 @@ export class ProdutosService implements ServicoProdutos {
 
     await this.repository.baixarEstoque(dados, tx);
 
-    if (this.gestaoGateway) {
+    if (this.usarMensageria) {
+      if (!tx) {
+        this.outboxPublisher?.notificarNovoEvento();
+      }
+    } else if (this.gestaoGateway) {
       for (const item of dados.itens) {
         try {
           const prod = await this.repository.buscarPorId(item.produto_id);
@@ -319,7 +330,9 @@ export class ProdutosService implements ServicoProdutos {
 
     const resultado = await this.repository.reporEstoque(id, quantidade, motivo);
 
-    if (this.gestaoGateway) {
+    if (this.usarMensageria) {
+      this.outboxPublisher?.notificarNovoEvento();
+    } else if (this.gestaoGateway) {
       try {
         const prod = resultado.produto;
         await this.gestaoGateway.notificarEvento({

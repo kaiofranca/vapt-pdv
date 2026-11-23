@@ -25,6 +25,7 @@ import { moduloComandas } from './modules/comandas';
 import type { ICaixaGateway } from './shared/gateways/caixa.gateway';
 import type { IGestaoGateway } from './shared/gateways/gestao.gateway';
 import type { IKdsGateway } from './shared/gateways/kds.gateway';
+import type { OutboxPublisher } from './shared/messaging';
 
 export interface OpcoesApp {
   prisma?: ClienteBanco;
@@ -34,6 +35,8 @@ export interface OpcoesApp {
   caixaGateway?: ICaixaGateway;
   gestaoGateway?: IGestaoGateway;
   kdsGateway?: IKdsGateway;
+  outboxPublisher?: OutboxPublisher;
+  usarMensageria?: boolean;
 }
 
 export function criarOpcoesLogger(
@@ -394,12 +397,19 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
 
   await app.register(rotasSaude, { prisma });
   await app.register(moduloUsuarios, { prisma });
-  await app.register(moduloProdutos, { prisma, gestaoGateway: opcoes.gestaoGateway });
+  await app.register(moduloProdutos, {
+    prisma,
+    gestaoGateway: opcoes.gestaoGateway,
+    outboxPublisher: opcoes.outboxPublisher,
+    usarMensageria: opcoes.usarMensageria,
+  });
   await app.register(moduloComandas, {
     prisma,
     caixaGateway: opcoes.caixaGateway,
     gestaoGateway: opcoes.gestaoGateway,
     kdsGateway: opcoes.kdsGateway,
+    outboxPublisher: opcoes.outboxPublisher,
+    usarMensageria: opcoes.usarMensageria,
   });
 
   return app;
