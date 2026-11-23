@@ -12,13 +12,46 @@ export interface RespostaProcessamentoEvento {
 }
 
 export class GestaoService {
+  private readonly emProcessamento = new Map<string, Promise<RespostaProcessamentoEvento>>();
+
   constructor(private readonly repository: GestaoRepository) {}
+
+  private resolverDataEvento(...candidatas: Array<string | undefined>): Date {
+    for (const valor of candidatas) {
+      if (valor) {
+        const data = new Date(valor);
+        if (!Number.isNaN(data.getTime())) {
+          return data;
+        }
+      }
+    }
+    return new Date();
+  }
 
   async processarEvento(evento: EnvelopeEventoOperacional): Promise<RespostaProcessamentoEvento> {
     if (!evento.evento_id || !evento.evento) {
       throw ErroDominio.validacao('Os campos evento_id e evento são obrigatórios.');
     }
 
+    while (this.emProcessamento.has(evento.evento_id)) {
+      await this.emProcessamento.get(evento.evento_id)!.catch(() => undefined);
+    }
+
+    const promessa = this.executarProcessamentoEvento(evento);
+    this.emProcessamento.set(evento.evento_id, promessa);
+
+    try {
+      return await promessa;
+    } finally {
+      if (this.emProcessamento.get(evento.evento_id) === promessa) {
+        this.emProcessamento.delete(evento.evento_id);
+      }
+    }
+  }
+
+  private async executarProcessamentoEvento(
+    evento: EnvelopeEventoOperacional,
+  ): Promise<RespostaProcessamentoEvento> {
     const jaProcessado = await this.repository.eventoJaProcessado(evento.evento_id);
     if (jaProcessado) {
       return {
@@ -30,24 +63,19 @@ export class GestaoService {
       };
     }
 
-    const timestamp = evento.ocorrido_em
-      ? new Date(evento.ocorrido_em)
-      : evento.data_hora
-        ? new Date(evento.data_hora)
-        : evento.timestamp
-          ? new Date(evento.timestamp)
-          : new Date();
-
-    await this.repository.registrarEventoProcessado(evento.evento_id, evento.evento, timestamp);
+    const timestamp = this.resolverDataEvento(
+      evento.ocorrido_em,
+      evento.data_hora,
+      evento.timestamp,
+    );
 
     if (evento.evento === 'comanda.paga') {
-      const dataRef = evento.paga_em
-        ? new Date(evento.paga_em)
-        : evento.data_hora
-          ? new Date(evento.data_hora)
-          : evento.ocorrido_em
-            ? new Date(evento.ocorrido_em)
-            : timestamp;
+      const dataRef = this.resolverDataEvento(
+        evento.paga_em,
+        evento.data_hora,
+        evento.ocorrido_em,
+        evento.timestamp,
+      );
       const itensFormatados = (evento.itens || []).map((i) => ({
         produto_id: i.produto_id,
         nome: i.nome || i.nome_copiado || `Produto #${i.produto_id}`,
@@ -57,6 +85,7 @@ export class GestaoService {
           i.subtotal ||
           new Prisma.Decimal(i.preco_unitario || i.preco_copiado || '0.00')
             .mul(i.quantidade)
+            .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
             .toFixed(2),
       }));
 
@@ -72,10 +101,13 @@ export class GestaoService {
         itens: itensFormatados,
       });
     } else if (evento.evento === 'comanda.cancelada') {
-      const dataRef = timestamp;
-      await this.repository.processarComandaCancelada(dataRef);
+      await this.repository.processarComandaCancelada(timestamp);
     } else if (evento.evento === 'estoque.movimentado') {
-      if (evento.produto_id !== undefined && evento.estoque_atual !== undefined && evento.estoque_minimo !== undefined) {
+      if (
+        evento.produto_id !== undefined &&
+        evento.estoque_atual !== undefined &&
+        evento.estoque_minimo !== undefined
+      ) {
         await this.repository.processarMovimentoEstoque({
           produtoId: evento.produto_id,
           nome: evento.nome_produto || `Produto #${evento.produto_id}`,
@@ -85,7 +117,15 @@ export class GestaoService {
           timestamp,
         });
       }
+    } else if (
+      evento.evento === 'item.lancado' ||
+      evento.evento === 'item.pronto' ||
+      evento.evento === 'comanda.fechada'
+    ) {
+      // Eventos operacionais recebidos via binding '#' são aceitos e registrados em eventos_processados.
     }
+
+    await this.repository.registrarEventoProcessado(evento.evento_id, evento.evento, timestamp);
 
     return {
       evento_id: evento.evento_id,
