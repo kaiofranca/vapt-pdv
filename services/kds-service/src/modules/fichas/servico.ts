@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { FichasRepositorio, FichaRegistro } from './repositorio';
 import { CriarFichaInput, FichaResposta, RespostaPendenciasComanda, StatusFicha } from './schemas';
 import { ErroDominio } from '../../shared/erros';
+import { ClienteBanco } from '../../shared/prisma';
+import { DadosEventoOutbox, OutboxPublisher } from '../../shared/messaging/outbox.publisher';
 
 export interface FichaFilaItem extends FichaResposta {
   tempo_decorrido_segundos: number;
@@ -45,10 +48,16 @@ export function serializarFicha(ficha: FichaRegistro): FichaResposta {
 }
 
 export class FichasServico {
-  constructor(private readonly repositorio: FichasRepositorio) {}
+  constructor(
+    private readonly repositorio: FichasRepositorio,
+    private readonly outboxPublisher?: OutboxPublisher,
+  ) {}
 
-  async registrarFicha(dados: CriarFichaInput): Promise<{ criada: boolean; ficha: FichaResposta }> {
-    const resultado = await this.repositorio.criarOuObterFicha(dados);
+  async registrarFicha(
+    dados: CriarFichaInput,
+    tx?: ClienteBanco,
+  ): Promise<{ criada: boolean; ficha: FichaResposta }> {
+    const resultado = await this.repositorio.criarOuObterFicha(dados, tx);
     return {
       criada: resultado.criada,
       ficha: serializarFicha(resultado.ficha),
@@ -136,16 +145,49 @@ export class FichasServico {
 
     const agora = new Date();
     const camposData: { iniciadoEm?: Date; prontoEm?: Date; entregueEm?: Date } = {};
+    let eventoOutbox: DadosEventoOutbox | undefined;
 
     if (novoStatus === 'em_preparo') {
       camposData.iniciadoEm = agora;
     } else if (novoStatus === 'pronto') {
       camposData.prontoEm = agora;
+      const eventoId = randomUUID();
+      const agoraIso = agora.toISOString();
+      eventoOutbox = {
+        id: eventoId,
+        tipoEvento: 'item.pronto',
+        chaveAgregado: `ficha:${ficha.id}`,
+        payload: {
+          evento_id: eventoId,
+          evento: 'item.pronto',
+          versao: 1,
+          ocorrido_em: agoraIso,
+          ficha_id: ficha.id,
+          comanda_id: ficha.comandaId,
+          item_comanda_id: ficha.itemComandaId,
+          produto_id: ficha.produtoId,
+          nome_produto: ficha.nomeProduto,
+          mesa: ficha.mesa,
+          setor: ficha.setor,
+          status_preparo: 'pronto',
+          pronto_em: agoraIso,
+        },
+      };
     } else if (novoStatus === 'entregue') {
       camposData.entregueEm = agora;
     }
 
-    const atualizada = await this.repositorio.atualizarStatusFicha(id, novoStatus, camposData);
+    const atualizada = await this.repositorio.atualizarStatusFicha(
+      id,
+      novoStatus,
+      camposData,
+      eventoOutbox,
+    );
+
+    if (eventoOutbox) {
+      this.outboxPublisher?.notificarNovoEvento();
+    }
+
     return serializarFicha(atualizada);
   }
 
@@ -204,10 +246,13 @@ export class FichasServico {
     };
   }
 
-  async cancelarFichas(dados: {
-    comanda_id?: number;
-    item_comanda_id?: number;
-  }): Promise<{ canceladas: number }> {
+  async cancelarFichas(
+    dados: {
+      comanda_id?: number;
+      item_comanda_id?: number;
+    },
+    tx?: ClienteBanco,
+  ): Promise<{ canceladas: number }> {
     if (!dados.comanda_id && !dados.item_comanda_id) {
       throw ErroDominio.validacao([
         {
@@ -217,10 +262,13 @@ export class FichasServico {
       ]);
     }
 
-    const canceladas = await this.repositorio.cancelarFichasAtivas({
-      comandaId: dados.comanda_id,
-      itemComandaId: dados.item_comanda_id,
-    });
+    const canceladas = await this.repositorio.cancelarFichasAtivas(
+      {
+        comandaId: dados.comanda_id,
+        itemComandaId: dados.item_comanda_id,
+      },
+      tx,
+    );
     return { canceladas };
   }
 }

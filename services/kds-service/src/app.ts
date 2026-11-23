@@ -5,6 +5,7 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { AmbienteNode, NivelLog } from './config/env';
 import { ErroDominio } from './shared/erros';
 import { ClienteBanco, obterPrisma } from './shared/prisma';
+import { OutboxPublisher } from './shared/messaging/outbox.publisher';
 import { rotasSaude } from './modules/saude/rotas';
 import { rotasFichas } from './modules/fichas/rotas';
 
@@ -13,6 +14,7 @@ export interface OpcoesApp {
   nodeEnv?: AmbienteNode;
   logLevel?: NivelLog;
   logger?: boolean | FastifyLoggerOptions;
+  outboxPublisher?: OutboxPublisher;
 }
 
 export function criarOpcoesLogger(
@@ -130,7 +132,7 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   });
 
   await app.register(rotasSaude, { prisma });
-  await app.register(rotasFichas, { prisma });
+  await app.register(rotasFichas, { prisma, outboxPublisher: opcoes.outboxPublisher });
 
   return app as unknown as FastifyInstance;
 }

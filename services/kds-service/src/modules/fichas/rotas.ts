@@ -13,9 +13,11 @@ import {
 import { FichasRepositorio } from './repositorio';
 import { FichasServico } from './servico';
 import { RespostaErroSchema } from '../../shared/erros';
+import { OutboxPublisher } from '../../shared/messaging/outbox.publisher';
 
 export interface OpcoesRotasFichas {
   prisma: any;
+  outboxPublisher?: OutboxPublisher;
 }
 
 const QueryFilaSchema = Type.Object({
@@ -45,7 +47,7 @@ const RespostaFilaSchema = Type.Object({
 export const rotasFichas: FastifyPluginAsync<OpcoesRotasFichas> = async (app, opcoes) => {
   const servidor = app.withTypeProvider<TypeBoxTypeProvider>();
   const repositorio = new FichasRepositorio(opcoes.prisma);
-  const servico = new FichasServico(repositorio);
+  const servico = new FichasServico(repositorio, opcoes.outboxPublisher);
 
   servidor.post(
     '/kds/fichas',

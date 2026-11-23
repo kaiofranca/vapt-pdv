@@ -9,6 +9,7 @@ export interface VariaveisAmbiente {
   NODE_ENV: AmbienteNode;
   LOG_LEVEL: NivelLog;
   DATABASE_URL: string;
+  RABBITMQ_URL?: string;
 }
 
 export function carregarEnv(): VariaveisAmbiente {
@@ -43,10 +44,13 @@ export function carregarEnv(): VariaveisAmbiente {
     process.env.DATABASE_URL ||
     'postgresql://postgres:postgres@localhost:5432/kds_db?schema=public';
 
+  const rabbitmqUrl = process.env.RABBITMQ_URL?.trim() || undefined;
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
     LOG_LEVEL: logLevel,
     DATABASE_URL: databaseUrl,
+    RABBITMQ_URL: rabbitmqUrl,
   };
 }

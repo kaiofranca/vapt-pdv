@@ -2,9 +2,11 @@ import { PrismaClient } from '@prisma/client';
 
 export type ClienteBanco = {
   $queryRaw: (query: TemplateStringsArray, ...values: any[]) => Promise<any>;
-  $disconnect: () => Promise<void>;
+  $disconnect?: () => Promise<void>;
+  $transaction?: <T>(fn: (tx: ClienteBanco) => Promise<T>) => Promise<T>;
   fichaPreparo?: any;
   eventoProcessado?: any;
+  outboxEvento?: any;
 };
 
 let prismaInstance: PrismaClient | null = null;

@@ -1,4 +1,5 @@
 import { ClienteBanco } from '../../shared/prisma';
+import { DadosEventoOutbox, gravarEventoOutbox } from '../../shared/messaging/outbox.publisher';
 import { CriarFichaInput } from './schemas';
 
 export interface FichaRegistro {
@@ -28,8 +29,19 @@ export interface ResultadoCriacaoFicha {
 export class FichasRepositorio {
   constructor(private readonly prisma: any) {}
 
-  async buscarPorItemComandaId(itemComandaId: number): Promise<FichaRegistro | null> {
-    return this.prisma.fichaPreparo.findUnique({
+  async executarEmTransacao<T>(fn: (tx: ClienteBanco) => Promise<T>): Promise<T> {
+    if (typeof this.prisma.$transaction === 'function') {
+      return this.prisma.$transaction(fn);
+    }
+    return fn(this.prisma);
+  }
+
+  async buscarPorItemComandaId(
+    itemComandaId: number,
+    tx?: ClienteBanco,
+  ): Promise<FichaRegistro | null> {
+    const cliente = tx ?? this.prisma;
+    return cliente.fichaPreparo.findUnique({
       where: { itemComandaId },
     });
   }
@@ -40,12 +52,25 @@ export class FichasRepositorio {
     });
   }
 
-  async criarOuObterFicha(dados: CriarFichaInput): Promise<ResultadoCriacaoFicha> {
+  async criarOuObterFicha(
+    dados: CriarFichaInput,
+    tx?: ClienteBanco,
+  ): Promise<ResultadoCriacaoFicha> {
+    const cliente = tx ?? this.prisma;
     const setor = dados.estacao || dados.setor || 'cozinha';
     const nomeGarcom = dados.garcom_nome || dados.nome_garcom || null;
 
+    if (tx && typeof cliente.fichaPreparo?.findUnique === 'function') {
+      const fichaExistente = await cliente.fichaPreparo.findUnique({
+        where: { itemComandaId: dados.item_comanda_id },
+      });
+      if (fichaExistente) {
+        return { criada: false, ficha: fichaExistente };
+      }
+    }
+
     try {
-      const fichaCriada = await this.prisma.fichaPreparo.create({
+      const fichaCriada = await cliente.fichaPreparo.create({
         data: {
           comandaId: dados.comanda_id,
           itemComandaId: dados.item_comanda_id,
@@ -64,7 +89,7 @@ export class FichasRepositorio {
       return { criada: true, ficha: fichaCriada };
     } catch (erro: any) {
       if (erro?.code === 'P2002' || String(erro?.message).includes('item_comanda_id')) {
-        const fichaExistente = await this.buscarPorItemComandaId(dados.item_comanda_id);
+        const fichaExistente = await this.buscarPorItemComandaId(dados.item_comanda_id, tx);
         if (fichaExistente) {
           return { criada: false, ficha: fichaExistente };
         }
@@ -133,11 +158,34 @@ export class FichasRepositorio {
       prontoEm?: Date;
       entregueEm?: Date;
     },
+    eventoOutbox?: DadosEventoOutbox,
+    tx?: ClienteBanco,
   ): Promise<FichaRegistro> {
     const data: any = { status };
     if (camposData.iniciadoEm !== undefined) data.iniciadoEm = camposData.iniciadoEm;
     if (camposData.prontoEm !== undefined) data.prontoEm = camposData.prontoEm;
     if (camposData.entregueEm !== undefined) data.entregueEm = camposData.entregueEm;
+
+    const executarAtualizacao = async (cliente: ClienteBanco): Promise<FichaRegistro> => {
+      const atualizada = await cliente.fichaPreparo.update({
+        where: { id },
+        data,
+      });
+
+      if (eventoOutbox) {
+        await gravarEventoOutbox(cliente, eventoOutbox);
+      }
+
+      return atualizada;
+    };
+
+    if (tx) {
+      return executarAtualizacao(tx);
+    }
+
+    if (eventoOutbox) {
+      return this.executarEmTransacao(executarAtualizacao);
+    }
 
     return this.prisma.fichaPreparo.update({
       where: { id },
@@ -152,14 +200,18 @@ export class FichasRepositorio {
     });
   }
 
-  async cancelarFichasAtivas(filtros: {
-    comandaId?: number;
-    itemComandaId?: number;
-  }): Promise<number> {
+  async cancelarFichasAtivas(
+    filtros: {
+      comandaId?: number;
+      itemComandaId?: number;
+    },
+    tx?: ClienteBanco,
+  ): Promise<number> {
     if (!filtros.comandaId && !filtros.itemComandaId) {
       return 0;
     }
 
+    const cliente = tx ?? this.prisma;
     const where: any = {
       status: { in: ['recebido', 'em_preparo', 'pronto'] },
     };
@@ -170,8 +222,8 @@ export class FichasRepositorio {
       where.itemComandaId = filtros.itemComandaId;
     }
 
-    if (typeof this.prisma.fichaPreparo?.updateMany === 'function') {
-      const res = await this.prisma.fichaPreparo.updateMany({
+    if (typeof cliente.fichaPreparo?.updateMany === 'function') {
+      const res = await cliente.fichaPreparo.updateMany({
         where,
         data: { status: 'cancelado' },
       });
