@@ -9,6 +9,8 @@ export interface ClienteBanco {
   movimentoEstoque?: PrismaClient['movimentoEstoque'];
   comanda?: PrismaClient['comanda'];
   itemComanda?: PrismaClient['itemComanda'];
+  outboxEvento?: PrismaClient['outboxEvento'];
+  eventoProcessado?: PrismaClient['eventoProcessado'];
 }
 
 declare global {

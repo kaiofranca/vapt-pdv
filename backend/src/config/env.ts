@@ -8,6 +8,7 @@ export interface ConfigAmbiente {
   PORT: number;
   NODE_ENV: AmbienteNode;
   LOG_LEVEL: NivelLog;
+  RABBITMQ_URL?: string;
 }
 
 const AMBIENTES_VALIDOS: ReadonlySet<AmbienteNode> = new Set([
@@ -56,12 +57,20 @@ export function validarEnv(rawEnv: NodeJS.ProcessEnv = process.env): ConfigAmbie
     );
   }
 
-  return {
+  const rabbitmqUrl = rawEnv.RABBITMQ_URL?.trim();
+
+  const config: ConfigAmbiente = {
     DATABASE_URL: databaseUrl,
     PORT: port,
     NODE_ENV: nodeEnvRaw,
     LOG_LEVEL: logLevelRaw,
   };
+
+  if (rabbitmqUrl) {
+    config.RABBITMQ_URL = rabbitmqUrl;
+  }
+
+  return config;
 }
 
 export function carregarEnv(
