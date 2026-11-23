@@ -10,18 +10,80 @@ import {
   PagamentoParcelaRegistro,
   ReciboVendaRegistro,
   ResumoTurnoDto,
+  QuitarComOutboxDados,
+  QuitarComOutboxResultado,
 } from '../../src/modules/caixa/cobrancas.repository';
+import { OutboxEventoRegistro } from '../../src/shared/messaging/outbox.publisher';
 
 export class MemoriaCobrancasRepository implements CobrancasRepository {
   private cobrancasPorComandaId = new Map<number, CobrancaComandaRegistro>();
   private recibosPorComandaId = new Map<number, ReciboVendaRegistro>();
+  public outboxEventos: OutboxEventoRegistro[] = [];
   private proximoId = 1;
   private proximoPagamentoId = 1;
   private proximoReciboId = 1;
 
+  public readonly outboxEvento = {
+    create: async ({ data }: { data: any }): Promise<OutboxEventoRegistro> => {
+      const registro: OutboxEventoRegistro = {
+        id: data.id,
+        tipoEvento: data.tipoEvento,
+        chaveAgregado: data.chaveAgregado,
+        payload: data.payload,
+        status: data.status ?? 'PENDENTE',
+        tentativas: data.tentativas ?? 0,
+        criadoEm: new Date(),
+        publicadoEm: null,
+      };
+      this.outboxEventos.push(registro);
+      return { ...registro };
+    },
+    findMany: async ({
+      where,
+      orderBy,
+      take,
+    }: {
+      where: { status: string };
+      orderBy: { criadoEm: 'asc' | 'desc' };
+      take: number;
+    }): Promise<OutboxEventoRegistro[]> => {
+      const filtrados = this.outboxEventos
+        .filter((ev) => ev.status === where.status)
+        .sort((a, b) =>
+          orderBy.criadoEm === 'asc'
+            ? a.criadoEm.getTime() - b.criadoEm.getTime()
+            : b.criadoEm.getTime() - a.criadoEm.getTime(),
+        )
+        .slice(0, take);
+      return filtrados.map((ev) => ({ ...ev }));
+    },
+    update: async ({
+      where,
+      data,
+    }: {
+      where: { id: string };
+      data: { status?: string; publicadoEm?: Date | null; tentativas?: number };
+    }): Promise<OutboxEventoRegistro> => {
+      const idx = this.outboxEventos.findIndex((ev) => ev.id === where.id);
+      if (idx === -1) {
+        throw new Error(`Evento outbox ${where.id} não encontrado em memória.`);
+      }
+      const atual = this.outboxEventos[idx];
+      const atualizado: OutboxEventoRegistro = {
+        ...atual,
+        status: data.status !== undefined ? data.status : atual.status,
+        publicadoEm: data.publicadoEm !== undefined ? data.publicadoEm : atual.publicadoEm,
+        tentativas: data.tentativas !== undefined ? data.tentativas : atual.tentativas,
+      };
+      this.outboxEventos[idx] = atualizado;
+      return { ...atualizado };
+    },
+  };
+
   limpar(): void {
     this.cobrancasPorComandaId.clear();
     this.recibosPorComandaId.clear();
+    this.outboxEventos = [];
     this.proximoId = 1;
     this.proximoPagamentoId = 1;
     this.proximoReciboId = 1;
@@ -255,5 +317,36 @@ export class MemoriaCobrancasRepository implements CobrancasRepository {
   async buscarReciboPorComandaId(comandaId: number): Promise<ReciboVendaRegistro | null> {
     const recibo = this.recibosPorComandaId.get(comandaId);
     return recibo ? { ...recibo } : null;
+  }
+
+  async quitarComOutbox(dados: QuitarComOutboxDados): Promise<QuitarComOutboxResultado> {
+    const cobrancaExistente = this.cobrancasPorComandaId.get(dados.comandaId);
+    if (!cobrancaExistente) {
+      throw new Error(`Cobrança com comandaId ${dados.comandaId} não encontrada no repositório em memória.`);
+    }
+
+    const parcela = await this.registrarPagamento(dados.pagamento);
+    const cobranca = await this.atualizar(dados.comandaId, {
+      ...dados.atualizacao,
+      status: dados.atualizacao.status ?? 'paga',
+    });
+    const recibo = await this.salvarRecibo(dados.recibo);
+
+    await this.outboxEvento.create({
+      data: {
+        id: dados.eventoOutbox.id,
+        tipoEvento: dados.eventoOutbox.tipoEvento,
+        chaveAgregado: dados.eventoOutbox.chaveAgregado,
+        payload: dados.eventoOutbox.payload,
+        status: 'PENDENTE',
+        tentativas: 0,
+      },
+    });
+
+    return {
+      parcela,
+      cobranca: { ...cobranca, recibo },
+      recibo,
+    };
   }
 }
