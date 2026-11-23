@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { ClienteBanco } from '../../shared/prisma';
+import { gravarEventoOutbox } from '../../shared/messaging/outbox.publisher';
 
 export interface ItemSnapshot {
   item_comanda_id: number;
@@ -131,6 +132,25 @@ export interface SalvarReciboDados {
   emitidoEm?: Date;
 }
 
+export interface QuitarComOutboxDados {
+  comandaId: number;
+  pagamento: RegistrarPagamentoDados;
+  atualizacao: AtualizarCobrancaDados;
+  recibo: SalvarReciboDados;
+  eventoOutbox: {
+    id: string;
+    tipoEvento: string;
+    chaveAgregado: string;
+    payload: Record<string, unknown>;
+  };
+}
+
+export interface QuitarComOutboxResultado {
+  parcela: PagamentoParcelaRegistro;
+  cobranca: CobrancaComandaRegistro;
+  recibo: ReciboVendaRegistro;
+}
+
 export interface CobrancasRepository {
   listar(filtros?: CobrancaFiltros): Promise<CobrancaComandaRegistro[]>;
   buscarPorComandaId(comandaId: number): Promise<CobrancaComandaRegistro | null>;
@@ -142,6 +162,7 @@ export interface CobrancasRepository {
   removerPagamento?(comandaId: number, parcelaId: number): Promise<PagamentoParcelaRegistro | null>;
   salvarRecibo(dados: SalvarReciboDados): Promise<ReciboVendaRegistro>;
   buscarReciboPorComandaId(comandaId: number): Promise<ReciboVendaRegistro | null>;
+  quitarComOutbox?(dados: QuitarComOutboxDados): Promise<QuitarComOutboxResultado>;
 }
 
 export class PrismaCobrancasRepository implements CobrancasRepository {
@@ -397,5 +418,81 @@ export class PrismaCobrancasRepository implements CobrancasRepository {
       pagas_hoje: pagasHoje,
       faturamento_turno: faturamentoTurno,
     };
+  }
+
+  /**
+   * Persiste atomicamente a parcela final, a quitação da cobrança, o recibo e o evento no Outbox.
+   */
+  async quitarComOutbox(dados: QuitarComOutboxDados): Promise<QuitarComOutboxResultado> {
+    return this.prisma.$transaction(async (tx) => {
+      const parcela = await tx.pagamentoParcela.create({
+        data: {
+          cobrancaId: dados.pagamento.cobrancaId,
+          comandaId: dados.pagamento.comandaId,
+          numeroParcela: dados.pagamento.numeroParcela,
+          pagadorLabel: dados.pagamento.pagadorLabel ?? null,
+          formaPagamento: dados.pagamento.formaPagamento,
+          valorAplicado: dados.pagamento.valorAplicado,
+          valorRecebido: dados.pagamento.valorRecebido,
+          troco: dados.pagamento.troco,
+          registradoEm: dados.pagamento.registradoEm ?? new Date(),
+        },
+      });
+
+      const cobranca = await tx.cobrancaComanda.update({
+        where: { comandaId: dados.comandaId },
+        data: {
+          mesa: dados.atualizacao.mesa,
+          garcomId: dados.atualizacao.garcomId,
+          nomeCliente: dados.atualizacao.nomeCliente,
+          status: dados.atualizacao.status ?? 'paga',
+          aplicarTaxaServico: dados.atualizacao.aplicarTaxaServico,
+          subtotal: dados.atualizacao.subtotal,
+          taxaServico: dados.atualizacao.taxaServico,
+          total: dados.atualizacao.total,
+          valorPago: dados.atualizacao.valorPago,
+          saldoRestante: dados.atualizacao.saldoRestante,
+          trocoTotal: dados.atualizacao.trocoTotal,
+          modoDivisao: dados.atualizacao.modoDivisao,
+          quantidadePagadores: dados.atualizacao.quantidadePagadores,
+          itensSnapshot: dados.atualizacao.itensSnapshot,
+          divisaoDetalhes:
+            dados.atualizacao.divisaoDetalhes === null
+              ? Prisma.JsonNull
+              : dados.atualizacao.divisaoDetalhes,
+          fechadaEm: dados.atualizacao.fechadaEm,
+          pagaEm: dados.atualizacao.pagaEm,
+        },
+        include: {
+          pagamentos: {
+            orderBy: { numeroParcela: 'asc' },
+          },
+          recibo: true,
+        },
+      });
+
+      const recibo = await tx.reciboVenda.create({
+        data: {
+          codigoAutenticacao: dados.recibo.codigoAutenticacao,
+          comandaId: dados.recibo.comandaId,
+          cobrancaId: dados.recibo.cobrancaId,
+          resumoRecibo: dados.recibo.resumoRecibo,
+          emitidoEm: dados.recibo.emitidoEm ?? new Date(),
+        },
+      });
+
+      await gravarEventoOutbox(tx, {
+        id: dados.eventoOutbox.id,
+        tipoEvento: dados.eventoOutbox.tipoEvento,
+        chaveAgregado: dados.eventoOutbox.chaveAgregado,
+        payload: dados.eventoOutbox.payload,
+      });
+
+      return {
+        parcela: parcela as PagamentoParcelaRegistro,
+        cobranca: { ...cobranca, recibo } as CobrancaComandaRegistro,
+        recibo: recibo as ReciboVendaRegistro,
+      };
+    });
   }
 }

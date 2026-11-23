@@ -10,6 +10,7 @@ export interface ConfigAmbiente {
   LOG_LEVEL: NivelLog;
   CORE_API_URL: string;
   GESTAO_API_URL: string;
+  RABBITMQ_URL?: string;
 }
 
 const AMBIENTES_VALIDOS: ReadonlySet<AmbienteNode> = new Set([
@@ -60,6 +61,7 @@ export function validarEnv(rawEnv: NodeJS.ProcessEnv = process.env): ConfigAmbie
 
   const coreApiUrl = rawEnv.CORE_API_URL?.trim() || 'http://localhost:3000';
   const gestaoApiUrl = rawEnv.GESTAO_API_URL?.trim() || 'http://localhost:3003';
+  const rabbitmqUrl = rawEnv.RABBITMQ_URL?.trim();
 
   return {
     DATABASE_URL: databaseUrl || 'postgresql://fake:fake@localhost:5432/caixa_db',
@@ -68,6 +70,7 @@ export function validarEnv(rawEnv: NodeJS.ProcessEnv = process.env): ConfigAmbie
     LOG_LEVEL: logLevelRaw,
     CORE_API_URL: coreApiUrl,
     GESTAO_API_URL: gestaoApiUrl,
+    ...(rabbitmqUrl ? { RABBITMQ_URL: rabbitmqUrl } : {}),
   };
 }
 

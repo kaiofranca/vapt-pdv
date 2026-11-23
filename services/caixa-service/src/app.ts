@@ -9,6 +9,7 @@ import {
   formatarRespostaErro,
 } from './shared/erros';
 import { ClienteBanco, obterPrisma } from './shared/prisma';
+import { OutboxPublisher } from './shared/messaging';
 import { rotasSaude } from './modules/saude/rotas';
 import {
   CobrancasRepository,
@@ -27,6 +28,8 @@ export interface OpcoesApp {
   service?: CobrancasService;
   estoqueGateway?: EstoqueCoreGateway;
   gestaoGateway?: GestaoGateway;
+  outboxPublisher?: OutboxPublisher;
+  usarMensageria?: boolean;
   nodeEnv?: AmbienteNode;
   logLevel?: NivelLog;
   logger?: boolean | FastifyLoggerOptions;
@@ -149,7 +152,13 @@ export async function buildApp(opcoes: OpcoesApp = {}): Promise<FastifyInstance>
   const service =
     opcoes.service ||
     (repository
-      ? new CobrancasService(repository, estoqueGateway, gestaoGateway)
+      ? new CobrancasService(
+          repository,
+          estoqueGateway,
+          gestaoGateway,
+          opcoes.outboxPublisher,
+          opcoes.usarMensageria,
+        )
       : undefined);
 
   await app.register(rotasSaude, { prisma });

@@ -1,11 +1,14 @@
 import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { ErroDominio } from '../../shared/erros';
+import { OutboxPublisher, mensageriaHabilitada } from '../../shared/messaging';
 import {
   CobrancasRepository,
   CobrancaFiltros,
   CobrancaComandaRegistro,
   ItemSnapshot,
+  PagamentoParcelaRegistro,
+  ReciboVendaRegistro,
 } from './cobrancas.repository';
 import {
   FecharComandaBody,
@@ -34,11 +37,14 @@ import {
 export class CobrancasService {
   private readonly estoqueGateway: EstoqueCoreGateway;
   private readonly gestaoGateway: GestaoGateway;
+  private readonly usarMensageria: boolean;
 
   constructor(
     private readonly repository: CobrancasRepository,
     estoqueGateway?: EstoqueCoreGateway,
     gestaoGateway?: GestaoGateway,
+    private readonly outboxPublisher?: OutboxPublisher,
+    usarMensageria?: boolean,
   ) {
     this.estoqueGateway =
       estoqueGateway ||
@@ -46,6 +52,7 @@ export class CobrancasService {
     this.gestaoGateway =
       gestaoGateway ||
       new HttpGestaoGateway(process.env.GESTAO_API_URL || 'http://localhost:3003');
+    this.usarMensageria = usarMensageria ?? mensageriaHabilitada();
   }
 
   private normalizarItens(itensInput: ItemSnapshotInput[]): ItemSnapshot[] {
@@ -524,16 +531,7 @@ export class CobrancasService {
       ? cobranca.itensSnapshot
       : [];
 
-    if (quitada) {
-      const itensParaBaixa = itensSnapshot.map((it) => ({
-        produto_id: it.produto_id,
-        quantidade: it.quantidade,
-      }));
-
-      await this.estoqueGateway.baixarEstoque(cobranca.comandaId, itensParaBaixa, formaPagamento);
-    }
-
-    const parcelaCriada = await this.repository.registrarPagamento({
+    const dadosParcela = {
       cobrancaId: cobranca.id,
       comandaId: cobranca.comandaId,
       numeroParcela,
@@ -543,31 +541,34 @@ export class CobrancasService {
       valorRecebido,
       troco,
       registradoEm: agora,
-    });
+    };
 
-    const cobrancaAtualizada = await this.repository.atualizar(comandaId, {
-      valorPago: novoValorPago,
-      saldoRestante: novoSaldoRestante,
-      trocoTotal: novoTrocoTotal,
-      status: quitada ? 'paga' : 'aguardando_pagamento',
-      pagaEm: quitada ? agora : null,
-    });
-
+    let parcelaCriada: PagamentoParcelaRegistro;
+    let cobrancaAtualizada: CobrancaComandaRegistro;
     let reciboResposta: any = null;
     const avisos: string[] = [];
 
     if (quitada) {
       const codigoAutenticacao = gerarCodigoAutenticacao(cobranca.mesa, agora);
 
-      const todosPagamentos = [...pagamentosAtuais, parcelaCriada];
-      const pagamentosFormatados = todosPagamentos.map((p) => ({
-        numero_parcela: p.numeroParcela,
-        pagador_rotulo: p.pagadorLabel,
-        forma_pagamento: p.formaPagamento,
-        valor_aplicado: p.valorAplicado.toFixed(2),
-        valor_recebido: p.valorRecebido.toFixed(2),
-        troco: p.troco.toFixed(2),
-      }));
+      const pagamentosFormatados = [
+        ...pagamentosAtuais.map((p) => ({
+          numero_parcela: p.numeroParcela,
+          pagador_rotulo: p.pagadorLabel,
+          forma_pagamento: p.formaPagamento,
+          valor_aplicado: p.valorAplicado.toFixed(2),
+          valor_recebido: p.valorRecebido.toFixed(2),
+          troco: p.troco.toFixed(2),
+        })),
+        {
+          numero_parcela: numeroParcela,
+          pagador_rotulo: pagadorLabel,
+          forma_pagamento: formaPagamento,
+          valor_aplicado: valorAplicado.toFixed(2),
+          valor_recebido: valorRecebido.toFixed(2),
+          troco: troco.toFixed(2),
+        },
+      ];
 
       const itensFormatados = itensSnapshot.map((it) => ({
         nome: it.nome,
@@ -594,23 +595,9 @@ export class CobrancasService {
         emitido_em: agora.toISOString(),
       };
 
-      const reciboSalvo = await this.repository.salvarRecibo({
-        codigoAutenticacao,
-        comandaId: cobranca.comandaId,
-        cobrancaId: cobranca.id,
-        resumoRecibo,
-        emitidoEm: agora,
-      });
-
-      reciboResposta = {
-        id: reciboSalvo.id,
-        numero_recibo: reciboSalvo.id,
-        codigo_autenticacao: reciboSalvo.codigoAutenticacao,
-        emitido_em: reciboSalvo.emitidoEm.toISOString(),
-      };
-
+      const eventoId = crypto.randomUUID();
       const eventoComandaPaga = {
-        evento_id: crypto.randomUUID(),
+        evento_id: eventoId,
         evento: 'comanda.paga',
         versao: 1,
         ocorrido_em: agora.toISOString(),
@@ -644,19 +631,101 @@ export class CobrancasService {
         parcelas: pagamentosFormatados,
       };
 
-      let avisoGestao: string | undefined;
-      try {
-        const resGestao = await this.gestaoGateway.notificarComandaPaga(eventoComandaPaga);
-        if (resGestao && !resGestao.sucesso) {
-          avisoGestao = `integracao_gestao_pendente: ${resGestao.erro || 'Falha ao notificar gestao-service'}`;
+      const dadosAtualizacaoQuitada = {
+        valorPago: novoValorPago,
+        saldoRestante: novoSaldoRestante,
+        trocoTotal: novoTrocoTotal,
+        status: 'paga',
+        pagaEm: agora,
+      };
+
+      const dadosRecibo = {
+        codigoAutenticacao,
+        comandaId: cobranca.comandaId,
+        cobrancaId: cobranca.id,
+        resumoRecibo,
+        emitidoEm: agora,
+      };
+
+      let reciboSalvo: ReciboVendaRegistro;
+
+      if (this.usarMensageria) {
+        if (this.repository.quitarComOutbox) {
+          const resultado = await this.repository.quitarComOutbox({
+            comandaId,
+            pagamento: dadosParcela,
+            atualizacao: dadosAtualizacaoQuitada,
+            recibo: dadosRecibo,
+            eventoOutbox: {
+              id: eventoId,
+              tipoEvento: 'comanda.paga',
+              chaveAgregado: String(cobranca.comandaId),
+              payload: eventoComandaPaga,
+            },
+          });
+
+          parcelaCriada = resultado.parcela;
+          cobrancaAtualizada = resultado.cobranca;
+          reciboSalvo = resultado.recibo;
+        } else {
+          parcelaCriada = await this.repository.registrarPagamento(dadosParcela);
+          cobrancaAtualizada = await this.repository.atualizar(
+            comandaId,
+            dadosAtualizacaoQuitada,
+          );
+          reciboSalvo = await this.repository.salvarRecibo(dadosRecibo);
         }
-      } catch (err: any) {
-        avisoGestao = `integracao_gestao_pendente: ${err?.message || 'Falha ao notificar gestao-service'}`;
+
+        this.outboxPublisher?.notificarNovoEvento();
+      } else {
+        const itensParaBaixa = itensSnapshot.map((it) => ({
+          produto_id: it.produto_id,
+          quantidade: it.quantidade,
+        }));
+
+        await this.estoqueGateway.baixarEstoque(
+          cobranca.comandaId,
+          itensParaBaixa,
+          formaPagamento,
+        );
+
+        parcelaCriada = await this.repository.registrarPagamento(dadosParcela);
+        cobrancaAtualizada = await this.repository.atualizar(
+          comandaId,
+          dadosAtualizacaoQuitada,
+        );
+        reciboSalvo = await this.repository.salvarRecibo(dadosRecibo);
+
+        let avisoGestao: string | undefined;
+        try {
+          const resGestao = await this.gestaoGateway.notificarComandaPaga(eventoComandaPaga);
+          if (resGestao && !resGestao.sucesso) {
+            avisoGestao = `integracao_gestao_pendente: ${resGestao.erro || 'Falha ao notificar gestao-service'}`;
+          }
+        } catch (err: any) {
+          avisoGestao = `integracao_gestao_pendente: ${err?.message || 'Falha ao notificar gestao-service'}`;
+        }
+
+        if (avisoGestao) {
+          avisos.push(avisoGestao);
+        }
       }
 
-      if (avisoGestao) {
-        avisos.push(avisoGestao);
-      }
+      reciboResposta = {
+        id: reciboSalvo.id,
+        numero_recibo: reciboSalvo.id,
+        codigo_autenticacao: reciboSalvo.codigoAutenticacao,
+        emitido_em: reciboSalvo.emitidoEm.toISOString(),
+      };
+    } else {
+      parcelaCriada = await this.repository.registrarPagamento(dadosParcela);
+      cobrancaAtualizada = await this.repository.atualizar(comandaId, {
+        valorPago: novoValorPago,
+        saldoRestante: novoSaldoRestante,
+        trocoTotal: novoTrocoTotal,
+        status: 'aguardando_pagamento',
+        pagaEm: null,
+      });
     }
 
     let statusCalculado = cobrancaAtualizada.status;
