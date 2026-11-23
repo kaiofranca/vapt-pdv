@@ -90,16 +90,39 @@ model Comanda {
 }
 
 model ItemComanda {
-  id            Int     @id @default(autoincrement())
-  comanda_id    Int
-  produto_id    Int
-  nome_copiado  String
-  preco_copiado Decimal @db.Decimal(10, 2)
-  quantidade    Int
-  observacao    String?         @db.VarChar(240)
-  comanda       Comanda @relation(fields: [comanda_id], references: [id], onDelete: Cascade)
+  id             Int     @id @default(autoincrement())
+  comanda_id     Int
+  produto_id     Int
+  nome_copiado   String
+  preco_copiado  Decimal @db.Decimal(10, 2)
+  quantidade     Int
+  observacao     String? @db.VarChar(240)
+  status_preparo String  @default("recebido") @db.VarChar(20)
+  comanda        Comanda @relation(fields: [comanda_id], references: [id], onDelete: Cascade)
 
   @@index([comanda_id])
   @@index([produto_id])
   @@map("itens_comanda")
+}
+
+model OutboxEvento {
+  id            String    @id @default(uuid()) @map("id") @db.Uuid
+  tipoEvento    String    @map("tipo_evento") @db.VarChar(60)
+  chaveAgregado String    @map("chave_agregado") @db.VarChar(80)
+  payload       Json      @map("payload")
+  status        String    @default("PENDENTE") @map("status") @db.VarChar(20)
+  tentativas    Int       @default(0) @map("tentativas")
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  publicadoEm   DateTime? @map("publicado_em") @db.Timestamptz(6)
+
+  @@index([status, criadoEm(sort: Asc)], map: "outbox_pendentes_idx")
+  @@map("outbox_eventos")
+}
+
+model EventoProcessado {
+  eventoId     String   @id @map("evento_id") @db.Uuid
+  evento       String   @db.VarChar(60)
+  processadoEm DateTime @default(now()) @map("processado_em") @db.Timestamptz(6)
+
+  @@map("eventos_processados")
 }

@@ -37,3 +37,17 @@ model EventoProcessado {
 
   @@map("eventos_processados")
 }
+
+model OutboxEvento {
+  id            String    @id @default(uuid()) @map("id") @db.Uuid
+  tipoEvento    String    @map("tipo_evento") @db.VarChar(60)
+  chaveAgregado String    @map("chave_agregado") @db.VarChar(80)
+  payload       Json      @map("payload")
+  status        String    @default("PENDENTE") @map("status") @db.VarChar(20)
+  tentativas    Int       @default(0) @map("tentativas")
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  publicadoEm   DateTime? @map("publicado_em") @db.Timestamptz(6)
+
+  @@index([status, criadoEm(sort: Asc)], map: "outbox_pendentes_idx")
+  @@map("outbox_eventos")
+}
