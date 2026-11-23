@@ -16,17 +16,11 @@ export interface LoggerRabbitMQ {
   debug?: (...args: any[]) => void;
 }
 
-/**
- * Indica se a mensageria AMQP está habilitada a partir de RABBITMQ_URL.
- */
 export function mensageriaHabilitada(url?: string): boolean {
   const valor = (url ?? process.env.RABBITMQ_URL)?.trim();
   return Boolean(valor && valor.toLowerCase() !== 'disabled');
 }
 
-/**
- * Cliente gerenciador de conexão, canal de confirmação e publicação de eventos no RabbitMQ.
- */
 export class RabbitMQClient {
   private readonly url: string;
   private readonly logger?: LoggerRabbitMQ;
@@ -43,9 +37,6 @@ export class RabbitMQClient {
     this.logger = logger;
   }
 
-  /**
-   * Registra callback executado após conexão/reconexão bem-sucedida para re-registrar consumidores.
-   */
   registrarCallbackConexao(cb: CallbackConexaoAmqp): void {
     this.callbacksConexao.push(cb);
     if (this.canal && this.estaConectado()) {
@@ -55,9 +46,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Estabelece conexão AMQP, cria canal com publisher confirms e declara a topologia.
-   */
   async conectar(): Promise<CanalAmqp> {
     if (this.canal && this.estaConectado()) {
       return this.canal;
@@ -125,9 +113,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Agenda reconexão automática com backoff exponencial (até 30s).
-   */
   agendarReconexao(): void {
     if (this.encerrando || this.timerReconexao) {
       return;
@@ -153,9 +138,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Publica um evento JSON persistente no exchange principal vaptpdv.eventos.
-   */
   async publicarEvento(
     tipoEvento: string,
     payload: unknown,

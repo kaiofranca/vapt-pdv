@@ -33,10 +33,6 @@ function extrairTentativas(msg: MensagemAmqp): number {
   return 0;
 }
 
-/**
- * Registra um consumidor AMQP com prefetch limitado, ack manual pós-commit,
- * validação de payload/evento_id e retry com envio para DLQ após esgotar tentativas.
- */
 export async function registrarConsumidorIdempotente<
   TPayload = Record<string, unknown>,
 >(

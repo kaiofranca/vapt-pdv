@@ -71,9 +71,6 @@ function validarPayloadComandaFechada(payload: PayloadComandaFechada): {
   };
 }
 
-/**
- * Registra o consumidor idempotente do caixa-service na fila `caixa.comanda.fechada`.
- */
 export async function registrarConsumidorCaixa(
   canal: CanalAmqp,
   prismaOuControle: ControleEventosProcessados,

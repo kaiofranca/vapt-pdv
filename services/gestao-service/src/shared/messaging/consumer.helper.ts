@@ -25,10 +25,6 @@ export interface OpcoesConsumidorIdempotente<TPayload = Record<string, unknown>>
   ) => Promise<{ duplicado?: boolean } | void>;
 }
 
-/**
- * Registra um consumidor AMQP com ack manual pós-processamento, prefetch controlado,
- * validação estrutural inicial e política de retentativas via header x-retry-count + DLQ.
- */
 export async function registrarConsumidorIdempotente<TPayload = Record<string, unknown>>(
   channel: CanalAmqp,
   opcoes: OpcoesConsumidorIdempotente<TPayload>,

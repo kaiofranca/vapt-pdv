@@ -28,10 +28,6 @@ export interface OpcoesConsumidorIdempotente<TPayload = Record<string, unknown>>
   ) => Promise<unknown>;
 }
 
-/**
- * Registra um consumidor AMQP resiliente com `ack` manual pós-commit,
- * validação de envelope JSON/`evento_id`, retry com `x-retry-count` e roteamento para DLQ.
- */
 export async function registrarConsumidorIdempotente<
   TPayload = Record<string, unknown>,
 >(

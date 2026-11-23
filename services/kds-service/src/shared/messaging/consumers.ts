@@ -79,9 +79,6 @@ function validarPayloadItemLancado(payload: Record<string, unknown>): CriarFicha
   };
 }
 
-/**
- * Registra o consumidor idempotente do KDS na fila `kds.item.lancado`.
- */
 export async function registrarConsumidorKds(
   canal: CanalAmqp,
   prisma: ClienteBanco,

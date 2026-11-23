@@ -420,9 +420,6 @@ export class PrismaCobrancasRepository implements CobrancasRepository {
     };
   }
 
-  /**
-   * Persiste atomicamente a parcela final, a quitação da cobrança, o recibo e o evento no Outbox.
-   */
   async quitarComOutbox(dados: QuitarComOutboxDados): Promise<QuitarComOutboxResultado> {
     return this.prisma.$transaction(async (tx) => {
       const parcela = await tx.pagamentoParcela.create({

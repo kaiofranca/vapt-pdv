@@ -117,12 +117,6 @@ export class GestaoService {
           timestamp,
         });
       }
-    } else if (
-      evento.evento === 'item.lancado' ||
-      evento.evento === 'item.pronto' ||
-      evento.evento === 'comanda.fechada'
-    ) {
-      // Eventos operacionais recebidos via binding '#' são aceitos e registrados em eventos_processados.
     }
 
     await this.repository.registrarEventoProcessado(evento.evento_id, evento.evento, timestamp);

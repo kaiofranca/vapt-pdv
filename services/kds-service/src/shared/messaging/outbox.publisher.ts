@@ -24,9 +24,6 @@ export interface OpcoesOutboxPublisher {
   };
 }
 
-/**
- * Grava evento na tabela outbox_eventos dentro da transação fornecida (ou no-op em mocks legados).
- */
 export async function gravarEventoOutbox(
   prismaOuTx: ClienteBanco | any,
   dados: DadosEventoOutbox,
@@ -49,9 +46,6 @@ export async function gravarEventoOutbox(
   });
 }
 
-/**
- * Worker em background responsável por varrer outbox_eventos PENDENTE e publicar no RabbitMQ.
- */
 export class OutboxPublisher {
   readonly intervaloMs: number;
   readonly tamanhoLote: number;
@@ -71,9 +65,6 @@ export class OutboxPublisher {
     this.logger = opcoes.logger;
   }
 
-  /**
-   * Processa um lote de até `tamanhoLote` registros PENDENTE ordenados por criadoEm ASC.
-   */
   async processarLote(): Promise<number> {
     if (this.processando) {
       this.pendenteNovaExecucao = true;
@@ -152,9 +143,6 @@ export class OutboxPublisher {
     return publicados;
   }
 
-  /**
-   * Inicia a varredura periódica do Outbox usando timer não bloqueante (.unref).
-   */
   iniciar(): void {
     if (this.timer) {
       return;
@@ -170,9 +158,6 @@ export class OutboxPublisher {
     }
   }
 
-  /**
-   * Dispara publicação imediata pós-commit quando o worker estiver ativo.
-   */
   notificarNovoEvento(): void {
     if (!this.ativo) {
       return;
@@ -186,9 +171,6 @@ export class OutboxPublisher {
     void this.processarLote();
   }
 
-  /**
-   * Interrompe o ciclo periódico de varredura do Outbox.
-   */
   parar(): void {
     this.ativo = false;
     this.pendenteNovaExecucao = false;

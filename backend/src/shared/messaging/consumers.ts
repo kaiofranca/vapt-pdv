@@ -17,10 +17,6 @@ async function executarEmTransacao<T>(
   return operacao(prisma);
 }
 
-/**
- * Registra os consumidores AMQP do serviço Core (`pdv.item.pronto` e `produtos.comanda.paga`)
- * garantindo desduplicação idempotente por `evento_id` na tabela `eventos_processados`.
- */
 export async function registrarConsumidoresCore(
   canal: CanalAmqp,
   prisma: ClienteBanco,

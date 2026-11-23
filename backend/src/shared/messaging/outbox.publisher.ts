@@ -39,10 +39,6 @@ export interface OpcoesOutboxPublisher {
   tamanhoLote?: number;
 }
 
-/**
- * Grava um evento na tabela `outbox_eventos` dentro da mesma transação de domínio,
- * degradando silenciosamente caso o cliente/mock não possua `outboxEvento`.
- */
 export async function gravarEventoOutbox(
   prismaOuTx: ClienteBanco | OutboxPrismaAdapter | undefined | null,
   dados: DadosGravacaoOutbox,
@@ -68,10 +64,6 @@ export async function gravarEventoOutbox(
   return id;
 }
 
-/**
- * Worker de Transactional Outbox responsável por varrer eventos `PENDENTE`
- * e publicá-los no broker garantindo entrega pelo menos uma vez (at-least-once).
- */
 export class OutboxPublisher {
   private readonly intervaloMs: number;
   private readonly tamanhoLote: number;
@@ -92,10 +84,6 @@ export class OutboxPublisher {
     this.tamanhoLote = opcoes?.tamanhoLote ?? 50;
   }
 
-  /**
-   * Processa um lote de eventos pendentes em ordem cronológica (`criadoEm ASC`),
-   * protegido por guarda de reentrância.
-   */
   async processarLote(): Promise<void> {
     if (this.emExecucao) {
       return;
@@ -154,9 +142,6 @@ export class OutboxPublisher {
     }
   }
 
-  /**
-   * Inicia o polling periódico de eventos pendentes sem bloquear o encerramento do processo.
-   */
   iniciar(): void {
     if (this.timer) {
       return;
@@ -171,16 +156,10 @@ export class OutboxPublisher {
     }
   }
 
-  /**
-   * Aciona imediatamente uma varredura de publicação pós-commit sem bloquear o chamador.
-   */
   notificarNovoEvento(): void {
     void this.processarLote();
   }
 
-  /**
-   * Interrompe o timer periódico de publicação.
-   */
   parar(): void {
     if (this.timer) {
       clearInterval(this.timer);

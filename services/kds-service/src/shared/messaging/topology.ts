@@ -119,9 +119,6 @@ export interface CanalAmqp {
   on?(event: string, listener: (...args: any[]) => void): any;
 }
 
-/**
- * Declara exchanges, filas duráveis, DLQs e bindings do ecossistema VaptPDV no RabbitMQ.
- */
 export async function declararTopologiaRabbitMQ(channel: CanalAmqp): Promise<void> {
   await channel.assertExchange(EXCHANGE_EVENTOS, 'topic', {
     durable: true,

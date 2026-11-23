@@ -23,18 +23,11 @@ export interface OpcoesRabbitMQClient {
 
 export type CallbackConexaoAmqp = (canal: CanalAmqp) => Promise<void> | void;
 
-/**
- * Indica se a mensageria RabbitMQ está habilitada conforme URL informada ou RABBITMQ_URL.
- */
 export function mensageriaHabilitada(url?: string): boolean {
   const valor = (url ?? process.env.RABBITMQ_URL)?.trim();
   return Boolean(valor) && valor!.toLowerCase() !== 'disabled';
 }
 
-/**
- * Cliente AMQP com ConfirmChannel, declaração automática da topologia VaptPDV,
- * reconexão com backoff exponencial e callbacks pós-conexão.
- */
 export class RabbitMQClient {
   private readonly url: string;
   private readonly intervaloReconexaoMs: number;
@@ -76,10 +69,6 @@ export class RabbitMQClient {
     return this.conexao !== null && this.canal !== null && !this.fechando;
   }
 
-  /**
-   * Abre conexão e ConfirmChannel (com fallback para createChannel), declara topologia
-   * e executa callbacks registrados.
-   */
   async conectar(): Promise<CanalAmqp> {
     if (this.canal && !this.fechando) {
       return this.canal;
@@ -151,9 +140,6 @@ export class RabbitMQClient {
     return canal;
   }
 
-  /**
-   * Agenda tentativa de reconexão com backoff exponencial limitado.
-   */
   agendarReconexao(): void {
     if (this.fechando || this.timerReconexao) {
       return;
@@ -182,9 +168,6 @@ export class RabbitMQClient {
     this.timerReconexao.unref?.();
   }
 
-  /**
-   * Publica um evento JSON persistente na exchange principal e aguarda publisher confirm.
-   */
   async publicarEvento(
     tipoEvento: string,
     payload: unknown,
@@ -210,9 +193,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Fecha canal e conexão AMQP de forma graciosa, cancelando timers pendentes.
-   */
   async fechar(): Promise<void> {
     this.fechando = true;
 

@@ -111,10 +111,6 @@ export interface CanalAmqp {
   waitForConfirms?(): Promise<void>;
 }
 
-/**
- * Declara de forma idempotente as exchanges, DLQs, filas principais e bindings
- * da topologia AMQP do VaptPDV no RabbitMQ.
- */
 export async function declararTopologiaRabbitMQ(channel: CanalAmqp): Promise<void> {
   await channel.assertExchange(EXCHANGE_EVENTOS, 'topic', {
     durable: true,

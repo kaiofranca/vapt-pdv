@@ -748,7 +748,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente —
       await registrarConsumidorCaixa(mockAmqp.canal, controleEventos, service);
 
       const eventoId = crypto.randomUUID();
-      // Payload inválido (itens vazio) dispara erro de validação no consumidor
       const payloadInvalido = {
         evento_id: eventoId,
         evento: 'comanda.fechada',
@@ -758,7 +757,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente —
         itens: [],
       };
 
-      // 1ª falha: x-retry-count ausente -> republica com x-retry-count: 1 + ack
       const msgTentativa1: MensagemAmqp = {
         content: Buffer.from(JSON.stringify(payloadInvalido)),
         fields: { routingKey: FILAS.CAIXA_COMANDA_FECHADA },
@@ -772,7 +770,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente —
       expect(mockAmqp.acks).toHaveLength(1);
       expect(mockAmqp.nacks).toHaveLength(0);
 
-      // 2ª falha: x-retry-count = 1 -> republica com x-retry-count: 2 + ack
       const msgTentativa2: MensagemAmqp = {
         content: mockAmqp.enviosFila[0].content,
         fields: { routingKey: FILAS.CAIXA_COMANDA_FECHADA },
@@ -789,7 +786,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente —
       expect(mockAmqp.acks).toHaveLength(2);
       expect(mockAmqp.nacks).toHaveLength(0);
 
-      // 3ª falha (MAX_TENTATIVAS_CONSUMO = 3): x-retry-count = 2 -> nack(false, false) -> DLQ
       const msgTentativa3: MensagemAmqp = {
         content: mockAmqp.enviosFila[1].content,
         fields: { routingKey: FILAS.CAIXA_COMANDA_FECHADA },

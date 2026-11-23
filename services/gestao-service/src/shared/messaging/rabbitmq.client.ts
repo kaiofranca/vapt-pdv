@@ -24,17 +24,11 @@ export interface OpcoesRabbitMQClient {
 
 export type CallbackConexaoAmqp = (canal: CanalAmqp) => Promise<void> | void;
 
-/**
- * Indica se a mensageria RabbitMQ está habilitada pela URL informada ou por RABBITMQ_URL.
- */
 export function mensageriaHabilitada(url?: string): boolean {
   const valor = (url ?? process.env.RABBITMQ_URL)?.trim();
   return Boolean(valor && valor.toLowerCase() !== 'disabled');
 }
 
-/**
- * Cliente gerenciador de conexão, canal, topologia e reconexão com backoff no RabbitMQ.
- */
 export class RabbitMQClient {
   private readonly url?: string;
   private readonly logger?: LoggerMensageria;
@@ -66,17 +60,10 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Registra um callback executado sempre que a conexão e a topologia forem estabelecidas.
-   */
   registrarCallbackConexao(callback: CallbackConexaoAmqp): void {
     this.callbacksConexao.push(callback);
   }
 
-  /**
-   * Estabelece conexão AMQP, cria canal (com Publisher Confirms quando disponível),
-   * declara a topologia e dispara os callbacks de conexão registrados.
-   */
   async conectar(): Promise<CanalAmqp> {
     if (this.canal) {
       return this.canal;
@@ -164,9 +151,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Agenda tentativa de reconexão exponencial respeitando o teto máximo configurado.
-   */
   agendarReconexao(): void {
     if (this.encerrando || this.timerReconexao) {
       return;
@@ -197,9 +181,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Utilitário opcional para publicação persistente de evento na exchange principal.
-   */
   async publicarEvento(
     routingKey: string,
     payload: unknown,
@@ -239,9 +220,6 @@ export class RabbitMQClient {
     return this.conexao !== null && this.canal !== null;
   }
 
-  /**
-   * Encerra canal, conexão e timers pendentes de forma segura durante o shutdown.
-   */
   async fechar(): Promise<void> {
     this.encerrando = true;
     if (this.timerReconexao) {

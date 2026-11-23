@@ -272,7 +272,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(canal1.publicacoes[0].options?.messageId).toBe('evt-pub-1');
     expect(canal1.waitForConfirmsChamado).toBe(1);
 
-    // Simula queda da conexão e reconexão automática com callback
     emissorConexao1.emit('close');
     expect(client.estaConectado()).toBe(false);
 
@@ -285,7 +284,7 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     await client.fechar();
     expect(client.estaConectado()).toBe(false);
     expect(canal2.fechado).toBe(true);
-    expect(fechouConexao1).toBe(false); // já havia sido fechada no evento close
+    expect(fechouConexao1).toBe(false);
   });
 
   it('deve configurar prefetch(10), noAck: false e confirmar ack manual apenas após processamento bem-sucedido', async () => {
@@ -326,7 +325,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
   it('deve processar comanda.paga, comanda.cancelada, estoque.movimentado e aceitar item.lancado / item.pronto via # sem erro', async () => {
     await registrarConsumidorGestao(canal, service);
 
-    // 1. item.lancado (recebido via #)
     const msgLancado = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({
@@ -351,7 +349,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(canal.acks).toContain(msgLancado);
     expect(await repo.eventoJaProcessado('7c9e6679-7425-40de-944b-e07fc1f90ae7')).toBe(true);
 
-    // 2. item.pronto (recebido via #)
     const msgPronto = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({
@@ -374,7 +371,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(canal.acks).toContain(msgPronto);
     expect(await repo.eventoJaProcessado('9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d')).toBe(true);
 
-    // 3. comanda.paga (formato canônico com split payment e itens)
     const msgPaga = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({
@@ -431,7 +427,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(ranking.receita_total_acumulada).toBe('64.70');
     expect(ranking.produtos).toHaveLength(2);
 
-    // 4. comanda.cancelada
     const msgCancelada = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({
@@ -451,7 +446,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(linhasFat[0].comandas_pagas).toBe(1);
     expect(linhasFat[0].comandas_canceladas).toBe(1);
 
-    // 5. estoque.movimentado
     const msgEstoque = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({
@@ -544,7 +538,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
       itens: [],
     });
 
-    // 1ª entrega (sem x-retry-count) -> reenfileira com x-retry-count: 1 + ack
     const tentativa1 = await canal.entregarMensagem(FILAS.GESTAO_EVENTOS, payload, {
       routingKey: 'comanda.paga',
       headers: { origem: 'caixa-service' },
@@ -558,10 +551,8 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     });
     expect(canal.acks).toContain(tentativa1);
     expect(canal.nacks).toHaveLength(0);
-    // Evento NÃO pode ter sido marcado como processado enquanto a projeção falhar
     expect(await repo.eventoJaProcessado(eventoId)).toBe(false);
 
-    // 2ª entrega (x-retry-count: 1) -> reenfileira com x-retry-count: 2 + ack
     const tentativa2 = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       canal.reenfileiramentos[0].content,
@@ -580,7 +571,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(canal.nacks).toHaveLength(0);
     expect(await repo.eventoJaProcessado(eventoId)).toBe(false);
 
-    // 3ª entrega (x-retry-count: 2 -> proxima = 3 >= 3) -> nack(msg, false, false) para gestao.eventos.dlq
     const tentativa3 = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       canal.reenfileiramentos[1].content,
@@ -599,7 +589,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     });
     expect(await repo.eventoJaProcessado(eventoId)).toBe(false);
 
-    // JSON inválido vai direto para .dlq sem retry
     const msgCorrompida = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       '{json-corrompido',
@@ -614,7 +603,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
       requeue: false,
     });
 
-    // JSON válido sem evento_id e sem messageId também vai direto para .dlq sem retry
     const msgSemId = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({ evento: 'comanda.paga' }),
@@ -648,7 +636,6 @@ describe('Mensageria RabbitMQ & Consumidor Idempotente (gestao-service)', () => 
     expect(canal.acks).toContain(msgFallback);
     expect(await repo.eventoJaProcessado('22222222-2222-4222-8222-222222222222')).toBe(true);
 
-    // Sem campo evento e sem routingKey/type -> lança erro -> cai em retry
     const msgSemEvento = await canal.entregarMensagem(
       FILAS.GESTAO_EVENTOS,
       JSON.stringify({ evento_id: '33333333-3333-4333-8333-333333333333' }),

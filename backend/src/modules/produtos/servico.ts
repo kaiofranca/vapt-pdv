@@ -2,7 +2,7 @@ import { ClienteBanco } from '../../shared/prisma';
 import type { IGestaoGateway } from '../../shared/gateways/gestao.gateway';
 import type { OutboxPublisher } from '../../shared/messaging';
 import { ProdutosRepositoryPrisma } from './produtos.repository';
-import { ProdutosService, ServicoProdutos } from './produtos.service';
+import { ProdutosService } from './produtos.service';
 
 export * from './produtos.entity';
 export * from './produtos.repository';

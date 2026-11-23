@@ -692,7 +692,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente (kd
       quantidade: 1,
     };
 
-    // 1ª entrega (x-retry-count ausente => 0) -> republica com x-retry-count: 1 e ack na original
     const msg1 = await canalMock.entregarMensagem(FILAS.KDS_ITEM_LANCADO, payload);
     expect(canalMock.republicacoesFila).toHaveLength(1);
     expect(canalMock.republicacoesFila[0].fila).toBe(FILAS.KDS_ITEM_LANCADO);
@@ -700,7 +699,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente (kd
     expect(canalMock.acks).toEqual([msg1]);
     expect(canalMock.nacks).toHaveLength(0);
 
-    // 2ª entrega (x-retry-count: 1) -> republica com x-retry-count: 2 e ack na original
     const msg2 = await canalMock.entregarMensagem(FILAS.KDS_ITEM_LANCADO, payload, {
       properties: { headers: { 'x-retry-count': 1 } },
     });
@@ -709,7 +707,6 @@ describe('Mensageria RabbitMQ, Transactional Outbox e Consumidor Idempotente (kd
     expect(canalMock.acks).toEqual([msg1, msg2]);
     expect(canalMock.nacks).toHaveLength(0);
 
-    // 3ª entrega (x-retry-count: 2 => tentativa 3 >= MAX_TENTATIVAS_CONSUMO) -> nack(msg, false, false) -> .dlq
     const msg3 = await canalMock.entregarMensagem(FILAS.KDS_ITEM_LANCADO, payload, {
       properties: { headers: { 'x-retry-count': 2 } },
     });

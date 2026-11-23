@@ -20,17 +20,11 @@ export interface OpcoesRabbitMQClient {
   atrasoMaximoReconexaoMs?: number;
 }
 
-/**
- * Indica se a mensageria RabbitMQ está habilitada pela URL informada ou via `RABBITMQ_URL`.
- */
 export function mensageriaHabilitada(url?: string): boolean {
   const valor = (url ?? process.env.RABBITMQ_URL)?.trim();
   return Boolean(valor && valor.toLowerCase() !== 'disabled');
 }
 
-/**
- * Cliente resiliente de conexão, publicação com Publisher Confirms e reconexão automática ao RabbitMQ.
- */
 export class RabbitMQClient {
   private readonly url: string;
   private readonly atrasoBaseMs: number;
@@ -53,17 +47,10 @@ export class RabbitMQClient {
     this.atrasoMaximoMs = opcoes?.atrasoMaximoReconexaoMs ?? 30000;
   }
 
-  /**
-   * Registra callback invocado após conectar e em todas as reconexões futuras.
-   */
   registrarCallbackConexao(cb: CallbackConexaoAmqp): void {
     this.callbacksConexao.push(cb);
   }
 
-  /**
-   * Estabelece conexão AMQP, cria canal (ConfirmChannel com fallback), declara a topologia
-   * e executa os callbacks registrados para subscrição de consumidores.
-   */
   async conectar(): Promise<CanalAmqp> {
     if (this.canal && this.conexao) {
       return this.canal;
@@ -162,9 +149,6 @@ export class RabbitMQClient {
     }
   }
 
-  /**
-   * Publica um evento em JSON UTF-8 no exchange principal com persistência e Publisher Confirm.
-   */
   async publicarEvento(
     tipoEvento: string,
     payload: unknown,

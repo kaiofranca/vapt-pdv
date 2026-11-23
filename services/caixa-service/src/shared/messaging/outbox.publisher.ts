@@ -58,10 +58,6 @@ export interface OpcoesOutboxPublisher {
   logger?: LoggerMensageria;
 }
 
-/**
- * Grava um evento pendente na tabela outbox_eventos dentro da mesma transação
- * ou cliente Prisma informado, preservando compatibilidade com mocks parciais.
- */
 export async function gravarEventoOutbox(
   prismaOuTx: ClienteOutboxDb | Record<string, any> | undefined | null,
   dados: DadosNovoOutboxEvento,
@@ -83,10 +79,6 @@ export async function gravarEventoOutbox(
   });
 }
 
-/**
- * Worker em background responsável por drenar eventos PENDENTE de outbox_eventos
- * e publicá-los no RabbitMQ com confirmação e controle de tentativas.
- */
 export class OutboxPublisher {
   private readonly intervaloMs: number;
   private readonly tamanhoLote: number;
@@ -111,9 +103,6 @@ export class OutboxPublisher {
     this.logger = logger;
   }
 
-  /**
-   * Varre um lote de eventos PENDENTE ordenados por criadoEm ASC e os publica.
-   */
   async processarLote(): Promise<number> {
     if (this.parado) {
       return 0;
@@ -191,9 +180,6 @@ export class OutboxPublisher {
     return totalPublicados;
   }
 
-  /**
-   * Inicia o polling periódico em background sem bloquear o encerramento do processo.
-   */
   iniciar(): void {
     this.parado = false;
     if (this.timer) {
@@ -209,9 +195,6 @@ export class OutboxPublisher {
     this.timer.unref?.();
   }
 
-  /**
-   * Aciona processamento imediato pós-commit quando um novo evento é gravado.
-   */
   notificarNovoEvento(): void {
     if (this.parado) {
       return;
@@ -222,9 +205,6 @@ export class OutboxPublisher {
     });
   }
 
-  /**
-   * Interrompe o worker periódico do outbox.
-   */
   parar(): void {
     this.parado = true;
     this.reprocessarPendente = false;

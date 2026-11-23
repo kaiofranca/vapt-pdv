@@ -4,10 +4,6 @@ import { registrarConsumidorIdempotente } from './consumer.helper';
 import { LoggerMensageria } from './rabbitmq.client';
 import { CanalAmqp, FILAS } from './topology';
 
-/**
- * Registra o consumidor AMQP da fila gestao.eventos (binding '#') delegando o envelope
- * validado para processamento idempotente e projeção OLAP no GestaoService.
- */
 export async function registrarConsumidorGestao(
   canal: CanalAmqp,
   gestaoService: Pick<GestaoService, 'processarEvento'>,

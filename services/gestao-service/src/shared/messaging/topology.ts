@@ -101,10 +101,6 @@ export interface CanalAmqp {
   close?(): Promise<void>;
 }
 
-/**
- * Declara as exchanges (principal topic e DLX direct), todas as 5 filas principais,
- * as 5 Dead Letter Queues (.dlq) e os respectivos bindings no broker RabbitMQ.
- */
 export async function declararTopologiaRabbitMQ(channel: CanalAmqp): Promise<void> {
   await channel.assertExchange(EXCHANGE_EVENTOS, 'topic', {
     durable: true,
