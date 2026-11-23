@@ -12,6 +12,8 @@ volumes:
     name: pgdata_caixa
   pgdata_gestao:
     name: pgdata_gestao
+  rabbitmq_data:
+    name: rabbitmq_data
 
 services:
   postgres-core:
@@ -120,8 +122,11 @@ services:
       CAIXA_SERVICE_URL: http://caixa-service:3002
       GESTAO_SERVICE_URL: http://gestao-service:3003
       GESTAO_API_URL: http://gestao-service:3003
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-vaptpdv}:${RABBITMQ_PASSWORD:-vaptpdv_secret}@rabbitmq:5672
     depends_on:
       postgres-core:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - vaptpdv-net
@@ -149,8 +154,11 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PORT: "3001"
       DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-kds:5432/${POSTGRES_DB_KDS:-kds_db}?schema=public
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-vaptpdv}:${RABBITMQ_PASSWORD:-vaptpdv_secret}@rabbitmq:5672
     depends_on:
       postgres-kds:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - vaptpdv-net
@@ -180,8 +188,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-caixa:5432/${POSTGRES_DB_CAIXA:-caixa_db}?schema=public
       CORE_API_URL: http://vapt-pdv-core:3000
       GESTAO_API_URL: http://gestao-service:3003
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-vaptpdv}:${RABBITMQ_PASSWORD:-vaptpdv_secret}@rabbitmq:5672
     depends_on:
       postgres-caixa:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - vaptpdv-net
@@ -209,8 +220,11 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PORT: "3003"
       DATABASE_URL: postgresql://${POSTGRES_USER:-vaptpdv}:${POSTGRES_PASSWORD:-vaptpdv_secret}@postgres-gestao:5432/${POSTGRES_DB_GESTAO:-gestao_db}?schema=public
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-vaptpdv}:${RABBITMQ_PASSWORD:-vaptpdv_secret}@rabbitmq:5672
     depends_on:
       postgres-gestao:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - vaptpdv-net
@@ -225,3 +239,28 @@ services:
         limits:
           memory: 192M
           cpus: "0.30"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-vaptpdv}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-vaptpdv_secret}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - vaptpdv-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
